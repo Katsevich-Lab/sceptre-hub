@@ -21,8 +21,8 @@ disturbing the review.
 2. Native data-model foundations: `SingleCellExperiment` in R, AnnData/MuData in
    Python.
 
-Everything else waits unless an accepted proposal says otherwise. Details are in
-the [roadmap](../ROADMAP.md).
+These are the current focus. The [roadmap](../ROADMAP.md) orders the rest of
+the work as a dependency graph.
 
 ### R package branching during review
 
