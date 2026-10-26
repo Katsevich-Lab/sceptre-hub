@@ -89,7 +89,7 @@ that are Now. The dashed hexagon is the Bioconductor acceptance gate.
 | **R4 SingleCellExperiment object** | The analysis object built on `SingleCellExperiment`, import from an existing SCE, and migration of objects saved by the released version. Developed on `dev`; merged after Bioconductor acceptance. | R3 | R | Next |
 | **R5 Disk-backed counts and 10x import** | Disk-backed counts through HDF5Array/DelayedArray, and 10x Genomics import | R4 | R | Later |
 | **R6 CPU speedups, results unchanged** | Speedups already implemented on development branches, where together they ran a full Gasperini permutation analysis 4.8× and a CRT analysis 3.6× faster than the released version, with identical output. They include native Poisson fitting, a dispersion cache, a fused scoring kernel, shared permutation prefixes, faster QC and import, and fit reuse. Brought over one at a time, each with unchanged results and a timing. | R3 | R | Next |
-| **R7 Faster fitting methods (results change)** | Prototyped accelerations that change numerical results: an accelerated logistic fitter for CRT, marginal guide-fit initialization, a native binomial QR fitter, and glmGamPoi fitting. Each needs a method proposal and validation. | R3, X1, a proposal | R | Later |
+| **R7 Faster fitting methods (results change)** | Prototyped accelerations that change numerical results: an accelerated logistic fitter for CRT, marginal guide-fit initialization, and a native binomial QR fitter. Each needs a method proposal and validation. | R3, X1, a proposal | R | Later |
 | **P1 Organize and land existing GPU code** | Existing GPU, native sampler and execution code reviewed and merged in pieces | — | pysceptre | Now |
 | **P2 Diagnose the full-scale GPU run** | One instrumented full-scale GPU CRT run that shows where the time goes | — | pysceptre | Now |
 | **P3 GPU at full scale** | Full-screen CRT and permutation on GPU, matching CPU results, with a timing table against 32 CPU cores | P1, P2, X2 | pysceptre | Next |
@@ -125,6 +125,10 @@ Considered and set aside for now:
 - Seurat interoperability.
 - Distributed execution inside the R package (the pipeline covers this).
 - Result bundles and resource summaries.
+- glmGamPoi fitting of the gene models. It replaces the Poisson fit plus
+  dispersion estimate with a full negative binomial fit, which is a different
+  estimator rather than a speedup; native Poisson fitting (R6) already speeds up
+  the current method.
 
 Any of these can return through a proposal.
 
