@@ -11,7 +11,7 @@ Open as an issue titled "Release pysceptre x.y.z".
 - [ ] Tests pass on CPU in CI
 - [ ] GPU tests pass on a GPU machine; record which one
 - [ ] Documentation builds
-- [ ] Shared parity fixtures pass
+- [ ] Parity comparison tests pass against the latest R fixture version (sync first if R has released a new one)
 
 ## Release
 
@@ -24,5 +24,5 @@ Open as an issue titled "Release pysceptre x.y.z".
 
 - [ ] Tag the release on GitHub
 - [ ] Publish the documentation
-- [ ] Update the compatibility table in the hub specs, if the result schema changed
+- [ ] Update the compatibility table in the hub contracts
 - [ ] Close the milestone

@@ -32,6 +32,10 @@ rules, those apply too.
   handoff documents.
 - Write commit messages, comments and documentation in plain language a
   maintainer can read quickly.
+- If a change alters R's output on the parity fixtures, say so. Regenerate the
+  fixtures and bump their version in the same pull request only when the
+  change is intended; otherwise fix the code. See
+  [contracts/parity.md](contracts/parity.md).
 
 ## Repository hygiene
 

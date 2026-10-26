@@ -12,7 +12,7 @@ setup, style and testing.
 | A design decision within one package, such as a new object layout | A short design note in that repository, reviewed before code |
 | A bug, task or feature in one package | An issue in that repository |
 | Ranked priorities | [ROADMAP.md](ROADMAP.md) |
-| Specs both packages follow | [specs/](specs/) |
+| Contracts the implementations must agree on | [contracts/](contracts/) |
 
 ## Issues, pull requests and milestones
 
@@ -71,8 +71,8 @@ Bioconductor staging repository, deliberately, with a version bump.
 Each release is tracked by a release-checklist issue made from the template for
 [Bioconductor](templates/release-checklist-bioconductor.md) or
 [PyPI](templates/release-checklist-pypi.md). Packages release on their own
-schedules. The specs record which package versions support which version of the
-result schema.
+schedules. The [contracts](contracts/) record which package versions support
+which version of the parity fixtures and the result schema.
 
 ## Research boundaries
 

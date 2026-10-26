@@ -14,6 +14,7 @@ Open as an issue titled "Release sceptre x.y.z".
 - [ ] CI passes on Linux, macOS and Windows
 - [ ] Vignettes build and examples run
 - [ ] Objects saved by the previous release still load
+- [ ] Reference stability test passes; if R's output changed on purpose, the parity fixtures were regenerated and their version bumped
 
 ## Release
 
@@ -25,5 +26,5 @@ Open as an issue titled "Release sceptre x.y.z".
 
 - [ ] Tag the release on GitHub
 - [ ] Update the pkgdown site
-- [ ] Update the compatibility table in the hub specs, if the result schema changed
+- [ ] Update the compatibility table in the hub contracts
 - [ ] Close the milestone
