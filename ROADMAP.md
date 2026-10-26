@@ -28,6 +28,8 @@ flowchart LR
   G["G Improved gRNA<br/>assignment"]:::method
   S1["S1 SPA in R"]:::method
   R5["R5 Disk-backed counts,<br/>10x import"]:::r
+  IR["IR Fast import in R"]:::r
+  IP["IP Fast import<br/>in pysceptre"]:::py
   X3["X3 R ↔ Python<br/>data-model mapping"]:::shared
   S2["S2 SPA in pysceptre<br/>and on GPU"]:::py
   W["W Wilcoxon test"]:::method
@@ -48,6 +50,8 @@ flowchart LR
   R3 --> R4
   BA -.-> R4
   R4 --> R5
+  R5 --> IR
+  P1 --> IP
   R3 --> R6
   R3 --> R7
   X1 --> R7
@@ -88,6 +92,8 @@ that are Now. The dashed hexagon is the Bioconductor acceptance gate.
 | **R3 Internal restructure** | Clear internal modules for cell selection, count access, fitting, QC, inference and results, with results unchanged | R1, R2 | R | Next |
 | **R4 SingleCellExperiment object** | The analysis object built on `SingleCellExperiment`, import from an existing SCE, and migration of objects saved by the released version. Developed on `dev`; merged after Bioconductor acceptance. | R3 | R | Next |
 | **R5 Disk-backed counts and 10x import** | Disk-backed counts through HDF5Array/DelayedArray, and 10x Genomics import | R4 | R | Later |
+| **IR Fast import in R** | Import rebuilt in R's own C++ code using the techniques of the redesigned converter prototyped during development: streamed parsing straight into gene-major output, guide aggregation as a sparse matrix product, an uncompressed or lightly compressed output option, and optionally overlapped decompression. That prototype imported the full Replogle screen in about 5 minutes on two CPU threads, against about 43 minutes for the current importer. A quick measurement of the two cheap changes (output compression and guide aggregation) on the current importer can start now. | R5 | R | Later (measurement Now) |
+| **IP Fast import in pysceptre** | The same converter as a native pysceptre importer writing standard AnnData/MuData storage, with an optional GPU mode (which adds little over CPU at full scale) | P1 | pysceptre | Next |
 | **R6 CPU speedups, results unchanged** | Speedups already implemented on development branches, where together they ran a full Gasperini permutation analysis 4.8× and a CRT analysis 3.6× faster than the released version, with identical output. They include native Poisson fitting, a dispersion cache, a fused scoring kernel, shared permutation prefixes, faster QC and import, and fit reuse. Brought over one at a time, each with unchanged results and a timing. | R3 | R | Next |
 | **R7 Faster fitting methods (results change)** | Prototyped accelerations that change numerical results: an accelerated logistic fitter for CRT, marginal guide-fit initialization, and a native binomial QR fitter. Each needs a method proposal and validation. | R3, X1, a proposal | R | Later |
 | **P1 Organize and land existing GPU code** | Existing GPU, native sampler and execution code reviewed and merged in pieces | — | pysceptre | Now |
