@@ -44,7 +44,7 @@ On `main`:
 On `dev`:
 
 1. A test suite that pins the current behavior of `main`.
-2. The internal restructuring and speedups, with results unchanged.
+2. The internal restructuring, with results unchanged.
 3. A design note for the `SingleCellExperiment`-based object, reviewed before
    any code.
 4. An internal accessor layer, so the rest of the code no longer reads object
@@ -53,7 +53,8 @@ On `dev`:
    migration from objects saved by the released version.
 6. Disk-backed counts through DelayedArray/HDF5Array.
 7. 10x Genomics import.
-8. Further speedups, one per pull request.
+8. Speedups, one per pull request, each with unchanged results and a timing
+   table.
 
 ### Ways of working
 
