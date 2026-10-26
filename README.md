@@ -1,0 +1,49 @@
+# SCEPTRE hub
+
+SCEPTRE provides statistically rigorous methods and software for analyzing
+single-cell CRISPR screens. It is developed as one coordinated effort across an
+R package, a Python package and a Nextflow pipeline. This repository is where
+that coordination happens: shared direction, decisions that span more than one
+repository, and the rules everyone works by.
+
+## Components
+
+| Component | Role | Code and documentation |
+| --- | --- | --- |
+| sceptre (R) | Bioconductor package for interactive analysis | [Code](https://github.com/Katsevich-Lab/sceptre) · [Documentation](https://katsevich-lab.github.io/sceptre/) |
+| pysceptre (Python) | Python implementation, including GPU-accelerated analysis | [Code](https://github.com/broadinstitute/pysceptre) · [Documentation](https://broadinstitute.github.io/pysceptre/) |
+| sceptre-pipeline (Nextflow) | Distributed execution on clusters and the cloud | [Code](https://github.com/timothy-barry/sceptre-pipeline) |
+| Book | Methods and worked analyses | [Hands-On Single-Cell CRISPR Screen Analysis](https://timothy-barry.github.io/sceptre-book/) |
+
+## What lives here and what lives in each repository
+
+**The rule:** a change that has to happen in more than one language is decided
+here. A change that only affects how one language does something lives in that
+language's repository.
+
+This repository holds:
+
+- [ROADMAP.md](ROADMAP.md): the ranked development priorities.
+- [proposals/](proposals/): numbered proposals for decisions that span
+  repositories, such as new methods, changed defaults, new result columns or
+  public functions that exist in more than one language. Accepted proposals are
+  the decision record.
+- [specs/](specs/): what SCEPTRE computes, how its data model maps between R and
+  Python, the result-table schema, and what it means for R and Python to agree.
+- [CONTRIBUTING.md](CONTRIBUTING.md): how work flows from issue to merged pull
+  request, how changes are reviewed, and how progress is tracked.
+- [AGENTS.md](AGENTS.md): rules for AI-assisted contributions.
+- [templates/](templates/): canonical pull-request and release-checklist
+  templates that each repository copies.
+
+Each component repository holds its code, tests, API documentation, vignettes,
+changelog, CI, releases and implementation issues.
+
+Later, this repository will also hold the cross-language parity tests and the
+benchmark scripts with their results table. Raw logs and large outputs do not go
+into git.
+
+## Status
+
+This repository is new (October 2026) and still being set up. Expect the specs
+and proposals to fill in over the coming weeks.
