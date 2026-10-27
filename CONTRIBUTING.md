@@ -56,8 +56,9 @@ Every pull request goes through these stages in order:
    - Every pull request: the frozen behavior suite and the parity fixtures, in
      CI.
    - Changes to import or analysis code: the base branch and the pull request
-     run side by side on real data, comparing every result, run time and peak
-     memory.
+     run side by side on small real datasets, comparing every result, run time
+     and peak memory. Run at full scale only when the change targets
+     large-scale performance (speed or memory on big data).
    - Before each release: full-scale analyses of public datasets on the
      development version, including negative-control calibration checks.
 4. **Maintainer approval.** See [Approval](#approval).
