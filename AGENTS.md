@@ -28,6 +28,9 @@ rules, those apply too.
   separate from changes that alter results.
 - State what the pull request checks and how that was verified. Report failures
   and skipped checks plainly.
+- Before opening a pull request, run the checks and a fresh-context review, and
+  address the findings. Follow the review stages and round limits in
+  [CONTRIBUTING.md](CONTRIBUTING.md#review).
 - Report progress on the issue and pull request, not in separate status or
   handoff documents.
 - Write commit messages, comments and documentation in plain language a

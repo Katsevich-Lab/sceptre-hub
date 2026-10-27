@@ -21,6 +21,14 @@ Pick one and fill it in:
 
 <!-- Commands run and their outcome. Report failures and skipped checks plainly. -->
 
+## Review so far
+
+<!--
+Agent review: which reviewer, its findings, and how each was resolved.
+Regression check (import or analysis changes): link to the side-by-side report,
+with results, run time and peak memory against the base branch.
+-->
+
 ## User-facing changes
 
 <!-- New or changed public functions, arguments, defaults, outputs or dependencies. "None" if none. -->
