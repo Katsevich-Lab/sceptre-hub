@@ -31,6 +31,11 @@ rules, those apply too.
 - Before opening a pull request, run the checks and a fresh-context review, and
   address the findings. Follow the review stages and round limits in
   [CONTRIBUTING.md](CONTRIBUTING.md#review).
+- A pull request's approver cannot also be its author, because GitHub does not
+  let authors approve their own pull requests. Open the pull request from your
+  own account, unless you are the repository's approver (see
+  [Approval](CONTRIBUTING.md#approval)). In that case, open it from the lab's
+  machine account, `katsevich-lab-bot`. Never print or commit its token.
 - Report progress on the issue and pull request, not in separate status or
   handoff documents.
 - Write commit messages, comments and documentation in plain language a
