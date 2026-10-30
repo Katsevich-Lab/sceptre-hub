@@ -15,7 +15,7 @@ so for the same state they write the same bytes.
 
 | File | Holds | Format stamp |
 | --- | --- | --- |
-| `screen.h5mu` | response and gRNA counts, cell covariates, MOI (MuData; modalities `response` and `grna`) | `uns["sceptre_format"]` |
+| `screen.h5mu` | response and gRNA counts, cell covariates, MOI (MuData; modalities `response` and `grna`); the response IDs are the response modality's `var` index, and its `var` column `response_name`, when present, holds the display names the import was given | `uns["sceptre_format"]` |
 | `grna_targets.parquet` | the gRNA table | Parquet schema metadata `sceptre_format` |
 | `state.h5ad` | per-cell stage values in `obs`, the design matrix in `obsm`, every other value in `uns["state"]` (below) | `uns["sceptre_format"]` |
 | `tables/NAME.parquet` | pair tables and other tables of the analysis | schema metadata `sceptre_format` |
@@ -29,21 +29,48 @@ so for the same state they write the same bytes.
 
 - **In place.** Saved to the directory it was read from, or that holds its
   `screen.h5mu`, it replaces that directory's analysis files (`state.h5ad`,
-  `tables/`, `results/`, `fits.parquet`, `execution.json`) and leaves
-  `screen.h5mu` and `grna_targets.parquet` untouched. The new files are written
-  to a hidden staging folder in the directory and renamed into place, so a
-  failed save leaves the previous analysis readable, and no table or result of
-  the previous save survives. `checksums.tsv` is written last, under another
-  name, then renamed.
+  `tables/`, `results/`, `fits.parquet`, `execution.json`) and `checksums.tsv`
+  in one commit, and leaves `screen.h5mu` and `grna_targets.parquet` untouched;
+  no table or result of the previous save survives. The commit:
+  1. The new analysis files, and the `checksums.tsv` that lists them with the
+     files the save leaves, are written to a hidden staging folder
+     `.sceptre-save-*` in the directory.
+  2. The previous `checksums.tsv`, then the previous analysis files, are
+     renamed into a hidden backup folder `.sceptre-previous-*`.
+  3. The new analysis files are renamed into place, and the new `checksums.tsv`
+     last; that rename publishes the save.
+  4. On any error before it, the new files are removed and the previous files
+     and `checksums.tsv` are renamed back, so a failed save leaves the previous
+     analysis readable. The backup folder is removed once the save is published
+     or the previous files are back.
+
+  The renames are not atomic together. A process killed between the first
+  rename of step 2 and the last of step 3 leaves the directory without
+  `checksums.tsv`; readers refuse such a directory (never reading it as a
+  screen alone) and name the `.sceptre-previous-*` folder, whose files restore
+  the previous analysis when moved back.
 - **By reference.** Saved to another directory, it writes the analysis files
   and no screen: `uns["state"]` key `screen_reference` (below) says where the
   screen is.
 - In both cases the analysis's gRNA table (which `set_analysis_parameters()`
   extends with `grna_group`) is `tables/grna_target_data_frame.parquet`, and
   readers use it in place of the screen's `grna_targets.parquet`.
+- In both cases the save leaves the screen's files as they are, so it stops
+  if the screen in memory differs from the saved screen in its cell or feature
+  IDs, cell covariates, gRNA summaries, response annotations (`var`) or MOI:
+  an edit made in memory would otherwise be lost.
 - A self-contained copy (`self_contained` in both packages) writes the screen
   into the directory. An analysis held in memory is always written with its
   screen.
+
+**Steps and their results.** A step marked as not run in `functs_called`
+(below) has no results, and its tables and per-step keys hold their empty
+values: running a step again clears what every later step computed (R's step
+ranks: `import_data`; `set_analysis_parameters`; `assign_grnas`; `run_qc`;
+then `run_calibration_check`, `run_power_check` and `run_discovery_analysis`).
+Writers never write a result, or its `execution.json` plan, of a step marked
+as not run. Earlier versions of R sceptre kept the later steps' results after
+a rerun; readers drop such stale results and values, with a warning.
 
 Readers resolve `screen_reference` to the directory given relative to the
 analysis directory, else to the absolute one; the files there must have the
