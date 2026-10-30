@@ -24,6 +24,32 @@ so for the same state they write the same bytes.
 | `execution.json` | how each result was computed (below) | top-level key `sceptre_format` |
 | `checksums.tsv` | size and MD5 of every other file | none (a manifest) |
 
+**Shared screens.** An analysis whose response counts are read from disk
+(backed) is saved without copying the counts:
+
+- **In place.** Saved to the directory it was read from, or that holds its
+  `screen.h5mu`, it replaces that directory's analysis files (`state.h5ad`,
+  `tables/`, `results/`, `fits.parquet`, `execution.json`) and leaves
+  `screen.h5mu` and `grna_targets.parquet` untouched. The new files are written
+  to a hidden staging folder in the directory and renamed into place, so a
+  failed save leaves the previous analysis readable, and no table or result of
+  the previous save survives. `checksums.tsv` is written last, under another
+  name, then renamed.
+- **By reference.** Saved to another directory, it writes the analysis files
+  and no screen: `uns["state"]` key `screen_reference` (below) says where the
+  screen is.
+- In both cases the analysis's gRNA table (which `set_analysis_parameters()`
+  extends with `grna_group`) is `tables/grna_target_data_frame.parquet`, and
+  readers use it in place of the screen's `grna_targets.parquet`.
+- A self-contained copy (`self_contained` in both packages) writes the screen
+  into the directory. An analysis held in memory is always written with its
+  screen.
+
+Readers resolve `screen_reference` to the directory given relative to the
+analysis directory, else to the absolute one; the files there must have the
+recorded sizes (and, when the reader verifies, MD5s). Otherwise the read stops
+with an error that says where the screen was and how to put it back.
+
 ## The format stamp
 
 Every file but `checksums.tsv` carries the same stamp, a JSON text:
@@ -56,6 +82,10 @@ together, update both readers, keep reading the older formats, and set
 `execution.json` plans that readers ignore (new keys inside a plan) are not.
 
 ## `uns["state"]`: plain JSON, one key per value
+
+`state.h5ad` is a standard h5ad (AnnData) file without features; sceptre writes
+it with `rhdf5`, following the AnnData on-disk format, and pysceptre with
+`anndata`.
 
 `uns["state"]` is one JSON object (a string in `state.h5ad`), with one key per
 value of the analysis state, in the order of the table below. It holds every
@@ -152,6 +182,7 @@ index list that is not strictly increasing).
 | `grna_fit_method` | character | the gRNA model fitter; empty in files that predate it |
 | `seed` | integer | the resampling seed; empty means the default (4) |
 | `pairwise_qc` | logical | whether pairwise QC (testability) is on; empty means on |
+| `screen_reference` | any | `null` when the directory holds its screen; otherwise the shared screen: `directory` (absolute path), `relative_directory` (relative to the analysis directory) and `files`, an object with, for `screen.h5mu` and `grna_targets.parquet`, `size` (bytes, a double) and `md5` |
 
 ### Example
 
