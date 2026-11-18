@@ -1,7 +1,11 @@
 # Builds example/: two datasets and their analyses, written by R, and
 # example-objects.rds, the sceptre_objects they were written from.
-# Run from this folder: Rscript make_example.R
-source("format/setup.R")
+# Needs the sceptre3 build of sceptre. Run from the folder that holds format/:
+#     Rscript package-suite/make_example.R
+# It also writes example/<dataset>/expected/: what sceptre itself held for each
+# analysis, captured once, so that the package-free checks in verify/ can
+# compare what they derive from the files with it without loading sceptre.
+source("package-suite/setup.R")
 quiet <- function(object, ..., through = "discovery") {
     object <- object |> assign_grnas(parallel = FALSE, ...) |> run_qc()
     if (through == "qc") return(object)
@@ -99,7 +103,7 @@ metadata(types) <- list(sceptre = list(
 ))
 
 objects <- list(highmoi = highmoi, lowmoi = lowmoi)
-saveRDS(objects, "example-objects.rds")
+saveRDS(objects, "package-suite/example-objects.rds")
 unlink("example", recursive = TRUE)
 write_sceptre_screen(high, "example/highmoi/screen.h5mu", response_names = highmoi_example_data$gene_names,
     metadata = list(name = "sceptre high-MOI example data", perturbation_type = "CRISPRi", organism = "Homo sapiens"))
@@ -110,6 +114,44 @@ for (dataset in names(objects)) {
     screen <- file.path("example", dataset, "screen.h5mu")
     for (name in setdiff(names(objects[[dataset]]), "imported")) {
         write_sceptre_analysis(objects[[dataset]][[name]], screen, file.path("example", dataset, "analyses", name))
+    }
+}
+
+# What sceptre held, for the package-free checks (verify/derived.R, verify/derived.py).
+ids_text <- function(lists, cells) paste(paste0(names(lists), "\t", vapply(lists, function(idx) paste(cells[idx], collapse = ","), character(1))), collapse = "\n")
+sha256_text <- function(text) unname(tools::sha256sum(bytes = charToRaw(enc2utf8(text))))
+for (dataset in names(objects)) {
+    cells <- colnames(fmt_read_screen(file.path("example", dataset, "screen.h5mu")))
+    for (name in setdiff(names(objects[[dataset]]), "imported")) {
+        object <- objects[[dataset]][[name]]
+        done <- called(object)
+        folder <- file.path("example", dataset, "expected", name)
+        expected <- list(
+            captured_from = paste("sceptre", as.character(utils::packageVersion("sceptre")), "(sceptre3 build)"),
+            captured_on = format(Sys.Date()), stages = I(done)
+        )
+        if ("assignment" %in% done) {
+            expected$cells_by_grna_sha256 <- sha256_text(ids_text(field(object, "initial_grna_assignment_list"), cells))
+            raw <- field(object, "grna_assignments_raw")
+            expected$cells_by_group_sha256 <- sha256_text(ids_text(raw$grna_group_idxs, cells))
+            expected$cells_by_control_grna_sha256 <- sha256_text(ids_text(raw$indiv_nt_grna_idxs, cells))
+            per_cell <- field(object, "grnas_per_cell")
+            if (length(per_cell) > 0L) expected$grnas_per_cell_sha256 <- sha256_text(paste(per_cell, collapse = ","))
+        }
+        if ("qc" %in% done) {
+            expected$cells_in_use_sha256 <- sha256_ids(cells[field(object, "cells_in_use")])
+            expected$n_ok_discovery_pairs <- field(object, "n_ok_discovery_pairs")
+            expected$n_ok_positive_control_pairs <- field(object, "n_ok_positive_control_pairs")
+        }
+        if ("calibration" %in% done) {
+            expected$control_groups <- I(sort(unique(as.character(field(object, "negative_control_pairs")$grna_group)), method = "radix"))
+        }
+        for (stage in intersect(c("calibration", "power", "discovery"), done)) {
+            result <- as.data.frame(sceptre:::analysis_result(object, stage), stringsAsFactors = FALSE)
+            keep <- intersect(c("grna_target", "grna_id", "response_id", "p_value", "log_2_fold_change", "significant"), names(result))
+            write_table(result[keep], file.path(folder, paste0(stage, ".parquet")), unit_key(result))
+        }
+        write_json(expected, file.path(folder, "expected.json"))
     }
 }
 

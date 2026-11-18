@@ -1,0 +1,44 @@
+# The package-free checks of the file format (file-format/verify/run.sh), on
+# Linux and macOS. It installs standard libraries only: neither sceptre nor
+# pysceptre.
+#
+# It runs only when started by hand (Actions > File format > Run workflow), so
+# that adding this file starts nothing. This workflow has not yet been run:
+# the suite was run on one Mac. Add a `push:` trigger once it has passed here.
+name: File format
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python libraries
+        run: pip install mudata anndata h5py pyarrow pandas scipy numpy jsonschema scanpy polars duckdb
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - name: System libraries for R packages (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev libhdf5-dev libnode-dev
+      - name: R libraries
+        run: |
+          install.packages(c("BiocManager", "jsonlite", "nanoparquet", "jsonvalidate", "arrow", "Matrix"))
+          BiocManager::install(c("MuData", "rhdf5", "HDF5Array", "SingleCellExperiment", "MultiAssayExperiment"), ask = FALSE, update = FALSE)
+        shell: Rscript {0}
+      - name: Package-free checks
+        run: file-format/verify/run.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ matrix.os }}
+          path: file-format/verify/out/results/

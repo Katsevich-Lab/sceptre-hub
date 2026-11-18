@@ -20,7 +20,12 @@ the format against them. Its twin, `notebook-python.qmd`, does the same in
 Python, section by section. `SPEC.md` states the rules and `RATIONALE.md` the
 reasons; section numbers such as S4 or T3 refer to both. Every output below comes from running the code.
 
-`example/` was written by R (`make_example.R`) from sceptre's built-in data:
+It belongs to the **package suite**: it builds the package's own objects from
+the files, on an unreviewed branch build, to test that the files hold
+everything an analysis needs. The checks of the format that need no package
+are in `verify/`.
+
+`example/` was written by R (`package-suite/make_example.R`) from sceptre's built-in data:
 
 | Dataset | Cells | Responses | gRNAs | Analyses |
 |---|---|---|---|---|
@@ -33,7 +38,7 @@ writes its own copy of everything to `roundtrip/python-copy`, which this
 notebook reads.
 
 ```{r}
-source("format/setup.R")
+source("package-suite/setup.R")
 screen <- "example/highmoi/screen.h5mu"
 analyses <- "example/highmoi/analyses"
 show_table <- function(...) print(data.frame(..., check.names = FALSE), row.names = FALSE, right = FALSE)
@@ -142,7 +147,7 @@ and compares it with an independent source: the `sceptre_object` the analysis
 was written from, kept in `example-objects.rds` from the session that ran it.
 
 ```{r}
-originals <- readRDS("example-objects.rds")
+originals <- readRDS("package-suite/example-objects.rds")
 original <- originals$highmoi$left_sided
 tables <- saved$tables
 records <- saved$stages
@@ -379,6 +384,9 @@ do.call(rbind, lapply(names(r_written), function(dataset) {
 ```
 
 ## 8. Continue an analysis across languages
+
+This section is about parity between the two packages, not about the format:
+the format's part is only to carry what each needs to continue.
 
 **Python continued R's analysis.** `stopped_after_qc` was run in R through QC.
 The Python notebook read it, ran the three testing stages in pysceptre and

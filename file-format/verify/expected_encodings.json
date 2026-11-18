@@ -1,0 +1,16 @@
+{
+ "data file, boolean: Python writes, R reads": "values differ (read as character)",
+ "data file, integer_64: Python writes, R reads": "values differ (read as integer)",
+ "data file, integer_with_missing: Python writes, R reads": "same values, read as array",
+ "data file, boolean_with_missing: Python writes, R reads": "correct (read as logical)",
+ "data file, text_with_missing_in_feature_table: Python writes, R reads": "same values, read as factor, levels x",
+ "data file, text_covariate: Python writes, R reads": "same values, read as factor, levels L1,L2",
+ "data file, default_string_settings: Python writes, R reads": "cannot open",
+ "table, integer_64: Python (pyarrow) writes, nanoparquet reads": "correct (read as numeric)",
+ "table, integer_64: Python (pyarrow) writes, arrow reads": "correct (read as integer64)",
+ "data file, boolean: R writes, Python reads": "same values, read as int8",
+ "data file, integer_with_missing: R writes, Python reads": "cannot open (TypeError)",
+ "data file, boolean_with_missing: R writes, Python reads": "cannot open (TypeError)",
+ "data file, text_with_missing_in_feature_table: R writes, Python reads": "values differ (read as str)",
+ "data file, text_covariate: R writes, Python reads": "correct (read as str)"
+}

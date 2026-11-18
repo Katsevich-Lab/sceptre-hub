@@ -875,6 +875,90 @@ objecting; he can overturn any of them.
 | 11 | Exactly what is hashed | Identifiers: UTF-8, joined by line feeds, which identifiers must not contain (*Adopted*). Design matrix: little-endian doubles, column by column | A1.3, S9.4, T7.3 |
 | 12 | Signed or unsigned 32-bit integers | Signed; both validators can tell | S4, S7.1 |
 
+### What counts as evidence about the format
+
+Five points, agreed with Eugene on 18 November, that shape how the format is
+checked:
+
+1. **There is no canonical writer.** The standard writers (R's MuData, Python's
+   mudata and anndata, nanoparquet, pyarrow) do not produce conforming files as
+   they come; the writers that do are the prototype's. So the format is defined
+   by `SPEC.md` and `spec/`, and the validators are the arbiter. Any code whose
+   files pass the validators and read back correctly in the standard libraries
+   is a conforming writer.
+2. **A round trip through one's own reader and writer is weak evidence.** It
+   tests that the pair is self-consistent and cannot catch an error they share.
+   It is a fair requirement of a package that adopts the format. Stronger
+   evidence is independent: a file read by a reader we did not write; data read
+   back and compared with its source, not with a rewrite; R's file compared
+   with Python's.
+3. **Whether sceptre and pysceptre compute the same thing from the same files
+   is not the format's job.** That is parity between the packages. The
+   format's part is to make the comparison possible: it records the formula,
+   the methods, the seed, the settings and the writer; it stores the design's
+   term names and hash; and it stops fits crossing where the method differs.
+4. **So the cross-language continuation** (an analysis stopped in R and
+   finished in pysceptre, agreeing to 8e-12) **is a parity result**, not
+   evidence about the format.
+5. **One package-dependent question is the format's concern: sufficiency.** Do
+   the files hold everything an analysis needs? It is a property of the
+   format's design that can only be tested by rebuilding a package's object.
+
+**Two suites follow from this.**
+
+- *The package-free suite* (`verify/`) loads neither sceptre nor pysceptre and
+  runs on committed files with standard libraries only. *(measured, one Mac)*
+  About 790 checks in five groups, each in R and in Python, all passing:
+  - an encoding matrix: each kind of value written by each language's standard
+    libraries and read by the other's;
+  - two writers on seeded random content, compared array by array and with the
+    source;
+  - readers we did not write: anndata, scanpy, polars, duckdb, HDF5Array, arrow;
+  - the validators and readers on the conformance set;
+  - what a reader derives from the files, against values sceptre held, captured
+    once and stored beside the examples.
+- *The package suite* (`package-suite/`) rebuilds each package's object from
+  the files and compares it with the original, which is the sufficiency test.
+  It found most of the gaps in earlier drafts. It also holds the parity checks.
+  It depends on unreviewed branch builds and is meant to move into the packages.
+
+**What the package-free suite found.** Writing it changed one thing and raised
+two questions:
+
+- *Fixed.* The two writers stored a feature table's text differently: R as
+  text, Python as a categorical, because mudata converts text with repeated
+  values as it writes. Both conformed and both read back the same, but the
+  files were not the same. The Python writer now stores it as R does.
+- *Open: counts cannot be handed to scanpy as anndata reads them.* The format
+  stores column pointers as 64-bit integers and cell positions as 32-bit (S4).
+  scipy's compiled routines refuse a matrix whose two index arrays differ in
+  width, so `scanpy.pp.calculate_qc_metrics` fails on a modality read with
+  anndata alone. The prototype's reader brings both to one width, and IGVF's
+  code does the same; a user who opens the file with standard tools gets an
+  error. The alternatives are to store both arrays in one width (32-bit until
+  the nonzeros need 64, as scipy and anndata write natively, at the price of a
+  type that depends on the data; or always 64-bit, at four more bytes per
+  nonzero), or to keep S4 and document the step. This is Eugene's to decide.
+- *Open: the fit cache's record sits inside its folder of parts.* A reader
+  pointed at `fits/response/` as a Parquet dataset meets `identity.json` and
+  fails; given the part files, or a `*.parquet` pattern, it works. Moving the
+  record beside the folder (`fits/response.json`) would let any dataset reader
+  open the folder. Also Eugene's to decide.
+
+**What the package-free suite cannot show.** Sufficiency, and anything about
+results. The validators and both writers also still come from one author; the
+independent readers reduce that weakness and only an outside implementer
+removes it. The suite has run on one operating system: a workflow file for
+Linux and macOS is in the hub and has not been run.
+
+**A question for Eugene: what the prototype's reader and writer become.**
+Either throwaway, with each package writing its own and the conformance set
+keeping them equivalent; or a kept reference implementation living with the
+specification, explicitly not authoritative. The side session leans to the
+second, because otherwise the only writers in existence are inside the two
+packages and the format is in practice whatever they do. It is more code to
+maintain. Not decided.
+
 ### What a code review found
 
 A review of the specification and the code that checks it (18 November) found
@@ -1041,14 +1125,18 @@ Everything in sections 3 to 6, and the validators of section 11. The code is
 files in the format; the two notebooks run the checks below in R and in Python
 and show their outputs.
 
-**Checked in both languages** (notebook section in brackets):
+The checks fall into two suites, described in section 11: `verify/`, which
+loads neither package, and `package-suite/`, whose notebooks are tabulated
+here.
+
+**Checked in both languages by the package suite** (notebook section in brackets):
 
 | What | Result |
 |---|---|
 | R writes, R reads back as a `sceptre_object` [6] | Every field identical or equal for all 7 analyses, on high MOI and low MOI |
 | R writes, Python reads into pysceptre's `Analysis` [7] | Equal, part by part, to what pysceptre's own reader gives for the same analyses in the October layout |
 | Python rewrites everything, R reads the Python copy [6, 7] | Objects as above; all stage records equal; all tables identical; same number types in the data file |
-| Python continues an analysis R stopped after QC [8] | p-values agree with R's to a relative 8e-12; same discoveries |
+| Python continues an analysis R stopped after QC [8] (a parity result between the packages, not evidence about the format) | p-values agree with R's to a relative 8e-12; same discoveries |
 | R resumes from Python-written files [8] | Results identical to an analysis that was never saved |
 | Negative-control groups read from the table [4] | Every member is a non-targeting gRNA; every tested group has members |
 | Per-target unions, per-control lists, gRNAs per cell derived from assignments [4] | Equal to what the packages hold |

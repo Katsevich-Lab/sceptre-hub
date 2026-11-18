@@ -1,13 +1,10 @@
-# Libraries for the prototype: nanoparquet from ./rlib, and the sceptre3 build of
-# sceptre from the tour library (see README.md). Run from the proposal folder.
+# Libraries for the format code: nothing but standard packages. `nanoparquet`
+# and `jsonvalidate` are taken from ./rlib if they are there (see README.md).
+# Run from the folder that holds format/ and spec/.
 proposal_dir <- Sys.getenv("SCEPTRE_FORMAT_DIR", getwd())
-.libPaths(c(
-    file.path(proposal_dir, "rlib"),
-    Sys.getenv("SCEPTRE_TOUR_RLIB", path.expand("~/code/research/sceptre-tour-rlib")),
-    .libPaths()
-))
+if (dir.exists(file.path(proposal_dir, "rlib"))) .libPaths(c(file.path(proposal_dir, "rlib"), .libPaths()))
 suppressPackageStartupMessages({
-    library(sceptre)
     library(SingleCellExperiment)
+    library(Matrix)
 })
 source(file.path(proposal_dir, "format", "sceptre_format.R"))

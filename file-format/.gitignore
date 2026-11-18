@@ -2,7 +2,8 @@
 rlib/
 roundtrip/
 reference-october-layout/
-example-objects.rds
+package-suite/example-objects.rds
+verify/out/
 conformance/results-*.json
 *.html
 *_files/

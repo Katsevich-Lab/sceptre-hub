@@ -67,7 +67,7 @@ its table says which:
 | Kind | What it is | How it is tested |
 |---|---|---|
 | **file** | True of every conforming file | By the validators, `validate_screen()` and `validate_analysis()`, in R and in Python |
-| **behaviour** | What a reader or a writer does | By the round-trip checks in the two notebooks and by the conformance run |
+| **behaviour** | What a reader or a writer does | By the conformance run, the package-free checks in `verify/`, and the notebooks of `package-suite/` |
 | **guidance** | Advice or a definition. Not binding, and not tested | — |
 
 **Key words.** In file and behaviour rules, **MUST**, **MUST NOT**, **SHOULD**
@@ -79,7 +79,7 @@ final; the sorting into kinds is.
 
 - **V**: the validators check it, and a file in `conformance/` exercises it;
 - **v**: the validators check it, with no conformance file;
-- **tests**: a check in the notebooks exercises it, named in brackets;
+- **tests**: a check in `verify/` or in the notebooks of `package-suite/` exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
 Of the 122 statements, 82 are file rules, 29 behaviour rules and 11
@@ -513,6 +513,11 @@ and QC stages have run.
   object, and return every problem they find as rows of `rule`, `where`,
   `message` and `readable`. `conformance_level()` turns the rows into
   "conforming", "readable" or "not readable".
+- **No canonical writer.** The format is defined by this document and `spec/`.
+  Any code whose files pass the validators and read back correctly in the
+  standard libraries is a conforming writer.
+- **The package-free suite.** `verify/run.sh` runs every check of the format
+  that needs neither sceptre nor pysceptre.
 - **Agreement.** `check_conformance.R` and `check_conformance.py` run the two
   validators over every case. Both MUST report exactly the expected rules and
   level, and each reader MUST read every readable file to the same counts as

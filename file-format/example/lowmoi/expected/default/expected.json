@@ -1,0 +1,12 @@
+{
+  "captured_from": "sceptre 0.99.1 (sceptre3 build)",
+  "captured_on": "2026-11-18",
+  "stages": ["parameters", "assignment", "qc", "calibration", "power", "discovery"],
+  "cells_by_grna_sha256": "6064125299edb8c441d71578d9871ad763be4a38ce252517e1be87ae731fcc6f",
+  "cells_by_group_sha256": "f4b06073325510bb937c01c2c04f9af8963650d6341a074a4c7dd1a58cb69d87",
+  "cells_by_control_grna_sha256": "4592636f454c3081b893fb5a54e804d8f71c381a6878b7f7e38af58028faee4b",
+  "cells_in_use_sha256": "6d2b62380b12d9ca9ee0236ebd3c278ffaa0fd00eeb92a12d9e13b4ffa1909d6",
+  "n_ok_discovery_pairs": 1980,
+  "n_ok_positive_control_pairs": 20,
+  "control_groups": ["nt_grna1&nt_grna10", "nt_grna1&nt_grna2", "nt_grna1&nt_grna3", "nt_grna1&nt_grna4", "nt_grna1&nt_grna5", "nt_grna1&nt_grna6", "nt_grna1&nt_grna7", "nt_grna1&nt_grna8", "nt_grna1&nt_grna9", "nt_grna10&nt_grna2", "nt_grna10&nt_grna3", "nt_grna10&nt_grna4", "nt_grna10&nt_grna5", "nt_grna10&nt_grna6", "nt_grna10&nt_grna7", "nt_grna10&nt_grna8", "nt_grna10&nt_grna9", "nt_grna2&nt_grna3", "nt_grna2&nt_grna4", "nt_grna2&nt_grna5", "nt_grna2&nt_grna6", "nt_grna2&nt_grna7", "nt_grna2&nt_grna8", "nt_grna2&nt_grna9", "nt_grna3&nt_grna4", "nt_grna3&nt_grna5", "nt_grna3&nt_grna6", "nt_grna3&nt_grna7", "nt_grna3&nt_grna8", "nt_grna3&nt_grna9", "nt_grna4&nt_grna5", "nt_grna4&nt_grna6", "nt_grna4&nt_grna7", "nt_grna4&nt_grna8", "nt_grna4&nt_grna9", "nt_grna5&nt_grna6", "nt_grna5&nt_grna7", "nt_grna5&nt_grna8", "nt_grna5&nt_grna9", "nt_grna6&nt_grna7", "nt_grna6&nt_grna8", "nt_grna6&nt_grna9", "nt_grna7&nt_grna8", "nt_grna7&nt_grna9", "nt_grna8&nt_grna9"]
+}

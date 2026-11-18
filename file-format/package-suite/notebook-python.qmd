@@ -22,7 +22,12 @@ of the format against them. Its twin, `notebook-r.qmd`, does the same in R,
 section by section. `SPEC.md` states the rules and `RATIONALE.md` the reasons;
 section numbers such as S4 or T3 refer to both. Every output below comes from running the code.
 
-`example/` was written by R (`make_example.R`) from sceptre's built-in data:
+It belongs to the **package suite**: it builds the package's own objects from
+the files, on an unreviewed branch build, to test that the files hold
+everything an analysis needs. The checks of the format that need no package
+are in `verify/`.
+
+`example/` was written by R (`package-suite/make_example.R`) from sceptre's built-in data:
 
 | Dataset | Cells | Responses | gRNAs | Analyses |
 |---|---|---|---|---|
@@ -47,8 +52,8 @@ warnings.simplefilter("ignore")
 pd.set_option("display.width", 200)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.max_colwidth", 130)
-sys.path.insert(0, "format")
-import sceptre_format as sf
+sys.path.insert(0, "package-suite")
+import pysceptre_objects as sf   # the format library, plus building pysceptre objects
 
 screen = Path("example/highmoi/screen.h5mu")
 analyses = Path("example/highmoi/analyses")
@@ -399,6 +404,9 @@ pd.DataFrame(rows)
 ```
 
 ## 8. Continue in Python an analysis that R stopped
+
+This section is about parity between the two packages, not about the format:
+the format's part is only to carry what each needs to continue.
 
 `stopped_after_qc` was run in R through QC. Python reads it, runs the three
 testing stages, and saves the result as a new analysis of the same data file.
