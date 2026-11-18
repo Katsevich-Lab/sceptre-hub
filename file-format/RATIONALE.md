@@ -85,7 +85,7 @@ my_analysis/                          ONE ANALYSIS. Any number per dataset, stor
 ├── power/                            record.json, results.parquet, resamples.parquet
 ├── discovery/                        record.json, results.parquet, resamples.parquet
 └── fits/                             A CACHE, NOT A STAGE (T6)
-    └── response/                     identity.json, and one part file per job
+    └── response/                     one part file per job, each saying inside how its fits were made
 ```
 
 Any `.parquet` table may instead be a folder of part files with the same name.
@@ -514,7 +514,7 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 
   IGVF's working table format is Parquet with zstd, the same as here. Its per-row count of perturbed cells is a useful diagnostic that these tables do not carry; it is listed in [section 10](#10-fixed-now-free-to-grow).
 
-### T6. The fit cache: `fits/response/` — *Decided (placement), Adopted (details)*
+### T6. The fit cache: `fits/response/` — *Decided (placement; where the identity lives), Adopted (details)*
 
 - **What it is.** A cache of fitted response models. A reader may ignore it, and deleting it changes no result beyond numerical tolerance.
 - **Columns.** `response_id`, `coefficients` (a list of doubles, in the order of the design's terms), `theta`. Key: `response_id`.
@@ -530,9 +530,25 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 - **How the cache works.**
   - It is a folder of part files. Each job adds a part of its own and never modifies another's, which keeps "every file is written once" and uses the rule that a table may be a folder of parts.
   - Two parts may hold the same response, when two parallel jobs fitted it. A reader takes either. So the rule that a key is unique does not hold across the parts of this table, and the specification says so.
-  - Fits are listed in no stage's record. What makes them valid is recorded once, in `identity.json` beside them: the dataset `id`, the formula, a hash of the identifiers of the cells in use, the fitting method and the control group. Parallel writers would write the same content; a later writer checks the record and does not rewrite it.
-  - The cache is deleted when the QC stage or an earlier one is rerun, and kept when a testing stage is rerun. *(measured)* Both libraries do this, and a conformance case covers it.
-- **When a cached fit is reused.** Only if every part of `identity.json` matches what the reader would use itself, and the fitting method is one the reader's language shares. The record no longer names the language that made a fit: a method name means the same estimator in every language that lists it, and parts may come from several languages.
+  - Fits are listed in no stage's record. What makes them valid is their **identity**: the dataset `id`, the formula, a hash of the identifiers of the cells in use, the fitting method and the control group. Each part carries the identity of its own fits, inside the file (next point).
+  - The cache is deleted when the QC stage or an earlier one is rerun, and kept when a testing stage is rerun. *(measured)* Both libraries do this, and a conformance case covers it. Since the identity moved into the parts, deleting is housekeeping (SHOULD): correctness does not depend on it. It is kept because a plain read of the whole folder would otherwise mix old parts with current ones.
+- **The identity is inside each part** *(Decided by Eugene, 18 November)*. It is JSON text under the key `sceptre_fit_identity` in the Parquet file's own key-value metadata. There is no `identity.json`, neither in the folder nor beside it; the folder holds part files and nothing else.
+  - **Why.** The identity exists to stop a fit being reused when it was computed for other cells, another formula or another method. If that check passes wrongly, the result is wrong p-values with no error. With a separate file, the check reads one file and trusts that it describes the others, and they can come apart: QC rerun with the clearing interrupted; a job adding parts without checking the file; two parallel jobs both finding a stale cache and both clearing and rewriting it. Each is unlikely, and the failure is silent. With the identity inside each part there is nothing to keep in step, a stale part is harmless, and no file is shared between writers, which fits "every file is written once". It also removes the earlier rule that the first writer writes the record and later writers verify it.
+  - **Why the other tables do not need this.** A stage finishes. Its record, written last, lists its files with their row counts and so marks the stage as complete, and rerunning the stage deletes the folder first. A record written last cannot work for something open-ended that jobs keep adding to. That structural difference is the whole reason the cache is treated differently.
+  - **What it replaced.** `fits/response/identity.json` (drafts up to 18 November), and the recommendation, mine and a side session's, to move that file beside the folder as `fits/response.json`.
+  - **Evidence** *(measured by a side session on 18 November; the first and third lines are repeated in the suite on every run)*:
+    - A JSON file inside a folder of parts: `pyarrow.dataset`, `pyarrow.parquet.read_table`, `pandas.read_parquet`, R's `arrow::open_dataset`, `polars.scan_parquet` on the folder and duckdb's `read_parquet('folder/*')` all fail. Only an explicit `*.parquet` pattern works.
+    - The same file named `_identity.json`: the Arrow family ignores it and works; polars and duckdb still fail. So an underscore is not enough.
+    - Parts only: everything works. *(measured here)* All six readers open the cache folder of every example directly.
+    - Both directions across languages, with the libraries already in use: pyarrow writes the key and nanoparquet reads it; nanoparquet writes it and pyarrow reads it. Arrow adds a key of its own, `ARROW:schema`, which is ignored. duckdb and R's arrow show the key too.
+  - **Costs.**
+    - It cannot be read with a text editor, so the validators and the notebooks show it.
+    - It is a mechanism the format uses nowhere else.
+    - A tool that rewrites a part may drop the metadata. The part is then ignored, which is the safe direction. *(measured here)* This happened while building the conformance set: pyarrow's `read_table` exposes only the metadata that Arrow's own schema record holds, so a part written by R, read and written back with pyarrow, lost the key until the builder copied it from the file's metadata. A reader must take the key from the file's metadata, not from the table.
+  - **Parts that are not the analysis's are not reported.** A part with another identity is legal and unused, so the validators say nothing about it. They do report a part with no identity, or one that does not conform, and anything in the folder that is not a part file.
+  - **One limit of reading the folder alone.** Four of the five identity fields can be read from the analysis folder. The fifth, the hash of the cells in use, needs the data file's order of cells. So a reader given only the folder returns the fits made for the analysis's parameters when all such parts agree on the cells, and nothing when they do not (parts left by an earlier QC beside current ones). A reader that has the data file gives the full identity and gets exactly its parts. Both libraries work this way.
+  - *(not verified)* GeoParquet is believed to keep its metadata the same way, as JSON under one key. A side session recalled this and did not confirm it, and neither did I.
+- **When a cached fit is reused.** Only from a part whose identity equals, field by field, what the reader would use itself, and only if the fitting method is one the reader's language shares. Identities are compared as parsed values, with white space in the formula ignored. The identity does not name the language that made a fit: a method name means the same estimator in every language that lists it, and parts may come from several languages.
 - **It is the part of the layout a new reader is most likely to misunderstand**, because it looks like a seventh stage and is not: no record, it fills gradually, and it is cleared at a different moment. The specification says so at the head of its section.
 - **Room for gRNA fits** *(Eugene, 18 November: these will be wanted eventually, and this version must not step on them)*. The folder is named for its kind, `fits/response/`, and `fits/grna/` is reserved. The two would not be one table with a kind column: they have different keys (a response, against a target or a gRNA depending on the strategy), different columns (no dispersion for a gRNA fit) and different dependencies. A gRNA fit would also depend on the assignments, so its cache would be cleared when assignment is rerun *(inferred by the side session from how conditional resampling works, not read in the code; to verify before the folder is specified)*.
 - **`response` is unambiguous** because an analysis names one response modality (A1). The folder is not named for the modality (`fits/rna/`), which would put a user-chosen name beside the reserved `grna`.
@@ -623,6 +639,7 @@ would cost.
 | 24 | The target molecule (S8) | No entry of its own; `perturbation_type` covers it (Eugene, 18 November) | A minor addition |
 | 28 | The coordinate convention (S8) | 1-based, both ends included; all three position columns or none | A format change: it changes what stored numbers mean |
 | 29 | The index type of the counts (S4) | Both index arrays in one width: 32-bit until a dataset needs 64, scipy's rule (Eugene, 18 November). Replaces 32-bit positions with 64-bit pointers | A format change: types |
+| 30 | Where the fit cache's identity lives (T6) | Inside each part file, in its Parquet key-value metadata; no `identity.json`; clearing the cache becomes housekeeping (Eugene, 18 November) | A format change: where a record lives |
 | 26 | The layout of the analysis folder (A2) | One folder per stage, holding its record and its tables (Eugene, 18 November) | A format change: paths |
 | 27 | Where fits live (T6) | A cache outside the stages, `fits/response/`, filled by part files, with its own clearing rule; `fits/grna/` reserved (Eugene, 18 November) | A format change: paths |
 | 25 | What kind of screen it was (S10) | Optional `perturbation_type`, `organism`, `genome_build`, recorded now because they cannot be recovered later (Eugene, 18 November) | A new kind of perturbation is a minor addition |
@@ -755,6 +772,7 @@ reader can safely ignore it, **major** if it could misread the file.
 | How the gRNAs were captured (IGVF's `capture_method`) | File metadata | sceptre does not use it | minor |
 | A declared type for each modality, beside its name | File metadata | No dataset needs it yet | minor |
 | A gRNA-to-target table, for a gRNA with two targets | Data file | A scientific question first (S8) | major: a file using it has gRNAs an old reader would assign to one target |
+| A small stamp in every stage table's Parquet metadata: format version, dataset `id`, stage, table name | Key-value metadata of each table file, as the fit cache's parts carry their identity (T6) | A convenience, not needed for correctness: a results file copied out of its folder would identify itself, and a validator could confirm each file belongs. It is a second copy of facts the stage record holds, so the two would have to be kept in agreement. Agreed with Eugene on 18 November that it waits | minor: an old reader ignores the metadata |
 | Why each cell was removed (`removed_by`) | `qc/cells.parquet` | sceptre does not record it (T2) | minor |
 | An assignment score (posterior probability or p-value) | `assignment/assignments.parquet` | Depends on the assignment method | minor |
 | Per-gRNA values an assignment method computes, such as fitted thresholds | A new optional table of the assignment stage, keyed by `grna_id` | They are computed by an analysis, so they are not data and not settings. Nothing needs them now: sceptre's thresholding uses one threshold, stored as a setting | minor |
@@ -807,9 +825,9 @@ remove a workaround in the format or its readers.
 | The reasons | this document | Why each rule is what it is |
 | Data-file definition | `spec/screen.json` | The structure of a data file as data: required groups, number types, encodings, allowed column kinds, required columns and metadata. Both validators read it |
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
-| Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json`, `spec/fits.schema.json` | JSON Schemas for `analysis.json`, the six stage records, and the record of how cached fits were made |
+| Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json`, `spec/fits.schema.json` | JSON Schemas for `analysis.json`, the six stage records, and the identity each part of the fit cache carries |
 | Data-file rules that need computing | `SPEC.md`, section 2 | The order of cells within a feature, uniqueness, the same cells in every modality: code in each language |
-| Conformance files | `conformance/`, built by `make_conformance.py` | 21 conforming files, written by R and by Python; 5 readable ones; and 66 that each break one rule, with the rules and the level a validator must report |
+| Conformance files | `conformance/`, built by `make_conformance.py` | 23 conforming files, written by R and by Python; 5 readable ones; and 68 that each break one rule, with the rules and the level a validator must report |
 | Validators | `validate_screen()`, `validate_analysis()` in both prototype libraries | Check a data file or an analysis folder without building a package object, and report every problem, not only the first |
 
 **Why define it this way.**
@@ -845,8 +863,8 @@ implementation by someone who has only the specification.
 
 ### What was checked
 
-*(measured)* Both validators accept all 21 conforming files, report the 4
-readable files as readable, and report exactly the expected rules for all 66
+*(measured)* Both validators accept all 23 conforming files, report the 5
+readable files as readable, and report exactly the expected rules for all 68
 broken ones. The two languages report the same rules and the same level for
 every case. Both readers read each readable file to the same counts as the
 conforming file it was made from. 57 rules are exercised by at least one broken
@@ -949,7 +967,7 @@ checked:
   It depends on unreviewed branch builds and is meant to move into the packages.
 
 **What the package-free suite found.** Writing it changed one thing and raised
-two questions, one since settled:
+two questions, both since settled:
 
 - *Fixed.* The two writers stored a feature table's text differently: R as
   text, Python as a categorical, because mudata converts text with repeated
@@ -965,11 +983,11 @@ two questions, one since settled:
   decided on 18 November to store both arrays in one width by scipy's rule; see
   S4 for the reason, the cost and what was checked. The suite now runs that
   function on every file as a check.
-- *Open: the fit cache's record sits inside its folder of parts.* A reader
-  pointed at `fits/response/` as a Parquet dataset meets `identity.json` and
-  fails; given the part files, or a `*.parquet` pattern, it works. Moving the
-  record beside the folder (`fits/response.json`) would let any dataset reader
-  open the folder. Also Eugene's to decide.
+- *Settled: the fit cache's record sat inside its folder of parts.* A reader
+  pointed at `fits/response/` as a Parquet dataset met `identity.json` and
+  failed. Eugene decided on 18 November that the identity goes inside each
+  part file and the folder holds parts only; see T6. The suite now opens the
+  folder itself with six readers as a check.
 
 **What the package-free suite cannot show.** Sufficiency, and anything about
 results. The validators and both writers also still come from one author; the
@@ -1231,7 +1249,7 @@ here.
 | Clearing a stage [9] | Its record and files and all later ones are removed |
 | Saved fits whose recorded method differs [9] | Not reused, with a message |
 | Every allowed column type, written by each language and read by the other [9] | Same result both ways |
-| The validators on 21 conforming, 5 readable and 66 broken files [10] | Both languages report the same rules and the same level for every file |
+| The validators on 23 conforming, 5 readable and 68 broken files [10] | Both languages report the same rules and the same level for every file |
 | A covariate with a dot in its name [9] | R and Python build the same design matrix (Python through an alias) |
 
 **Limits that remain.** These are limits of the prototype or of what was

@@ -445,13 +445,21 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
     if ("discovery" %in% done) set_result("discovery")
 
     # cached fits are reused only if they were made as this analysis would make them (T6)
-    saved <- if (is.null(directory)) NULL else analysis$fits_identity
-    if (!is.null(saved) && "qc" %in% done && !is.null(tables[[FITS]])) {
-        reason <- fit_mismatch(saved, fit_identity(object, sce))
+    # Each part of the cache says how its fits were made; only parts made as this
+    # analysis would make them are read, and any other part is left alone.
+    made <- if (is.null(directory) || !"qc" %in% done) list() else Filter(Negate(is.null), lapply(fit_parts(directory), function(part) part$identity))
+    if (length(made) > 0L) {
+        current <- fit_identity(object, sce)
+        fits <- fmt_read_fits(directory, current)
+        reason <- fit_mismatch(current, current)   # is the method one this language shares
+        if (is.null(reason) && is.null(fits)) {
+            reason <- fit_mismatch(made[[1]], current)
+            if (is.null(reason)) reason <- "they were made differently"
+        }
         if (!is.null(reason)) {
             message("The fits saved in ", FITS, " are not reused: ", reason, ".")
         } else {
-            table <- tables[[FITS]]
+            table <- fits$table
             terms <- colnames(field(object, "covariate_matrix"))
             fits <- lapply(stats::setNames(seq_len(nrow(table)), table$response_id), function(i) {
                 list(fitted_coefs = stats::setNames(table$coefficients[[i]], terms), theta = table$theta[i])

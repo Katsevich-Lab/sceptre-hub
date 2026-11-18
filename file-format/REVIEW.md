@@ -64,7 +64,7 @@ need review now:
 
 - **Tested without either package** (`verify/run.sh`): R and Python write identical files from the same content; each reads the other's and gets the source back; tools outside this code (anndata, polars, duckdb, HDF5Array, arrow) read them; two validators agree on a set of valid and deliberately broken files.
 - **Tested with the packages** (`package-suite/`): every example analysis is rebuilt as a sceptre and a pysceptre object and matches the original, which shows the files hold everything an analysis needs.
-- **One open finding** from the independent readers: a dataset reader pointed at the fit cache's folder trips on the JSON record inside it (`RATIONALE.md`, section 11). A second, that one scanpy function failed on the counts as read, was settled by storing both index arrays in one width (S4).
+- **No open finding** from the independent readers. Two were settled on 18 November: one scanpy function failed on the counts as read, fixed by storing both index arrays in one width (S4); and a dataset reader pointed at the fit cache's folder tripped on a JSON record inside it, fixed by putting the identity of the fits inside each part file (T6).
 - **Tested once at scale:** the data file, on a real screen of 207,324 cells, written by both languages to identical files and read back in memory and from disk (`RATIONALE.md`, Appendix A).
 - **Not tested:** an analysis larger than 1,000 cells; a second operating system; real data in a second measured modality.
 - **Known limit:** everything was written and implemented by one author. An independent implementation from the specification alone has not been attempted.

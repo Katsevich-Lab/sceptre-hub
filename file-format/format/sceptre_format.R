@@ -82,7 +82,8 @@ read_json <- function(path) {
 # ---------------------------------------------------------------- tables (T0)
 
 # Rows sorted by the key in byte order; row groups of at most a million rows.
-write_table <- function(table, path, key) {
+# `metadata` is text by key, stored in the file's own key-value metadata.
+write_table <- function(table, path, key, metadata = NULL) {
     table <- as.data.frame(table, stringsAsFactors = FALSE)
     factors <- vapply(table, is.factor, logical(1))
     table[factors] <- lapply(table[factors], as.character)
@@ -90,7 +91,7 @@ write_table <- function(table, path, key) {
     rownames(table) <- NULL
     atomically(path, function(temporary) {
         nanoparquet::write_parquet(
-            table, temporary,
+            table, temporary, metadata = metadata,
             options = nanoparquet::parquet_options(num_rows_per_row_group = ROW_GROUP_ROWS)
         )
     })
@@ -98,7 +99,7 @@ write_table <- function(table, path, key) {
 }
 
 table_files <- function(path) {
-    if (dir.exists(path)) sort(list.files(path, pattern = "\\.parquet$", full.names = TRUE)) else path
+    if (length(path) == 1L && dir.exists(path)) sort(list.files(path, pattern = "\\.parquet$", full.names = TRUE)) else path
 }
 table_rows <- function(path) sum(vapply(table_files(path), function(f) nanoparquet::read_parquet_info(f)$num_rows, numeric(1)))
 
@@ -505,42 +506,84 @@ fmt_clear_stage <- function(directory, stage) {
     invisible(directory)
 }
 
-# ---- the fit cache (T6): fits/response/, a folder of part files outside the
-# stages. It is no stage's output and is listed in no record. Each writer adds
-# a part of its own; what makes the fits valid is recorded once, beside them.
+# ---- the fit cache (T6): fits/response/, a folder of part files and nothing
+# else, outside the stages. It is no stage's output and is listed in no record.
+# Each writer adds a part of its own, and each part says how its fits were made,
+# in the Parquet file's own key-value metadata. No file is shared between
+# writers, so there is nothing to keep in step: a part made for other cells,
+# another formula or another method is simply not used.
 FITS <- TABLE_SPEC$fits$folder
-fits_identity_file <- function(directory) file.path(directory, TABLE_SPEC$fits$identity)
+FIT_KEY <- TABLE_SPEC$fits$identity_key
 # A formula is the same formula however it is spaced (T6.5).
 formula_key <- function(text) gsub("[[:space:]]", "", as.character(text))
 identity_value <- function(identity, name) {
     value <- as.character(identity[[name]])
     if (identical(name, "formula")) formula_key(value) else value
 }
+# Identities are compared as parsed values, never as text.
 same_identity <- function(a, b) {
     all(vapply(union(names(a), names(b)), function(name) identical(identity_value(a, name), identity_value(b, name)), logical(1)))
 }
+# The identity a part carries, as the text stored, or NULL.
+fit_identity_text <- function(file) {
+    stored <- nanoparquet::read_parquet_metadata(file)$file_meta_data$key_value_metadata[[1]]
+    value <- stored$value[stored$key == FIT_KEY]
+    if (length(value) == 1L && !is.na(value)) value else NULL
+}
+# Every part of the cache with the identity it carries. The identity is NULL
+# where a part has none or it is not a JSON object; a reader ignores such a
+# part (T6.5).
+fit_parts <- function(directory) {
+    folder <- file.path(directory, FITS)
+    files <- if (dir.exists(folder)) table_files(folder) else character()
+    lapply(files, function(file) {
+        text <- fit_identity_text(file)
+        identity <- if (is.null(text)) NULL else tryCatch(jsonlite::fromJSON(text, simplifyVector = TRUE, simplifyDataFrame = FALSE), error = function(e) NULL)
+        list(file = file, identity = if (is.list(identity) && !is.null(names(identity))) identity else NULL)
+    })
+}
+# What the folder alone says of the identity its fits must have: everything but
+# the cells in use, whose hash needs the data file's order of cells.
+analysis_fit_fields <- function(directory) {
+    if (!all(c("parameters", "qc") %in% fmt_stages_run(directory))) return(NULL)
+    settings <- read_json(stage_file(directory, "parameters"))$settings
+    list(
+        screen_id = read_json(file.path(directory, "analysis.json"))$screen$id, formula = settings$formula,
+        response_fit_method = settings$response_fit_method, control_group = settings$control_group
+    )
+}
+identity_matches <- function(identity, fields) {
+    !is.null(identity) && all(vapply(names(fields), function(name) identical(identity_value(identity, name), identity_value(fields, name)), logical(1)))
+}
+# Add a part holding `table`, with the identity of its fits inside it.
 fmt_write_fits <- function(directory, table, identity) {
     missing <- setdiff(c("parameters", "qc"), fmt_stages_run(directory))
     if (length(missing) > 0L) fmt_stop("Fits can be saved once the parameters and qc stages are written.")
-    path <- fits_identity_file(directory)
-    if (file.exists(path)) {
-        # a later writer checks the record; it does not rewrite it
-        if (!same_identity(read_json(path), identity)) fmt_stop("The fits already saved in ", FITS, " were made differently.")
-    } else {
-        write_json(identity, path)
-    }
     part <- file.path(directory, FITS, paste0("part-", substr(new_id(), 1L, 12L), ".parquet"))
-    write_table(table, part, table_key(FITS, table))
+    text <- as.character(jsonlite::toJSON(identity[sort(names(identity))], auto_unbox = TRUE))
+    write_table(table, part, table_key(FITS, table), stats::setNames(text, FIT_KEY))
     invisible(part)
 }
-# The cached fits and how they were made, or NULL. Two parts may hold the same
-# response; a reader takes either.
-fmt_read_fits <- function(directory) {
-    if (!file.exists(fits_identity_file(directory))) return(NULL)
-    folder <- file.path(directory, FITS)
-    table <- if (length(table_files(folder)) > 0L) read_table(folder, TABLES[[FITS]]$columns) else NULL
-    if (!is.null(table)) table <- table[!duplicated(table$response_id), , drop = FALSE]
-    list(identity = read_json(fits_identity_file(directory)), table = table)
+# The cached fits made as `identity` says, and that identity, or NULL if no
+# part has it. Parts with another identity, or with none, are ignored. Two parts
+# may hold the same response; a reader takes either.
+# Without `identity`, the parts made for this analysis's own parameters are
+# returned. If those were made for more than one set of cells (parts left by an
+# earlier QC), the folder alone cannot say which set is current, and NULL is
+# returned: give the identity.
+fmt_read_fits <- function(directory, identity = NULL) {
+    parts <- fit_parts(directory)
+    if (is.null(identity)) {
+        fields <- analysis_fit_fields(directory)
+        if (is.null(fields)) return(NULL)
+        found <- Filter(function(part) identity_matches(part$identity, fields), parts)
+        if (length(found) == 0L || !all(vapply(found, function(part) same_identity(part$identity, found[[1]]$identity), logical(1)))) return(NULL)
+        identity <- found[[1]]$identity
+    }
+    files <- unlist(lapply(parts, function(part) if (!is.null(part$identity) && same_identity(part$identity, identity)) part$file))
+    if (length(files) == 0L) return(NULL)
+    table <- read_table(files, TABLES[[FITS]]$columns)
+    list(identity = identity, table = table[!duplicated(table$response_id), , drop = FALSE])
 }
 
 # Read an analysis folder: its link, the record of each stage that ran, their
@@ -1073,8 +1116,8 @@ json_validator <- local({
     }
 })
 # Problems a JSON file has against a schema, as text; character() when it conforms.
-schema_problems <- function(path, schema) {
-    text <- paste(readLines(path, warn = FALSE), collapse = "\n")
+schema_problems <- function(path, schema) schema_problems_text(paste(readLines(path, warn = FALSE), collapse = "\n"), schema)
+schema_problems_text <- function(text, schema) {
     parsed <- tryCatch(jsonlite::fromJSON(text, simplifyVector = FALSE), error = function(e) NULL)
     if (is.null(parsed)) return("is not valid JSON.")
     result <- json_validator(schema)(text, verbose = TRUE, greedy = TRUE)
@@ -1163,16 +1206,25 @@ validate_analysis <- function(directory, screen_file = NULL) {
         if (file.exists(table_path(directory, name))) log$add("A4.1", paste0(name, ".parquet"), "is in the folder and its stage's record does not list it.")
     }
 
-    # the fit cache: parts, and one record of how the fits were made (T6)
-    fits_identity <- NULL
+    # the fit cache: part files only, each saying how its fits were made (T6)
+    fit_identities <- list()
     fits_folder <- file.path(directory, FITS)
     if (dir.exists(fits_folder)) {
-        if (!file.exists(fits_identity_file(directory))) {
-            log$add("T6.1", FITS, "has no record of how the fits were made.")
-        } else {
-            faults <- schema_problems(fits_identity_file(directory), "fits.schema.json")
-            for (fault in faults) log$add("T6.1", TABLE_SPEC$fits$identity, fault)
-            if (length(faults) == 0L) fits_identity <- read_json(fits_identity_file(directory))
+        entries <- sort(list.files(fits_folder, all.files = TRUE, no.. = TRUE), method = "radix")
+        for (entry in entries) {
+            if (dir.exists(file.path(fits_folder, entry)) || !grepl("\\.parquet$", entry)) log$add("T6.1", paste0(FITS, "/", entry), "is not a part file; the fit cache holds part files only.")
+        }
+        for (file in table_files(fits_folder)) {
+            text <- tryCatch(list(fit_identity_text(file)), error = function(e) NULL)
+            if (is.null(text)) next   # not a Parquet file: reported with the table below
+            where <- paste0(FITS, "/", basename(file))
+            if (is.null(text[[1]])) {
+                log$add("T6.1", where, "does not say how its fits were made: its metadata has no `", FIT_KEY, "`.")
+                next
+            }
+            faults <- schema_problems_text(text[[1]], TABLE_SPEC$fits$identity_schema)
+            for (fault in faults) log$add("T6.1", where, "`", FIT_KEY, "` ", fault)
+            if (length(faults) == 0L) fit_identities[[file]] <- jsonlite::fromJSON(text[[1]], simplifyVector = TRUE, simplifyDataFrame = FALSE)
         }
         if (length(table_files(fits_folder)) > 0L) tables[[FITS]] <- fits_folder
         if (!all(c("parameters", "qc") %in% present)) log$add("T6.3", FITS, "The fit cache needs the parameters and qc stages.")
@@ -1250,20 +1302,20 @@ validate_analysis <- function(directory, screen_file = NULL) {
     parameters <- records$parameters
     if (!is.null(parameters)) {
         if (!formula_in_subset(parameters$settings$formula)) log$add("T7.1", "parameters/record.json", "The formula is outside the additive subset.")
-        fits <- contents[[FITS]]
-        if (!is.null(fits) && any(lengths(fits$coefficients) != length(parameters$design$terms))) {
-            log$add("T6.2", FITS, "A fit does not have one coefficient per term of the design.")
-        }
-        # the cache was made for this analysis's parameters (T6.3)
-        if (!is.null(fits_identity)) {
-            expected <- list(
-                formula = parameters$settings$formula, response_fit_method = parameters$settings$response_fit_method,
-                control_group = parameters$settings$control_group, screen_id = analysis$screen$id
-            )
-            for (field in names(expected)) {
-                if (!is.null(expected[[field]]) && !identical(identity_value(fits_identity, field), identity_value(expected, field))) {
-                    log$add("T6.3", TABLE_SPEC$fits$identity, "`", field, "` is not that of the analysis.")
-                }
+        # A part made for this analysis's parameters has one coefficient per term of its
+        # design (T6.2). A part made otherwise is allowed and unused, and is not
+        # reported: nothing depends on it, and clearing it is housekeeping (T6.3, T6.6).
+        expected <- list(
+            formula = parameters$settings$formula, response_fit_method = parameters$settings$response_fit_method,
+            control_group = parameters$settings$control_group
+        )
+        if (!is.null(analysis)) expected$screen_id <- analysis$screen$id
+        for (file in names(fit_identities)) {
+            if (!identity_matches(fit_identities[[file]], expected)) next
+            part <- as.data.frame(nanoparquet::read_parquet(file), stringsAsFactors = FALSE)
+            if (!is.null(part$coefficients) && any(lengths(part$coefficients) != length(parameters$design$terms))) {
+                log$add("T6.2", FITS, "A fit does not have one coefficient per term of the design.")
+                break
             }
         }
     }
@@ -1296,9 +1348,6 @@ validate_analysis <- function(directory, screen_file = NULL) {
             kept <- contents[["qc/cells"]]
             if (!is.null(kept) && !setequal(kept$cell_id, screen$cells)) {
                 log$add("T2.1", "qc/cells.parquet", "does not have one row per cell of the data file.")
-            } else if (!is.null(kept) && !is.null(fits_identity)) {
-                in_use <- screen$cells[screen$cells %in% kept$cell_id[kept$in_use]]
-                if (!identical(fits_identity$cells_in_use_sha256, sha256_ids(in_use))) log$add("T6.3", TABLE_SPEC$fits$identity, "`cells_in_use_sha256` is not that of the cells in use.")
             }
         }
     }

@@ -160,18 +160,55 @@ two_parts = VALID / "analyses" / "fits_from_two_jobs"
 shutil.copytree("example/highmoi/analyses/left_sided", two_parts)
 first = next((two_parts / "fits/response").glob("*.parquet"))
 fits_table = pq.read_table(first)
-pq.write_table(fits_table.slice(0, 60), two_parts / "fits/response/part-job1.parquet")
-pq.write_table(fits_table.slice(59, 41), two_parts / "fits/response/part-job2.parquet")
+fits_made = {sf.FIT_KEY.encode(): pq.ParquetFile(first).metadata.metadata[sf.FIT_KEY.encode()]}
+pq.write_table(fits_table.slice(0, 60).replace_schema_metadata(fits_made), two_parts / "fits/response/part-job1.parquet")
+pq.write_table(fits_table.slice(59, 41).replace_schema_metadata(fits_made), two_parts / "fits/response/part-job2.parquet")
 first.unlink()
 case("analysis", two_parts, [], "The fit cache was filled by two jobs, and one response is in both parts", high_r)
 
 # the same formula, spaced differently in the record of how the fits were made
 spaced = VALID / "analyses" / "fits_formula_spaced_differently"
 shutil.copytree("example/highmoi/analyses/left_sided", spaced)
-identity = json.loads((spaced / "fits/response/identity.json").read_text())
-identity["formula"] = identity["formula"].replace(" + ", "+").replace("~", "~ ")
-(spaced / "fits/response/identity.json").write_text(json.dumps(identity, indent=2) + "\n")
-case("analysis", spaced, [], "The fit cache records the analysis's formula with other spacing", high_r)
+FIT_KEY = sf.FIT_KEY.encode()
+
+
+def fit_part(folder):
+    return next((Path(folder) / "fits/response").glob("*.parquet"))
+
+
+def restamp(part, change, to=None):
+    """Write a part again with its identity changed by `change` (None removes it)."""
+    table = pq.read_table(part)
+    # the file's own key-value metadata: pyarrow's table shows only what Arrow's schema
+    # record holds, which is not where a part written by R keeps the key
+    stored = {k: v for k, v in (pq.ParquetFile(part).metadata.metadata or {}).items() if k != b"ARROW:schema"}
+    if change is None:
+        stored.pop(FIT_KEY, None)
+    else:
+        identity = json.loads(stored[FIT_KEY])
+        out = change(identity)
+        stored[FIT_KEY] = (out if isinstance(out, str) else json.dumps(identity)).encode()
+    pq.write_table(table.replace_schema_metadata(stored), to or part)
+
+
+restamp(fit_part(spaced), lambda v: v.__setitem__("formula", v["formula"].replace(" + ", "+").replace("~", "~ ")))
+case("analysis", spaced, [], "A part of the fit cache records the analysis's formula with other spacing; its fits are used", high_r)
+cases[-1]["fits_used"] = True
+
+# Parts that are not this analysis's are allowed and unused: nothing depends on
+# them, so the validators say nothing and a reader takes no fit from them.
+other_method = VALID / "analyses" / "fits_made_with_another_method"
+shutil.copytree("example/highmoi/analyses/left_sided", other_method)
+restamp(fit_part(other_method), lambda v: v.__setitem__("response_fit_method", "sceptre"))
+case("analysis", other_method, [], "The one part of the fit cache was made with a method other than the analysis's: allowed, and a reader takes no fit from it", high_r)
+cases[-1]["fits_used"] = False
+
+stale = VALID / "analyses" / "stale_part_beside_a_current_one"
+shutil.copytree("example/highmoi/analyses/left_sided", stale)
+current_identity = json.loads(pq.ParquetFile(fit_part(stale)).metadata.metadata[FIT_KEY])
+restamp(fit_part(stale), lambda v: v.__setitem__("cells_in_use_sha256", "0" * 64), to=stale / "fits/response/part-left-by-an-earlier-qc.parquet")
+case("analysis", stale, [], "Beside the current part is one left by an earlier QC, made for other cells: allowed, and a reader given the current identity reads the current part only", high_r)
+cases[-1]["fits_for"] = {"identity": current_identity, "rows": pq.read_table(fit_part(other_method)).num_rows}
 
 # a testing stage rerun: its folder is gone, and the fit cache rightly remains
 cleared = VALID / "analyses" / "testing_stage_cleared_fits_kept"
@@ -433,7 +470,9 @@ def edit_json(path, change):
 
 def rewrite(path, change):
     """Replace a table with `change(table)`, sorted as it was unless `change` says otherwise."""
-    pq.write_table(change(pq.read_table(path)), path)
+    # the file's own key-value metadata is kept: a part of the fit cache says there how its fits were made
+    kept = {k: v for k, v in (pq.ParquetFile(path).metadata.metadata or {}).items() if k != b"ARROW:schema"}
+    pq.write_table(change(pq.read_table(path)).replace_schema_metadata(kept or None), path)
 
 
 broken_analysis("no_analysis_json", ["A1.1"], "`analysis.json` is missing", lambda p: (p / "analysis.json").unlink())
@@ -447,7 +486,7 @@ broken_analysis("analysis_format_from_the_future", ["A1.1"], "The analysis's for
                 lambda p: edit_json(p / "analysis.json", lambda v: v.__setitem__("format", "9.0")))
 broken_analysis("absolute_path_to_the_data", ["A1.4"], "The hint to the data file is an absolute local path",
                 lambda p: edit_json(p / "analysis.json", lambda v: v["screen"].__setitem__("path", "/home/someone/data/screen.h5mu")))
-broken_analysis("another_dataset", ["A1.2", "T6.3"], "The dataset identifier is that of another data file; the fit cache then belongs to another dataset too",
+broken_analysis("another_dataset", ["A1.2"], "The dataset identifier is that of another data file; the parts of the fit cache are then another dataset's, which is allowed and unused",
                 lambda p: edit_json(p / "analysis.json", lambda v: v["screen"].__setitem__("id", "0" * 32)))
 broken_analysis("record_of_another_stage", ["A2.1"], "The record in `discovery/` says it is the record of the power stage",
                 lambda p: edit_json(p / "discovery/record.json", lambda v: v.__setitem__("stage", "power")), reader_refuses=True)
@@ -501,17 +540,23 @@ broken_analysis("significant_stored", ["T5.3"], "The discovery results store a `
                 lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.append_column("significant", pa.array([False] * t.num_rows))))
 broken_analysis("no_effect_size", ["T5.1"], "The discovery results have neither `fold_change` nor `log_2_fold_change`",
                 lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.drop_columns(["fold_change", "se_fold_change"])))
-broken_analysis("fits_without_their_record", ["T6.1"], "The fit cache has fits and no record of how they were made",
-                lambda p: (p / "fits/response/identity.json").unlink())
-broken_analysis("fits_made_with_another_method", ["T6.3"], "The fit cache says its fits were made with a method other than the analysis's",
-                lambda p: edit_json(p / "fits/response/identity.json", lambda v: v.__setitem__("response_fit_method", "sceptre")))
+broken_analysis("fit_part_without_identity", ["T6.1"], "A part of the fit cache does not say how its fits were made, as after a tool rewrote it; a reader takes no fit from it",
+                lambda p: restamp(fit_part(p), None))
+cases[-1]["fits_used"] = False
+broken_analysis("fit_identity_incomplete", ["T6.1"], "The identity inside a part of the fit cache lacks `cells_in_use_sha256`",
+                lambda p: restamp(fit_part(p), lambda v: v.pop("cells_in_use_sha256") and None))
+broken_analysis("fit_identity_not_json", ["T6.1"], "The identity inside a part of the fit cache is not JSON",
+                lambda p: restamp(fit_part(p), lambda v: "poisson, all cells"))
+cases[-1]["fits_used"] = False
+broken_analysis("identity_file_in_the_fit_cache", ["T6.1"], "The fit cache holds a JSON file beside its parts, as drafts before 18 November had",
+                lambda p: (p / "fits/response/identity.json").write_text("{}\n"))
 broken_analysis("fits_before_qc", ["T6.3"], "An analysis that stopped after assignment holds a fit cache",
                 lambda p: [shutil.rmtree(p / s) for s in ("qc", "calibration", "power", "discovery")])
 broken_analysis("fit_with_too_few_coefficients", ["T6.2"], "A saved fit has fewer coefficients than the design has terms",
                 lambda p: rewrite(next((p / "fits/response").glob("*.parquet")), lambda t: t.set_column(
                     t.column_names.index("coefficients"), "coefficients",
                     pa.array([c[:-1] for c in t["coefficients"].to_pylist()], type=pa.list_(pa.float64())))))
-broken_analysis("formula_with_an_interaction", ["T6.3", "T7.1"], "The formula has an interaction, outside the additive subset; the fit cache was made for another formula",
+broken_analysis("formula_with_an_interaction", ["T7.1"], "The formula has an interaction, outside the additive subset; the fit cache was made for another formula, which is allowed and unused",
                 lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("formula", "~log(rna_n_umis) * batch")))
 
 (ROOT / "cases.json").write_text(json.dumps(cases, indent=2) + "\n")

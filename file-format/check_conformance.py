@@ -38,6 +38,12 @@ for case in cases:
         # Only the modality that passes the lowered limit may stay wide; the others then break S4.
         lowered = sf.validate_screen(case["path"], index_limit=case["conforming_with_index_limit"])
         result["wide_branch"] = not any("mod/rna/X" in w for w in lowered["where"])
+    if "fits_used" in case:
+        # whether a reader takes fits from the cache of this folder (T6.5)
+        result["fits_as_expected"] = (sf.FITS in sf.read_analysis(case["path"])["tables"]) == case["fits_used"]
+    if "fits_for" in case:
+        fits = sf.read_fits(case["path"], case["fits_for"]["identity"])
+        result["fits_as_expected"] = fits is not None and len(fits["table"]) == case["fits_for"]["rows"]
     if case.get("reader_refuses"):
         try:
             sf.read_screen(case["path"]) if case["kind"] == "screen" else sf.read_analysis(case["path"])
@@ -51,7 +57,7 @@ for case in cases:
             with h5py.File(case["path"]) as a, h5py.File(copy) as b:
                 result["copy_kept_modalities"] = sorted(a["mod"]) == sorted(b["mod"]) and len(sf.validate_screen(copy)) == 0
     results[case["name"]] = result
-    failed = [k for k in ("reads_correctly", "reader_refused", "copy_kept_modalities", "wide_branch") if result.get(k) is False]
+    failed = [k for k in ("reads_correctly", "reader_refused", "copy_kept_modalities", "wide_branch", "fits_as_expected") if result.get(k) is False]
     if result["rules"] != case["expect"] or result["level"] != case["level"] or failed:
         wrong += 1
         print(f"MISMATCH {case['name']}: expected {case['expect']} ({case['level']}), reported {result}")

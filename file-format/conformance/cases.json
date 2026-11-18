@@ -152,8 +152,38 @@
     "path": "conformance/valid/analyses/fits_formula_spaced_differently",
     "expect": [],
     "level": "conforming",
-    "what": "The fit cache records the analysis's formula with other spacing",
-    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+    "what": "A part of the fit cache records the analysis's formula with other spacing; its fits are used",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu",
+    "fits_used": true
+  },
+  {
+    "name": "valid/analyses/fits_made_with_another_method",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/fits_made_with_another_method",
+    "expect": [],
+    "level": "conforming",
+    "what": "The one part of the fit cache was made with a method other than the analysis's: allowed, and a reader takes no fit from it",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu",
+    "fits_used": false
+  },
+  {
+    "name": "valid/analyses/stale_part_beside_a_current_one",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/stale_part_beside_a_current_one",
+    "expect": [],
+    "level": "conforming",
+    "what": "Beside the current part is one left by an earlier QC, made for other cells: allowed, and a reader given the current identity reads the current part only",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu",
+    "fits_for": {
+      "identity": {
+        "cells_in_use_sha256": "d6040e7cdff5a1918e3869873f780155e192eab3e824d3e6662defe383852231",
+        "control_group": "complement",
+        "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch",
+        "response_fit_method": "batched",
+        "screen_id": "b907fd1b151fd398b78ff993ae9e86d6"
+      },
+      "rows": 100
+    }
   },
   {
     "name": "valid/analyses/testing_stage_cleared_fits_kept",
@@ -672,11 +702,10 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/another_dataset",
     "expect": [
-      "A1.2",
-      "T6.3"
+      "A1.2"
     ],
     "level": "not readable",
-    "what": "The dataset identifier is that of another data file; the fit cache then belongs to another dataset too",
+    "what": "The dataset identifier is that of another data file; the parts of the fit cache are then another dataset's, which is allowed and unused",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
@@ -883,25 +912,49 @@
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
-    "name": "invalid/analyses/fits_without_their_record",
+    "name": "invalid/analyses/fit_part_without_identity",
     "kind": "analysis",
-    "path": "conformance/invalid/analyses/fits_without_their_record",
+    "path": "conformance/invalid/analyses/fit_part_without_identity",
     "expect": [
       "T6.1"
     ],
     "level": "not readable",
-    "what": "The fit cache has fits and no record of how they were made",
+    "what": "A part of the fit cache does not say how its fits were made, as after a tool rewrote it; a reader takes no fit from it",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu",
+    "fits_used": false
+  },
+  {
+    "name": "invalid/analyses/fit_identity_incomplete",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/fit_identity_incomplete",
+    "expect": [
+      "T6.1"
+    ],
+    "level": "not readable",
+    "what": "The identity inside a part of the fit cache lacks `cells_in_use_sha256`",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
-    "name": "invalid/analyses/fits_made_with_another_method",
+    "name": "invalid/analyses/fit_identity_not_json",
     "kind": "analysis",
-    "path": "conformance/invalid/analyses/fits_made_with_another_method",
+    "path": "conformance/invalid/analyses/fit_identity_not_json",
     "expect": [
-      "T6.3"
+      "T6.1"
     ],
     "level": "not readable",
-    "what": "The fit cache says its fits were made with a method other than the analysis's",
+    "what": "The identity inside a part of the fit cache is not JSON",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu",
+    "fits_used": false
+  },
+  {
+    "name": "invalid/analyses/identity_file_in_the_fit_cache",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/identity_file_in_the_fit_cache",
+    "expect": [
+      "T6.1"
+    ],
+    "level": "not readable",
+    "what": "The fit cache holds a JSON file beside its parts, as drafts before 18 November had",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
@@ -931,11 +984,10 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/formula_with_an_interaction",
     "expect": [
-      "T6.3",
       "T7.1"
     ],
     "level": "not readable",
-    "what": "The formula has an interaction, outside the additive subset; the fit cache was made for another formula",
+    "what": "The formula has an interaction, outside the additive subset; the fit cache was made for another formula, which is allowed and unused",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   }
 ]

@@ -564,21 +564,30 @@ or add to them. Clearing a testing stage leaves them; clearing QC removes them.
 ```{python}
 folder = variant("fits_kept")
 sf.clear_stage(folder, "calibration")
-print("after clearing calibration:", sf.stages_run(folder), "- fits kept:", (folder / "fits/response/identity.json").exists())
+print("after clearing calibration:", sf.stages_run(folder), "- fits kept:", len(sf.fit_parts(folder)) > 0)
 sf.clear_stage(folder, "qc")
-print("after clearing qc:         ", sf.stages_run(folder), "- fits kept:", (folder / "fits/response/identity.json").exists())
+print("after clearing qc:         ", sf.stages_run(folder), "- fits kept:", len(sf.fit_parts(folder)) > 0)
 ```
 
-A cached fit is reused only if it was made as this analysis would make it.
-Here the record of how the fits were made is changed to another fitting
-method.
+Each part file says how its fits were made, in the Parquet file's own metadata
+under the key `sceptre_fit_identity`. A text editor cannot show it; this does:
 
 ```{python}
+sf.fit_parts(variant("fit_identity"))[0][1]
+```
+
+A cached fit is reused only from a part made as this analysis would make it;
+any other part is ignored. Here the one part is rewritten as if made with
+another fitting method.
+
+```{python}
+import pyarrow.parquet as pq
 print("fits reused as written:", len(original.response_fits()))
 folder = variant("other_fit_method")
-identity = json.loads((folder / "fits/response/identity.json").read_text())
+part, identity = sf.fit_parts(folder)[0]
 identity["response_fit_method"] = "sceptre"
-n = (folder / "fits/response/identity.json").write_text(json.dumps(identity, indent=2))
+table = pq.read_table(part)
+pq.write_table(table.replace_schema_metadata({sf.FIT_KEY: json.dumps(identity)}), part)
 changed = sf.read_sceptre_object(screen, folder)
 print("fits reused after the change:", len(changed.response_fits()))
 ```

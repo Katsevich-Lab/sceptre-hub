@@ -38,10 +38,12 @@ for (folder in c("example/highmoi/analyses/left_sided", "example/highmoi/analyse
     if (length(parts) > 0L) {
         rows <- sum(vapply(parts, function(p) nanoparquet::read_parquet_info(p)$num_rows, numeric(1)))
         check(paste0("arrow reads the part files of the fit cache of ", folder, " as one dataset"), arrow::open_dataset(parts, format = "parquet")$num_rows == rows)
-        # pointed at the folder itself, a dataset reader also meets identity.json
-        as_folder <- tryCatch({ arrow::open_dataset(file.path(folder, "fits/response"), format = "parquet")$num_rows; "works" },
-            error = function(e) "FAILS (the folder also holds identity.json, which is not Parquet)")
-        check(paste0("arrow pointed at the fit cache folder of ", folder, " itself"), as_folder, "an observation: the record of how the fits were made is inside the folder of parts")
+        # the folder holds part files and nothing else (T6.1), so a dataset reader opens the folder itself
+        as_folder <- tryCatch(arrow::open_dataset(file.path(folder, "fits/response"), format = "parquet")$num_rows == rows, error = function(e) FALSE)
+        check(paste0("arrow opens the fit cache folder of ", folder, " itself"), as_folder)
+        # the identity of the fits is in each part's own metadata, which arrow shows too
+        seen <- arrow::read_parquet(parts[1], as_data_frame = FALSE)$metadata[["sceptre_fit_identity"]]
+        check(paste0("arrow shows the identity inside a part of the fit cache of ", folder), !is.null(seen) && !is.null(jsonlite::fromJSON(seen)$cells_in_use_sha256))
     }
 }
 save_results("independent-readers")

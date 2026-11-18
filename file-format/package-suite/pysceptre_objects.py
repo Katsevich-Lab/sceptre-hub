@@ -350,14 +350,20 @@ def read_sceptre_object(screen_file, directory=None, *, response_modality=None, 
             analysis.set_result(STAGE_FUNCTIONS[stage], result(stage))
 
     # cached fits are reused only if they were made as this analysis would make them (T6)
-    identity = saved.get("fits_identity")
-    if identity is not None and "qc" in done and FITS in tables:
-        reason = _fit_mismatch(identity, _fit_identity(analysis, mdata))
+    # Each part of the cache says how its fits were made; only parts made as this
+    # analysis would make them are read, and any other part is left alone.
+    made = [i for _, i in fit_parts(directory) if i is not None] if "qc" in done else []
+    if made:
+        current = _fit_identity(analysis, mdata)
+        fits = read_fits(directory, current)
+        reason = _fit_mismatch(current, current)   # is the method one this language shares
+        if reason is None and fits is None:
+            reason = _fit_mismatch(made[0], current) or "they were made differently"
         if reason:
             if verbose:
                 print(f"The fits saved in {FITS} are not reused: {reason}.")
         else:
-            table = tables[FITS]
+            table = fits["table"]
             terms = list(analysis.design.terms)
             long = pd.DataFrame(
                 {

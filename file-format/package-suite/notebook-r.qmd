@@ -551,21 +551,30 @@ or add to them. Clearing a testing stage leaves them; clearing QC removes them.
 ```{r}
 folder <- variant("fits_kept")
 fmt_clear_stage(folder, "calibration")
-cat("after clearing calibration:", fmt_stages_run(folder), "- fits kept:", file.exists(file.path(folder, "fits/response/identity.json")), "\n")
+cat("after clearing calibration:", fmt_stages_run(folder), "- fits kept:", length(fit_parts(folder)) > 0L, "\n")
 fmt_clear_stage(folder, "qc")
-cat("after clearing qc:         ", fmt_stages_run(folder), "- fits kept:", file.exists(file.path(folder, "fits/response/identity.json")), "\n")
+cat("after clearing qc:         ", fmt_stages_run(folder), "- fits kept:", length(fit_parts(folder)) > 0L, "\n")
 ```
 
-A cached fit is reused only if it was made as this analysis would make it.
-Here the record of how the fits were made is changed to another fitting
-method.
+Each part file says how its fits were made, in the Parquet file's own metadata
+under the key `sceptre_fit_identity`. A text editor cannot show it; this does:
+
+```{r}
+str(fit_parts(folder_of_fits <- variant("fit_identity"))[[1]]$identity)
+```
+
+A cached fit is reused only from a part made as this analysis would make it;
+any other part is ignored. Here the one part is rewritten as if made with
+another fitting method.
 
 ```{r}
 cat("fits reused as written:", length(sceptre:::response_fits(object)), "\n")
 folder <- variant("other_fit_method")
-identity <- read_json(file.path(folder, "fits/response/identity.json"))
+part <- fit_parts(folder)[[1]]
+identity <- part$identity
 identity$response_fit_method <- "sceptre"
-write_json(identity, file.path(folder, "fits/response/identity.json"))
+nanoparquet::write_parquet(nanoparquet::read_parquet(part$file), part$file,
+    metadata = stats::setNames(as.character(jsonlite::toJSON(identity, auto_unbox = TRUE)), FIT_KEY))
 changed <- read_sceptre_object(screen, folder)
 cat("fits reused after the change:", length(sceptre:::response_fits(changed)), "\n")
 ```

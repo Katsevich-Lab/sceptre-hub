@@ -4,6 +4,7 @@ and what they return is compared with what the files say and with pyarrow.
 
     python verify/independent_readers.py
 """
+import json
 import sys
 import warnings
 from pathlib import Path
@@ -66,4 +67,28 @@ for folder in ("example/highmoi/analyses/left_sided", "example/highmoi/analyses/
         results.add(f"polars reads the part files of the fit cache of {folder} as one table", pl.read_parquet(parts).height == rows)
         results.add(f"duckdb reads the part files of the fit cache of {folder} as one table",
                     duckdb.sql(f"select count(*) from read_parquet('{parts}')").fetchall()[0][0] == rows)
+        # the folder holds part files and nothing else (T6.1), so readers open the folder itself
+        whole = f"{folder}/fits/response"
+        def opens(read):
+            try:
+                return read() == rows
+            except Exception as error:
+                return f"FAILS ({type(error).__name__})"
+        import pandas as pd
+        import pyarrow.dataset as ds
+        for reader, read in {
+            "pyarrow.dataset": lambda: ds.dataset(whole, format="parquet").count_rows(),
+            "pyarrow.parquet.read_table": lambda: pq.read_table(whole).num_rows,
+            "pandas.read_parquet": lambda: len(pd.read_parquet(whole)),
+            "polars.scan_parquet": lambda: pl.scan_parquet(whole).collect().height,
+            "duckdb read_parquet('folder/*')": lambda: duckdb.sql(f"select count(*) from read_parquet('{whole}/*')").fetchall()[0][0],
+        }.items():
+            outcome = opens(read)
+            results.add(f"{reader} opens the fit cache folder of {folder} itself", outcome is True, "" if outcome is True else outcome)
+        # the identity of the fits is in each part's own metadata, which pyarrow and duckdb show
+        key = "sceptre_fit_identity"
+        seen = pq.ParquetFile(files[0]).metadata.metadata.get(key.encode())
+        results.add(f"pyarrow shows the identity inside a part of the fit cache of {folder}", seen is not None and "cells_in_use_sha256" in json.loads(seen))
+        shown = duckdb.sql(f"select decode(value) from parquet_kv_metadata('{files[0]}') where decode(key) = '{key}'").fetchall()
+        results.add(f"duckdb shows the identity inside a part of the fit cache of {folder}", len(shown) == 1 and "cells_in_use_sha256" in json.loads(shown[0][0]))
 results.save()

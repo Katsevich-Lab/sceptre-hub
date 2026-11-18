@@ -96,7 +96,7 @@ both prototype libraries read them:
 | `spec/tables.json` | Every table of an analysis: its stage, key, columns and types (rules T0 to T6) |
 | `spec/analysis.schema.json` | `analysis.json` (rule A1.1), as a JSON Schema |
 | `spec/stage.schema.json` | The six stage records (rule A2.1), as a JSON Schema |
-| `spec/fits.schema.json` | The record of how cached fits were made (rule T6.1), as a JSON Schema |
+| `spec/fits.schema.json` | The identity each part of the fit cache carries: how its fits were made (rule T6.1), as a JSON Schema |
 
 HDF5 has no schema language, so `spec/screen.json` is this project's own
 description. The rules that need computing (the order of cells within a
@@ -187,8 +187,8 @@ my_analysis/                          one analysis (sections 3 and 4)
 │   └── resamples.parquet             (optional)
 └── fits/                             NOT a stage: a cache, with rules of its own (T6)
     └── response/
-        ├── identity.json             how the fits were made
-        └── part-….parquet            one part file per job that added fits
+        └── part-….parquet            one part file per job that added fits;
+                                      each says inside how its fits were made
 ```
 
 A dataset is one data file. An analysis is one folder. Any number of analyses
@@ -376,7 +376,7 @@ and `discovery`. The last three do not depend on one another.
 | Rule | Kind | | Check |
 |---|---|---|---|
 | A4.1 | file | A stage's folder MUST NOT hold one of that stage's tables that its record does not list. A folder holding tables and no record is a stage that did not finish. | V |
-| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the fit cache is deleted too (T6.6). | tests (a stage is cleared) |
+| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the writer SHOULD delete the fit cache too (T6.6). | tests (a stage is cleared) |
 | A4.3 | behaviour | A reader MUST ignore files it does not know. | V (a valid conformance case) |
 
 ### A5. Files of a stage
@@ -471,19 +471,20 @@ analysis's strategy and the table's stage; `spec/tables.json` records it as
 fitted models for the responses, which the three testing stages share. No
 stage owns it: it has no stage record, no stage lists its files, it fills as
 jobs add to it, and it is cleared at a different moment from any testing
-stage. A fit depends on the data, the formula, the fitting method, the control
+stage. Because it never finishes, it cannot have a record written last, so
+each part describes itself. A fit depends on the data, the formula, the fitting method, the control
 group and the cells that passed QC, all of which are fixed once the parameters
 and QC stages have run.
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T6.1 | file | If `fits/response/` exists, it MUST hold `identity.json`, conforming to `spec/fits.schema.json`: `screen_id`, `formula`, `cells_in_use_sha256`, `response_fit_method`, `control_group`. | V |
-| T6.2 | file | The fits are the part files of `fits/response/`: one row per response, with `response_id`, `coefficients` (one per term of the design, in the design's order) and `theta`. | V |
-| T6.3 | file | `identity.json` MUST describe this analysis: its data file's `id`, the formula (white space aside), fitting method and control group of its parameters record, and the hash (A1.3) of the identifiers of the cells in use. A fit cache MUST NOT exist before the parameters and QC stages have run. | V |
-| T6.4 | behaviour | Each writer adds a part file of its own and MUST NOT modify another's. Two parts MAY hold the same response; a reader takes either. A writer that finds `identity.json` MUST check that it matches what it would write, and MUST NOT rewrite it. | V (a valid conformance case with two parts); tests |
-| T6.5 | behaviour | The fits are a cache. A reader MAY ignore them, and deleting them changes no result beyond numerical tolerance. A reader MUST NOT reuse them unless every part of `identity.json` matches what it would use itself and the fitting method is one its language shares. Two formulas match when they are the same once white space is removed. | tests (a changed identity record); V (a formula spaced differently) |
-| T6.6 | behaviour | The cache is deleted when the `qc` stage or an earlier stage is rerun. It is kept when a testing stage is rerun. | V (a valid conformance case); tests |
-| T6.7 | guidance | `fits/grna/` is reserved for fitted models of the gRNAs, which this version does not define. A table of another kind of fit is a folder of its own, never a column in this one. | — |
+| T6.1 | file | `fits/response/`, if it exists, MUST hold part files (`*.parquet`) and nothing else. Each part MUST carry the **identity** of the fits it holds: JSON text under the key `sceptre_fit_identity` in the Parquet file's own key-value metadata, conforming to `spec/fits.schema.json`: `screen_id`, `formula`, `cells_in_use_sha256` (the hash of A1.3 over the identifiers of the cells in use), `response_fit_method`, `control_group`. Other keys in that metadata are ignored. | V |
+| T6.2 | file | The fits are the rows of the part files: one row per response, with `response_id`, `coefficients` and `theta`. In a part whose identity is that of the analysis, `coefficients` has one value per term of the design, in the design's order. | V |
+| T6.3 | file | A fit cache MUST NOT exist before the parameters and QC stages have run. A part whose identity is not that of the analysis (another formula, method, control group, dataset or set of cells) is allowed: it is unused, and the validators do not report it. | V |
+| T6.4 | behaviour | Each writer adds a part file of its own, carrying the identity of the fits in it, and MUST NOT modify another's. No file of the cache is shared between writers. Two parts MAY hold the same response; a reader takes either. | V (a valid conformance case with two parts); tests |
+| T6.5 | behaviour | The fits are a cache. A reader MAY ignore them, and deleting them changes no result beyond numerical tolerance. A reader MUST NOT take a fit from a part unless every field of that part's identity equals what the reader would use itself and the fitting method is one its language shares. It MUST ignore any other part, and a part with no identity. Identities are compared as parsed values, not as text, and two formulas are equal when they are the same once white space is removed. | tests (parts with another method, another set of cells, no identity, and a formula spaced differently) |
+| T6.6 | behaviour | A writer SHOULD delete the cache when the `qc` stage or an earlier stage is rerun, and MUST keep it when a testing stage is rerun. Deleting is housekeeping: no result depends on it (T6.5), and it keeps a plain read of the folder from mixing old parts with current ones. | V (a valid conformance case); tests |
+| T6.7 | guidance | `fits/grna/` is reserved for fitted models of the gRNAs, which this version does not define. It would work the same way, with identity fields of its own. A table of another kind of fit is a folder of its own, never a column in this one. | — |
 
 ### T7. The design matrix
 

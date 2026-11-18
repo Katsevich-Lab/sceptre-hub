@@ -111,8 +111,9 @@ def _byte_order(table: pd.DataFrame, key) -> list[int]:
 # ---------------------------------------------------------------- tables (T0)
 
 
-def write_table(table: pd.DataFrame, path, key) -> int:
-    """Rows sorted by the key in byte order; row groups of at most a million rows."""
+def write_table(table: pd.DataFrame, path, key, metadata=None) -> int:
+    """Rows sorted by the key in byte order; row groups of at most a million rows.
+    `metadata` is text by key, stored in the file's own key-value metadata."""
     import pyarrow as pa
     import pyarrow.parquet as pq
 
@@ -137,12 +138,14 @@ def write_table(table: pd.DataFrame, path, key) -> int:
             array = pa.Array.from_pandas(column)
         arrays.append(array)
         fields.append(pa.field(str(name), array.type))
-    out = pa.Table.from_arrays(arrays, schema=pa.schema(fields))
+    out = pa.Table.from_arrays(arrays, schema=pa.schema(fields, metadata=metadata))
     _atomically(path, lambda t: pq.write_table(out, t, row_group_size=ROW_GROUP_ROWS))
     return len(table)
 
 
 def _table_files(path) -> list[Path]:
+    if isinstance(path, (list, tuple)):
+        return [Path(f) for f in path]
     path = Path(path)
     return sorted(path.glob("*.parquet")) if path.is_dir() else [path]
 
@@ -600,10 +603,14 @@ def clear_stage(directory, stage) -> None:
         shutil.rmtree(directory / FITS, ignore_errors=True)
 
 
-# The fit cache (T6): fits/response/, a folder of part files outside the stages. It
-# is no stage's output and is listed in no record. Each writer adds a part of its
-# own; what makes the fits valid is recorded once, beside them.
+# The fit cache (T6): fits/response/, a folder of part files and nothing else,
+# outside the stages. It is no stage's output and is listed in no record. Each
+# writer adds a part of its own, and each part says how its fits were made, in the
+# Parquet file's own key-value metadata. No file is shared between writers, so
+# there is nothing to keep in step: a part made for other cells, another formula
+# or another method is simply not used.
 FITS = TABLE_SPEC["fits"]["folder"]
+FIT_KEY = TABLE_SPEC["fits"]["identity_key"]
 
 
 def formula_key(text) -> str:
@@ -617,39 +624,86 @@ def _identity_value(identity: dict, name):
 
 
 def same_identity(a: dict, b: dict) -> bool:
+    """Identities are compared as parsed values, never as text."""
     return all(_identity_value(a, name) == _identity_value(b, name) for name in set(a) | set(b))
 
 
-def _fits_identity_file(directory) -> Path:
-    return Path(directory) / TABLE_SPEC["fits"]["identity"]
+def _fit_identity_text(file):
+    """The identity a part carries, as the text stored, or None."""
+    import pyarrow.parquet as pq
+
+    value = (pq.ParquetFile(file).metadata.metadata or {}).get(FIT_KEY.encode())
+    return None if value is None else value.decode()
+
+
+def fit_parts(directory) -> list:
+    """Every part of the cache with the identity it carries: (file, identity). The
+    identity is None where a part has none or it is not a JSON object; a reader
+    ignores such a part (T6.5)."""
+    out = []
+    folder = Path(directory) / FITS
+    for file in _table_files(folder) if folder.is_dir() else []:
+        text = _fit_identity_text(file)
+        try:
+            identity = None if text is None else json.loads(text)
+        except ValueError:
+            identity = None
+        out.append((file, identity if isinstance(identity, dict) else None))
+    return out
+
+
+def _analysis_fit_fields(directory):
+    """What the folder alone says of the identity its fits must have: everything
+    but the cells in use, whose hash needs the data file's order of cells."""
+    directory = Path(directory)
+    if not {"parameters", "qc"} <= set(stages_run(directory)):
+        return None
+    settings = _read_json(_stage_file(directory, "parameters"))["settings"]
+    return {
+        "screen_id": _read_json(directory / "analysis.json")["screen"]["id"],
+        "formula": settings["formula"],
+        "response_fit_method": settings["response_fit_method"],
+        "control_group": settings["control_group"],
+    }
+
+
+def _matches(identity, fields) -> bool:
+    return identity is not None and all(_identity_value(identity, k) == _identity_value(fields, k) for k in fields)
 
 
 def write_fits(directory, table: pd.DataFrame, identity: dict) -> Path:
+    """Add a part holding `table`, with the identity of its fits inside it."""
     directory = Path(directory)
     if not {"parameters", "qc"} <= set(stages_run(directory)):
         raise ValueError("Fits can be saved once the parameters and qc stages are written.")
-    path = _fits_identity_file(directory)
-    if path.exists():
-        # a later writer checks the record; it does not rewrite it
-        if not same_identity(_read_json(path), identity):
-            raise ValueError(f"The fits already saved in {FITS} were made differently.")
-    else:
-        _write_json(identity, path)
     part = directory / FITS / f"part-{uuid.uuid4().hex[:12]}.parquet"
-    write_table(table, part, _table_key(FITS, table))
+    write_table(table, part, _table_key(FITS, table), {FIT_KEY: json.dumps(identity, sort_keys=True)})
     return part
 
 
-def read_fits(directory):
-    """The cached fits and how they were made, or None. Two parts may hold the same
-    response; a reader takes either."""
-    directory = Path(directory)
-    if not _fits_identity_file(directory).exists():
+def read_fits(directory, identity=None):
+    """The cached fits made as `identity` says, and that identity, or None if no
+    part has it. Parts with another identity, or with none, are ignored. Two parts
+    may hold the same response; a reader takes either.
+
+    Without `identity`, the parts made for this analysis's own parameters are
+    returned. If those were made for more than one set of cells (parts left by an
+    earlier QC), the folder alone cannot say which set is current, and None is
+    returned: give the identity."""
+    parts = fit_parts(directory)
+    if identity is None:
+        fields = _analysis_fit_fields(directory)
+        if fields is None:
+            return None
+        found = [i for _, i in parts if _matches(i, fields)]
+        if not found or not all(same_identity(i, found[0]) for i in found):
+            return None
+        identity = found[0]
+    files = [file for file, i in parts if i is not None and same_identity(i, identity)]
+    if not files:
         return None
-    table = None
-    if _table_files(directory / FITS):
-        table = read_table(directory / FITS, TABLES[FITS][2]).drop_duplicates(subset="response_id").reset_index(drop=True)
-    return {"identity": _read_json(_fits_identity_file(directory)), "table": table}
+    table = read_table(files, TABLES[FITS][2]).drop_duplicates(subset="response_id").reset_index(drop=True)
+    return {"identity": identity, "table": table}
 
 
 def read_analysis(directory) -> dict:
@@ -675,7 +729,7 @@ def read_analysis(directory) -> dict:
                 raise ValueError(f"{name}.parquet has {table_rows(path)} rows; the stage '{record['stage']}' wrote {file['rows']}.")
             tables[name] = read_table(path, TABLES[name][2] if name in TABLES else None)
     fits = read_fits(directory)
-    if fits is not None and fits["table"] is not None:
+    if fits is not None:
         tables[FITS] = fits["table"]
     return {
         "format": analysis["format"],
@@ -1215,10 +1269,14 @@ def _screen_identity(file, response_modality) -> dict:
 
 def _schema_problems(path, schema) -> list[str]:
     """Problems a JSON file has against a schema, as text; empty when it conforms."""
+    return _schema_problems_text(Path(path).read_text(), schema)
+
+
+def _schema_problems_text(text, schema) -> list[str]:
     import jsonschema
 
     try:
-        value = json.loads(Path(path).read_text())
+        value = json.loads(text)
     except ValueError:
         return ["is not valid JSON."]
     validator = jsonschema.Draft7Validator(json.loads((SPEC_DIR / schema).read_text()))
@@ -1311,17 +1369,25 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
         if table_path(directory, name).exists():
             log.add("A4.1", f"{name}.parquet", "is in the folder and its stage's record does not list it.")
 
-    # the fit cache: parts, and one record of how the fits were made (T6)
-    fits_identity = None
+    # the fit cache: part files only, each saying how its fits were made (T6)
+    fit_identities = {}
     if (directory / FITS).is_dir():
-        if not _fits_identity_file(directory).exists():
-            log.add("T6.1", FITS, "has no record of how the fits were made.")
-        else:
-            faults = _schema_problems(_fits_identity_file(directory), "fits.schema.json")
+        for entry in sorted((directory / FITS).iterdir()):
+            if entry.is_dir() or entry.suffix != ".parquet":
+                log.add("T6.1", f"{FITS}/{entry.name}", "is not a part file; the fit cache holds part files only.")
+        for file in _table_files(directory / FITS):
+            try:
+                text = _fit_identity_text(file)
+            except Exception:
+                continue   # not a Parquet file: reported with the table below
+            if text is None:
+                log.add("T6.1", f"{FITS}/{file.name}", f"does not say how its fits were made: its metadata has no `{FIT_KEY}`.")
+                continue
+            faults = _schema_problems_text(text, TABLE_SPEC["fits"]["identity_schema"])
             for fault in faults:
-                log.add("T6.1", TABLE_SPEC["fits"]["identity"], fault)
+                log.add("T6.1", f"{FITS}/{file.name}", f"`{FIT_KEY}` {fault}")
             if not faults:
-                fits_identity = _read_json(_fits_identity_file(directory))
+                fit_identities[file] = json.loads(text)
         if _table_files(directory / FITS):
             tables[FITS] = directory / FITS
         if not {"parameters", "qc"} <= set(present):
@@ -1388,20 +1454,21 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
     if parameters is not None:
         if not formula_in_subset(parameters["settings"]["formula"]):
             log.add("T7.1", "parameters/record.json", "The formula is outside the additive subset.")
-        fits = contents.get(FITS)
-        if fits is not None and any(len(c) != len(parameters["design"]["terms"]) for c in fits["coefficients"]):
-            log.add("T6.2", FITS, "A fit does not have one coefficient per term of the design.")
-        # the cache was made for this analysis's parameters (T6.3)
-        if fits_identity is not None:
-            expected = {
-                "formula": parameters["settings"]["formula"],
-                "response_fit_method": parameters["settings"]["response_fit_method"],
-                "control_group": parameters["settings"]["control_group"],
-                "screen_id": None if analysis is None else analysis["screen"]["id"],
-            }
-            for field, value in expected.items():
-                if value is not None and _identity_value(fits_identity, field) != _identity_value(expected, field):
-                    log.add("T6.3", TABLE_SPEC["fits"]["identity"], f"`{field}` is not that of the analysis.")
+        # A part made for this analysis's parameters has one coefficient per term of its
+        # design (T6.2). A part made otherwise is allowed and unused, and is not
+        # reported: nothing depends on it, and clearing it is housekeeping (T6.3, T6.6).
+        expected = {
+            "formula": parameters["settings"]["formula"],
+            "response_fit_method": parameters["settings"]["response_fit_method"],
+            "control_group": parameters["settings"]["control_group"],
+        }
+        if analysis is not None:
+            expected["screen_id"] = analysis["screen"]["id"]
+        for file, identity in fit_identities.items():
+            if _matches(identity, expected) and "coefficients" in pq.ParquetFile(file).schema_arrow.names:
+                if any(len(c) != len(parameters["design"]["terms"]) for c in pq.read_table(file, columns=["coefficients"])["coefficients"].to_pylist() if c is not None):
+                    log.add("T6.2", FITS, "A fit does not have one coefficient per term of the design.")
+                    break
 
     # against the data file
     if screen_file is not None and analysis is not None:
@@ -1431,8 +1498,4 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
             kept = contents.get("qc/cells")
             if kept is not None and set(kept["cell_id"]) != set(screen["cells"]):
                 log.add("T2.1", "qc/cells.parquet", "does not have one row per cell of the data file.")
-            elif kept is not None and fits_identity is not None:
-                in_use = set(kept.loc[kept["in_use"].astype(bool), "cell_id"])
-                if fits_identity.get("cells_in_use_sha256") != sha256_ids([c for c in screen["cells"] if c in in_use]):
-                    log.add("T6.3", TABLE_SPEC["fits"]["identity"], "`cells_in_use_sha256` is not that of the cells in use.")
     return log.all()

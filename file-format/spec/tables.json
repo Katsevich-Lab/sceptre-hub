@@ -1,606 +1,607 @@
 {
-  "$comment": "The tables of a sceptre analysis folder. Both prototype libraries and both validators read this file. SPEC.md sections T0 to T6 are the rules; this file is their machine-readable form. A table's name is its path in the analysis folder, without `.parquet`.",
-  "format": "0.1",
-  "stages": [
-    "parameters",
-    "assignment",
-    "qc",
-    "calibration",
-    "power",
-    "discovery"
-  ],
-  "stage_rank": {
-    "parameters": 1,
-    "assignment": 2,
-    "qc": 3,
-    "calibration": 4,
-    "power": 4,
-    "discovery": 4
-  },
-  "max_rows_per_row_group": 1000000,
-  "column_types": {
-    "string": "UTF-8 text, plain or dictionary-encoded; never missing",
-    "boolean": "Parquet boolean; never missing",
-    "double": "64-bit float; may be missing where `nullable` is true",
-    "list<double>": "a list of 64-bit floats per row"
-  },
-  "fields": {
-    "stage": "the stage that writes the table, which is also the folder it is in; null for the fit cache, which no stage owns",
-    "required": "whether the table must exist once its stage has run",
-    "key": "the key columns, in sort order; a key column that is not required is part of the key when it is present",
-    "extra_columns": "`ignored`: a reader takes only the columns listed. `kept`: a reader keeps further columns (diagnostics)",
-    "one_of": "groups of columns of which at least one must be present",
-    "present_under": "on a column: the gRNA integration strategies under which the column is present; under any other strategy it is absent",
-    "forbidden_columns": "columns the table must not have",
-    "unique_across_parts": "false where two part files may hold the same key (the fit cache); a reader then takes either row"
-  },
-  "tables": [
+ "$comment": "The tables of a sceptre analysis folder. Both prototype libraries and both validators read this file. SPEC.md sections T0 to T6 are the rules; this file is their machine-readable form. A table's name is its path in the analysis folder, without `.parquet`.",
+ "format": "0.1",
+ "stages": [
+  "parameters",
+  "assignment",
+  "qc",
+  "calibration",
+  "power",
+  "discovery"
+ ],
+ "stage_rank": {
+  "parameters": 1,
+  "assignment": 2,
+  "qc": 3,
+  "calibration": 4,
+  "power": 4,
+  "discovery": 4
+ },
+ "max_rows_per_row_group": 1000000,
+ "column_types": {
+  "string": "UTF-8 text, plain or dictionary-encoded; never missing",
+  "boolean": "Parquet boolean; never missing",
+  "double": "64-bit float; may be missing where `nullable` is true",
+  "list<double>": "a list of 64-bit floats per row"
+ },
+ "fields": {
+  "stage": "the stage that writes the table, which is also the folder it is in; null for the fit cache, which no stage owns",
+  "required": "whether the table must exist once its stage has run",
+  "key": "the key columns, in sort order; a key column that is not required is part of the key when it is present",
+  "extra_columns": "`ignored`: a reader takes only the columns listed. `kept`: a reader keeps further columns (diagnostics)",
+  "one_of": "groups of columns of which at least one must be present",
+  "present_under": "on a column: the gRNA integration strategies under which the column is present; under any other strategy it is absent",
+  "forbidden_columns": "columns the table must not have",
+  "unique_across_parts": "false where two part files may hold the same key (the fit cache); a reader then takes either row"
+ },
+ "tables": [
+  {
+   "name": "parameters/discovery_pairs",
+   "stage": "parameters",
+   "required": true,
+   "key": [
+    "grna_target",
+    "response_id"
+   ],
+   "extra_columns": "ignored",
+   "columns": [
     {
-      "name": "parameters/discovery_pairs",
-      "stage": "parameters",
-      "required": true,
-      "key": [
-        "grna_target",
-        "response_id"
-      ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "grna_target",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        }
-      ]
+     "name": "grna_target",
+     "type": "string",
+     "required": true
     },
     {
-      "name": "parameters/positive_control_pairs",
-      "stage": "parameters",
-      "required": true,
-      "key": [
-        "grna_target",
-        "response_id"
-      ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "grna_target",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "assignment/assignments",
-      "stage": "assignment",
-      "required": true,
-      "key": [
-        "grna_id",
-        "cell_id"
-      ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "grna_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "cell_id",
-          "type": "string",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "assignment/flagged_cells",
-      "stage": "assignment",
-      "required": false,
-      "key": [
-        "cell_id"
-      ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "cell_id",
-          "type": "string",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "qc/cells",
-      "stage": "qc",
-      "required": true,
-      "key": [
-        "cell_id"
-      ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "cell_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "in_use",
-          "type": "boolean",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "qc/discovery_pair_qc",
-      "stage": "qc",
-      "required": true,
-      "key": [
-        "grna_target",
-        "grna_id",
-        "response_id"
-      ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "grna_target",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "grna_id",
-          "type": "string",
-          "required": false,
-          "present_under": [
-            "singleton",
-            "bonferroni"
-          ],
-          "rule": "T3.3"
-        },
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "pass_qc",
-          "type": "boolean",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "qc/positive_control_pair_qc",
-      "stage": "qc",
-      "required": true,
-      "key": [
-        "grna_target",
-        "grna_id",
-        "response_id"
-      ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "grna_target",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "grna_id",
-          "type": "string",
-          "required": false,
-          "present_under": [
-            "singleton",
-            "bonferroni"
-          ],
-          "rule": "T3.3"
-        },
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "pass_qc",
-          "type": "boolean",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "calibration/negative_control_groups",
-      "stage": "calibration",
-      "required": true,
-      "key": [
-        "grna_group",
-        "grna_id"
-      ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "grna_group",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "grna_id",
-          "type": "string",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "calibration/results",
-      "stage": "calibration",
-      "required": true,
-      "key": [
-        "grna_target",
-        "grna_id",
-        "response_id"
-      ],
-      "extra_columns": "kept",
-      "columns": [
-        {
-          "name": "grna_target",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "grna_id",
-          "type": "string",
-          "required": false,
-          "present_under": [
-            "singleton",
-            "bonferroni"
-          ],
-          "rule": "T5.6"
-        },
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "pass_qc",
-          "type": "boolean",
-          "required": true
-        },
-        {
-          "name": "p_value",
-          "type": "double",
-          "required": true,
-          "nullable": true
-        },
-        {
-          "name": "fold_change",
-          "type": "double",
-          "required": false,
-          "nullable": true
-        },
-        {
-          "name": "se_fold_change",
-          "type": "double",
-          "required": false,
-          "nullable": true
-        },
-        {
-          "name": "log_2_fold_change",
-          "type": "double",
-          "required": false,
-          "nullable": true
-        }
-      ],
-      "one_of": [
-        [
-          "fold_change",
-          "log_2_fold_change"
-        ]
-      ],
-      "forbidden_columns": [
-        {
-          "name": "significant",
-          "rule": "T5.3"
-        }
-      ]
-    },
-    {
-      "name": "power/results",
-      "stage": "power",
-      "required": true,
-      "key": [
-        "grna_target",
-        "grna_id",
-        "response_id"
-      ],
-      "extra_columns": "kept",
-      "columns": [
-        {
-          "name": "grna_target",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "grna_id",
-          "type": "string",
-          "required": false,
-          "present_under": [
-            "singleton"
-          ],
-          "rule": "T5.6"
-        },
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "pass_qc",
-          "type": "boolean",
-          "required": true
-        },
-        {
-          "name": "p_value",
-          "type": "double",
-          "required": true,
-          "nullable": true
-        },
-        {
-          "name": "fold_change",
-          "type": "double",
-          "required": false,
-          "nullable": true
-        },
-        {
-          "name": "se_fold_change",
-          "type": "double",
-          "required": false,
-          "nullable": true
-        },
-        {
-          "name": "log_2_fold_change",
-          "type": "double",
-          "required": false,
-          "nullable": true
-        }
-      ],
-      "one_of": [
-        [
-          "fold_change",
-          "log_2_fold_change"
-        ]
-      ],
-      "forbidden_columns": [
-        {
-          "name": "significant",
-          "rule": "T5.3"
-        }
-      ]
-    },
-    {
-      "name": "discovery/results",
-      "stage": "discovery",
-      "required": true,
-      "key": [
-        "grna_target",
-        "grna_id",
-        "response_id"
-      ],
-      "extra_columns": "kept",
-      "columns": [
-        {
-          "name": "grna_target",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "grna_id",
-          "type": "string",
-          "required": false,
-          "present_under": [
-            "singleton"
-          ],
-          "rule": "T5.6"
-        },
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "pass_qc",
-          "type": "boolean",
-          "required": true
-        },
-        {
-          "name": "p_value",
-          "type": "double",
-          "required": true,
-          "nullable": true
-        },
-        {
-          "name": "fold_change",
-          "type": "double",
-          "required": false,
-          "nullable": true
-        },
-        {
-          "name": "se_fold_change",
-          "type": "double",
-          "required": false,
-          "nullable": true
-        },
-        {
-          "name": "log_2_fold_change",
-          "type": "double",
-          "required": false,
-          "nullable": true
-        }
-      ],
-      "one_of": [
-        [
-          "fold_change",
-          "log_2_fold_change"
-        ]
-      ],
-      "forbidden_columns": [
-        {
-          "name": "significant",
-          "rule": "T5.3"
-        }
-      ]
-    },
-    {
-      "name": "calibration/resamples",
-      "stage": "calibration",
-      "required": false,
-      "key": [
-        "grna_target",
-        "grna_id",
-        "response_id"
-      ],
-      "extra_columns": "kept",
-      "columns": [
-        {
-          "name": "grna_target",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "grna_id",
-          "type": "string",
-          "required": false,
-          "present_under": [
-            "singleton",
-            "bonferroni"
-          ],
-          "rule": "T5.6"
-        },
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "z_null",
-          "type": "list<double>",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "power/resamples",
-      "stage": "power",
-      "required": false,
-      "key": [
-        "grna_target",
-        "grna_id",
-        "response_id"
-      ],
-      "extra_columns": "kept",
-      "columns": [
-        {
-          "name": "grna_target",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "grna_id",
-          "type": "string",
-          "required": false,
-          "present_under": [
-            "singleton"
-          ],
-          "rule": "T5.6"
-        },
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "z_null",
-          "type": "list<double>",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "discovery/resamples",
-      "stage": "discovery",
-      "required": false,
-      "key": [
-        "grna_target",
-        "grna_id",
-        "response_id"
-      ],
-      "extra_columns": "kept",
-      "columns": [
-        {
-          "name": "grna_target",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "grna_id",
-          "type": "string",
-          "required": false,
-          "present_under": [
-            "singleton"
-          ],
-          "rule": "T5.6"
-        },
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "z_null",
-          "type": "list<double>",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "fits/response",
-      "stage": null,
-      "required": false,
-      "key": [
-        "response_id"
-      ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "coefficients",
-          "type": "list<double>",
-          "required": true
-        },
-        {
-          "name": "theta",
-          "type": "double",
-          "required": true,
-          "nullable": true
-        }
-      ],
-      "unique_across_parts": false
+     "name": "response_id",
+     "type": "string",
+     "required": true
     }
-  ],
-  "fits": {
-    "folder": "fits/response",
-    "identity": "fits/response/identity.json",
-    "cleared_with": "qc",
-    "$comment": "A cache shared by the testing stages. Not listed in any stage record. Cleared when the qc stage or an earlier one is rerun. `fits/grna` is reserved."
+   ]
+  },
+  {
+   "name": "parameters/positive_control_pairs",
+   "stage": "parameters",
+   "required": true,
+   "key": [
+    "grna_target",
+    "response_id"
+   ],
+   "extra_columns": "ignored",
+   "columns": [
+    {
+     "name": "grna_target",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "response_id",
+     "type": "string",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "assignment/assignments",
+   "stage": "assignment",
+   "required": true,
+   "key": [
+    "grna_id",
+    "cell_id"
+   ],
+   "extra_columns": "ignored",
+   "columns": [
+    {
+     "name": "grna_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "cell_id",
+     "type": "string",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "assignment/flagged_cells",
+   "stage": "assignment",
+   "required": false,
+   "key": [
+    "cell_id"
+   ],
+   "extra_columns": "ignored",
+   "columns": [
+    {
+     "name": "cell_id",
+     "type": "string",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "qc/cells",
+   "stage": "qc",
+   "required": true,
+   "key": [
+    "cell_id"
+   ],
+   "extra_columns": "ignored",
+   "columns": [
+    {
+     "name": "cell_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "in_use",
+     "type": "boolean",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "qc/discovery_pair_qc",
+   "stage": "qc",
+   "required": true,
+   "key": [
+    "grna_target",
+    "grna_id",
+    "response_id"
+   ],
+   "extra_columns": "ignored",
+   "columns": [
+    {
+     "name": "grna_target",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "grna_id",
+     "type": "string",
+     "required": false,
+     "present_under": [
+      "singleton",
+      "bonferroni"
+     ],
+     "rule": "T3.3"
+    },
+    {
+     "name": "response_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "pass_qc",
+     "type": "boolean",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "qc/positive_control_pair_qc",
+   "stage": "qc",
+   "required": true,
+   "key": [
+    "grna_target",
+    "grna_id",
+    "response_id"
+   ],
+   "extra_columns": "ignored",
+   "columns": [
+    {
+     "name": "grna_target",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "grna_id",
+     "type": "string",
+     "required": false,
+     "present_under": [
+      "singleton",
+      "bonferroni"
+     ],
+     "rule": "T3.3"
+    },
+    {
+     "name": "response_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "pass_qc",
+     "type": "boolean",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "calibration/negative_control_groups",
+   "stage": "calibration",
+   "required": true,
+   "key": [
+    "grna_group",
+    "grna_id"
+   ],
+   "extra_columns": "ignored",
+   "columns": [
+    {
+     "name": "grna_group",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "grna_id",
+     "type": "string",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "calibration/results",
+   "stage": "calibration",
+   "required": true,
+   "key": [
+    "grna_target",
+    "grna_id",
+    "response_id"
+   ],
+   "extra_columns": "kept",
+   "columns": [
+    {
+     "name": "grna_target",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "grna_id",
+     "type": "string",
+     "required": false,
+     "present_under": [
+      "singleton",
+      "bonferroni"
+     ],
+     "rule": "T5.6"
+    },
+    {
+     "name": "response_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "pass_qc",
+     "type": "boolean",
+     "required": true
+    },
+    {
+     "name": "p_value",
+     "type": "double",
+     "required": true,
+     "nullable": true
+    },
+    {
+     "name": "fold_change",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "se_fold_change",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "log_2_fold_change",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    }
+   ],
+   "one_of": [
+    [
+     "fold_change",
+     "log_2_fold_change"
+    ]
+   ],
+   "forbidden_columns": [
+    {
+     "name": "significant",
+     "rule": "T5.3"
+    }
+   ]
+  },
+  {
+   "name": "power/results",
+   "stage": "power",
+   "required": true,
+   "key": [
+    "grna_target",
+    "grna_id",
+    "response_id"
+   ],
+   "extra_columns": "kept",
+   "columns": [
+    {
+     "name": "grna_target",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "grna_id",
+     "type": "string",
+     "required": false,
+     "present_under": [
+      "singleton"
+     ],
+     "rule": "T5.6"
+    },
+    {
+     "name": "response_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "pass_qc",
+     "type": "boolean",
+     "required": true
+    },
+    {
+     "name": "p_value",
+     "type": "double",
+     "required": true,
+     "nullable": true
+    },
+    {
+     "name": "fold_change",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "se_fold_change",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "log_2_fold_change",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    }
+   ],
+   "one_of": [
+    [
+     "fold_change",
+     "log_2_fold_change"
+    ]
+   ],
+   "forbidden_columns": [
+    {
+     "name": "significant",
+     "rule": "T5.3"
+    }
+   ]
+  },
+  {
+   "name": "discovery/results",
+   "stage": "discovery",
+   "required": true,
+   "key": [
+    "grna_target",
+    "grna_id",
+    "response_id"
+   ],
+   "extra_columns": "kept",
+   "columns": [
+    {
+     "name": "grna_target",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "grna_id",
+     "type": "string",
+     "required": false,
+     "present_under": [
+      "singleton"
+     ],
+     "rule": "T5.6"
+    },
+    {
+     "name": "response_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "pass_qc",
+     "type": "boolean",
+     "required": true
+    },
+    {
+     "name": "p_value",
+     "type": "double",
+     "required": true,
+     "nullable": true
+    },
+    {
+     "name": "fold_change",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "se_fold_change",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "log_2_fold_change",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    }
+   ],
+   "one_of": [
+    [
+     "fold_change",
+     "log_2_fold_change"
+    ]
+   ],
+   "forbidden_columns": [
+    {
+     "name": "significant",
+     "rule": "T5.3"
+    }
+   ]
+  },
+  {
+   "name": "calibration/resamples",
+   "stage": "calibration",
+   "required": false,
+   "key": [
+    "grna_target",
+    "grna_id",
+    "response_id"
+   ],
+   "extra_columns": "kept",
+   "columns": [
+    {
+     "name": "grna_target",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "grna_id",
+     "type": "string",
+     "required": false,
+     "present_under": [
+      "singleton",
+      "bonferroni"
+     ],
+     "rule": "T5.6"
+    },
+    {
+     "name": "response_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "z_null",
+     "type": "list<double>",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "power/resamples",
+   "stage": "power",
+   "required": false,
+   "key": [
+    "grna_target",
+    "grna_id",
+    "response_id"
+   ],
+   "extra_columns": "kept",
+   "columns": [
+    {
+     "name": "grna_target",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "grna_id",
+     "type": "string",
+     "required": false,
+     "present_under": [
+      "singleton"
+     ],
+     "rule": "T5.6"
+    },
+    {
+     "name": "response_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "z_null",
+     "type": "list<double>",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "discovery/resamples",
+   "stage": "discovery",
+   "required": false,
+   "key": [
+    "grna_target",
+    "grna_id",
+    "response_id"
+   ],
+   "extra_columns": "kept",
+   "columns": [
+    {
+     "name": "grna_target",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "grna_id",
+     "type": "string",
+     "required": false,
+     "present_under": [
+      "singleton"
+     ],
+     "rule": "T5.6"
+    },
+    {
+     "name": "response_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "z_null",
+     "type": "list<double>",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "fits/response",
+   "stage": null,
+   "required": false,
+   "key": [
+    "response_id"
+   ],
+   "extra_columns": "ignored",
+   "columns": [
+    {
+     "name": "response_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "coefficients",
+     "type": "list<double>",
+     "required": true
+    },
+    {
+     "name": "theta",
+     "type": "double",
+     "required": true,
+     "nullable": true
+    }
+   ],
+   "unique_across_parts": false
   }
+ ],
+ "fits": {
+  "folder": "fits/response",
+  "identity_key": "sceptre_fit_identity",
+  "identity_schema": "fits.schema.json",
+  "cleared_with": "qc",
+  "$comment": "A cache shared by the testing stages. Not listed in any stage record. The folder holds part files only. Each part says how its fits were made, as JSON text under `identity_key` in the Parquet file's key-value metadata, conforming to `identity_schema`. A reader uses a part only if that identity is its own. Cleared when the qc stage or an earlier one is rerun. `fits/grna` is reserved."
+ }
 }

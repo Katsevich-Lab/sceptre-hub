@@ -23,6 +23,14 @@ for (case in cases) {
         lowered <- validate_screen(case$path, index_limit = case$conforming_with_index_limit)
         result$wide_branch <- !any(grepl("mod/rna/X", lowered$where, fixed = TRUE))
     }
+    if (!is.null(case$fits_used)) {
+        # whether a reader takes fits from the cache of this folder (T6.5)
+        result$fits_as_expected <- identical(!is.null(fmt_read_analysis(case$path)$tables[[FITS]]), case$fits_used)
+    }
+    if (!is.null(case$fits_for)) {
+        fits <- fmt_read_fits(case$path, case$fits_for$identity)
+        result$fits_as_expected <- !is.null(fits) && nrow(fits$table) == case$fits_for$rows
+    }
     if (isTRUE(case$reader_refuses)) {
         result$reader_refused <- tryCatch({
             if (case$kind == "screen") fmt_read_screen(case$path) else fmt_read_analysis(case$path)
@@ -40,7 +48,7 @@ for (case in cases) {
     results[[case$name]] <- result
     expected <- sort(as.character(unlist(case$expect)), method = "radix")
     if (!identical(as.character(result$rules), expected) || result$level != case$level || isFALSE(result$reads_correctly) ||
-        isFALSE(result$reader_refused) || isFALSE(result$copy_kept_modalities) || isFALSE(result$wide_branch)) {
+        isFALSE(result$reader_refused) || isFALSE(result$copy_kept_modalities) || isFALSE(result$wide_branch) || isFALSE(result$fits_as_expected)) {
         wrong <- wrong + 1L
         cat("MISMATCH ", case$name, ": expected ", paste(expected, collapse = ", "), " (", case$level, "); reported ",
             paste(result$rules, collapse = ", "), " (", result$level, ")\n", sep = "")
