@@ -619,6 +619,7 @@ built = md.MuData({
         "n_nonzero": np.asarray((grna_counts > 0).sum(axis=1)).reshape(-1).astype(np.int32),
     }, index=ids), var=pd.DataFrame({
         "grna_target": ["site_1", "non-targeting"], "target_chr": ["chr1", None], "target_start": pd.array([100, None], dtype="Int32"),
+        "target_end": pd.array([149, None], dtype="Int32"),
     }, index=["grna_a", "grna_nt"])),
 })
 built.obs["batch"] = pd.Categorical(["b", "a", "b", "a", "b", "a"], categories=["b", "a"])

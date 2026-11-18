@@ -82,8 +82,8 @@ final; the sorting into kinds is.
 - **tests**: a check in the notebooks exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 118 statements, 80 are file rules, 29 behaviour rules and 9
-guidance. The validators check 77 of the file rules, and tests cover 3
+Of the 122 statements, 82 are file rules, 29 behaviour rules and 11
+guidance. The validators check 79 of the file rules, and tests cover 3
 more. Tests cover 18 of the behaviour rules, and the validators 5; 6
 have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A6.2.
 
@@ -285,6 +285,10 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S8.7 | file | All gRNAs with the same `vector_id` MUST have the same `grna_target`: a vector has one target. | V |
 | S8.8 | file | A `vector_id` MUST NOT equal the identifier of a gRNA on another vector. A vector with one gRNA may be named after it. | V |
 | S8.9 | behaviour | A reader MUST refuse a file that breaks S8.7. A writer MUST NOT sum counts over the gRNAs of a vector: counts are stored per gRNA, and combining them is a step of an analysis. | V (both readers refuse the conformance file) |
+| S8.10 | file | Positions are **1-based with both ends included**: `target_start` is the first base of the target and `target_end` the last. Both are whole numbers, `target_start` is at least 1, and `target_end` is not before `target_start`. A single position has the two equal. | V |
+| S8.11 | file | A gRNA has all three of `target_chr`, `target_start` and `target_end`, or none of them. A non-targeting gRNA has none. | V |
+| S8.12 | guidance | This is the convention of GTF and GFF files, Ensembl, and Bioconductor's `GRanges`. An interval from a BED file (0-based, end excluded) is converted at import by adding 1 to its start. The format has one convention and no entry that says which is in use. Any position column added later follows it. | — |
+| S8.13 | guidance | Chromosome names are text, and the format does not choose between `chr1` and `1`. They have to match the naming of whatever positions they are compared with. A writer SHOULD record `genome_build` (S10.5) whenever the gRNA table has positions. | — |
 
 ### S9. Identifiers
 

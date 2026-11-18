@@ -317,6 +317,25 @@ broken_screen("vector_named_like_another_grna", ["S8.8"], "A vector is named wit
               vectors_changed(vector_named_like_another_grna), source=high_py)
 broken_screen("vector_id_as_a_number", ["S8.6"], "`vector_id` stored as numbers",
               lambda f: add_column(f, "mod/grna/var", "vector_id", np.arange(f["mod/grna/var/_index"].shape[0], dtype=np.float64)), source=high_py)
+def set_positions(start=None, end=None, chromosome=None):
+    """Change the target position of the first gRNA of the types file (chr1, 100 to 149)."""
+    def apply(f):
+        table = f["mod/grna/var"]
+        for name, value in (("target_start", start), ("target_end", end)):
+            if value is not None:
+                values = table[name][()]
+                values[0] = value
+                replace(f, f"mod/grna/var/{name}", values)
+        if chromosome == "missing":
+            codes = table["target_chr/codes"][()]
+            codes[0] = -1
+            replace(f, "mod/grna/var/target_chr/codes", codes)
+    return apply
+
+
+broken_screen("target_start_zero", ["S8.10"], "A target starts at position 0: a 0-based coordinate, as in a BED file", set_positions(start=0))
+broken_screen("target_end_before_start", ["S8.10"], "A target ends before it starts", set_positions(end=50))
+broken_screen("target_start_without_chromosome", ["S8.11"], "A gRNA has a target start and end and no chromosome", set_positions(chromosome="missing"))
 broken_screen("target_start_as_text", ["S8.2"], "`target_start` stored as text",
               lambda f: (f["mod/grna/var"].__delitem__("target_start"),
                          add_column(f, "mod/grna/var", "target_start", np.array(["100", "200"], dtype=object), "string-array", text)))

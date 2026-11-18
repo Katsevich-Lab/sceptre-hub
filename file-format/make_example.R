@@ -90,6 +90,7 @@ altExp(types, "gRNA") <- SingleCellExperiment(assays = list(counts = types_grna)
     grna_target = c("site_1", "non-targeting"),
     target_chr = c("chr1", NA),                                       # text with a missing value
     target_start = c(100L, NA),                                       # integer with a missing value
+    target_end = c(149L, NA),
     row.names = rownames(types_grna)
 ))
 metadata(types) <- list(sceptre = list(

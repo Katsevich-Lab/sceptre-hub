@@ -448,6 +448,36 @@
     "what": "`vector_id` stored as numbers"
   },
   {
+    "name": "invalid/screens/target_start_zero.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/target_start_zero.h5mu",
+    "expect": [
+      "S8.10"
+    ],
+    "level": "not readable",
+    "what": "A target starts at position 0: a 0-based coordinate, as in a BED file"
+  },
+  {
+    "name": "invalid/screens/target_end_before_start.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/target_end_before_start.h5mu",
+    "expect": [
+      "S8.10"
+    ],
+    "level": "not readable",
+    "what": "A target ends before it starts"
+  },
+  {
+    "name": "invalid/screens/target_start_without_chromosome.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/target_start_without_chromosome.h5mu",
+    "expect": [
+      "S8.11"
+    ],
+    "level": "not readable",
+    "what": "A gRNA has a target start and end and no chromosome"
+  },
+  {
     "name": "invalid/screens/target_start_as_text.h5mu",
     "kind": "screen",
     "path": "conformance/invalid/screens/target_start_as_text.h5mu",

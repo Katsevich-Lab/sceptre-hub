@@ -256,7 +256,14 @@ one rule, and no rounding between what a package computed and what it reads back
   - *Deferred: the analysis side.* Because the data file holds per-gRNA counts and is written once, sceptre's sum-within-vector has to become a step of an analysis. That implies a setting in the assignment stage's record, and an assignment table that names the unit it assigned, gRNA or vector, as results tables already switch their key by strategy. Nothing in the data file depends on the answer. It is listed in section 10. The prototype's readers do not use `vector_id` when they build a package object.
 - **No entry for the target molecule** *(Decided by Eugene, 18 November)*. Target coordinates are genomic positions; a screen that knocks down RNA names its transcript in `grna_target` and may leave coordinates out. Nothing in an analysis depends on the molecule: counts, assignments, targets and tests are the same, and the coordinates are used only when the user builds cis pairs. The optional `perturbation_type` (S10) records which kind of screen it was, and its knockdown value is the RNA-targeting case.
 - **The name `grna` is a slight wart.** The modality holds whatever identifies the perturbation, which for some designs is a barcode and could in principle be something other than a gRNA. It is kept because sceptre's vocabulary uses it throughout and another name buys nothing within this scope.
-- **Open before the freeze.** The coordinate convention (0-based or 1-based, and which genome build) is not stated, here or in sceptre. It should be fixed together with a genome-build entry ([section 10](#10-fixed-now-free-to-grow)).
+- **Positions are 1-based with both ends included** *(Adopted, 18 November, on the recommendation of a side session; Eugene can overturn it)*. `target_start` is the first base of the target and `target_end` the last. One fixed convention for the whole format, with no entry saying which is in use.
+  - *sceptre's own data are already in this convention* *(verified by the side session on the `sceptre3` build; I re-checked the first rows in this folder's example)*. In sceptre's high-MOI example every target has `end − start = 49`, and a target's second gRNA starts at the first one's end plus 1 (23567064 to 23567113, then 23567114 to 23567163). Adjacent 50-base tiles are consistent only with closed intervals. The gene positions sceptre pairs them with come from a GTF file, which is 1-based with both ends included.
+  - *Nothing has to be converted.* Files written from existing sceptre objects are already right, and target and gene positions are in one system. It is also the convention of Ensembl and of Bioconductor's `GRanges`, which the planned genome-build check would compare.
+  - *Why it was never pinned down.* sceptre builds cis pairs from the midpoint of a target and a distance threshold of hundreds of kilobases, so being one base off changes nothing. It matters for exchanging files, not for sceptre's results.
+  - *The cost.* Python tools and BED files usually count from 0 and exclude the end. A fixed, stated rule and one sentence ("add 1 to a BED start at import") handle it.
+  - *Checked.* Both validators report a start below 1, an end before its start, and a gRNA with some of the three position columns and not all.
+  - *Chromosome names* are text; the format does not choose between `chr1` and `1`. sceptre's own data use the `chr` prefix.
+  - *IGVF* does not fix a convention: its schema has a per-guide column `coordinate_system`, with zero-based half-open and one-based inclusive given as examples. That passes the question to every reader, which this format avoids. crisprVerse uses `GRanges`, but its guide coordinate is a single position at the PAM, a different thing from the targeted element *(as reported by the side session)*.
 - **IGVF.** Much richer, and better than this format today. Each gRNA has a `targeting` flag, a `type` (targeting, non-targeting, safe-targeting, negative control), its `spacer` sequence, its own position (`guide_chr`, `guide_start`, `guide_end`, `strand`, `pam`), its target's name and position (`intended_target_name`, `intended_target_chr`, `intended_target_start`, `intended_target_end`) and a collision-safe target key; source columns are passed through. This format takes the distinction between gRNA position and target position now, through the column names. The rest are optional columns that can be added without a format change and are listed in [section 10](#10-fixed-now-free-to-grow). A file may already carry them.
 
 ### S9. Identifiers — *Adopted*
@@ -609,6 +616,7 @@ would cost.
 | 22 | The hint to the data file (A1) | A relative path or a URL, never absolute; recorded only when the file is near; an optional dataset name and source; no dataset version (Eugene, 18 November) | Loosening the form is safe for old files |
 | 23 | Several gRNAs on one vector (S8) | An optional `vector_id`; one target per vector, and readers refuse otherwise; counts per gRNA (Eugene, 18 November) | Allowing several targets later is a minor change |
 | 24 | The target molecule (S8) | No entry of its own; `perturbation_type` covers it (Eugene, 18 November) | A minor addition |
+| 28 | The coordinate convention (S8) | 1-based, both ends included; all three position columns or none | A format change: it changes what stored numbers mean |
 | 26 | The layout of the analysis folder (A2) | One folder per stage, holding its record and its tables (Eugene, 18 November) | A format change: paths |
 | 27 | Where fits live (T6) | A cache outside the stages, `fits/response/`, filled by part files, with its own clearing rule; `fits/grna/` reserved (Eugene, 18 November) | A format change: paths |
 | 25 | What kind of screen it was (S10) | Optional `perturbation_type`, `organism`, `genome_build`, recorded now because they cannot be recovered later (Eugene, 18 November) | A new kind of perturbation is a minor addition |
@@ -722,7 +730,6 @@ table of planned additions below says which additions are not safe to ignore.
 
 ### To settle before the freeze
 
-- **The coordinate convention** for `target_chr`, `target_start`, `target_end`: 0-based or 1-based, and tied to which genome build.
 - **Review** ([`REVIEW.md`](REVIEW.md) says where to look).
 - **An analysis at scale.** The data file has been through one real large dataset, in both languages and disk-backed (Appendix A). No analysis larger than the 1,000-cell examples has been written or read in this format.
 
@@ -796,7 +803,7 @@ remove a workaround in the format or its readers.
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
 | Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json`, `spec/fits.schema.json` | JSON Schemas for `analysis.json`, the six stage records, and the record of how cached fits were made |
 | Data-file rules that need computing | `SPEC.md`, section 2 | The order of cells within a feature, uniqueness, the same cells in every modality: code in each language |
-| Conformance files | `conformance/`, built by `make_conformance.py` | 20 conforming files, written by R and by Python; 4 readable ones; and 63 that each break one rule, with the rules and the level a validator must report |
+| Conformance files | `conformance/`, built by `make_conformance.py` | 20 conforming files, written by R and by Python; 4 readable ones; and 66 that each break one rule, with the rules and the level a validator must report |
 | Validators | `validate_screen()`, `validate_analysis()` in both prototype libraries | Check a data file or an analysis folder without building a package object, and report every problem, not only the first |
 
 **Why define it this way.**
@@ -833,10 +840,10 @@ implementation by someone who has only the specification.
 ### What was checked
 
 *(measured)* Both validators accept all 20 conforming files, report the 4
-readable files as readable, and report exactly the expected rules for all 63
+readable files as readable, and report exactly the expected rules for all 66
 broken ones. The two languages report the same rules and the same level for
 every case. Both readers read each readable file to the same counts as the
-conforming file it was made from. 55 rules are exercised by at least one broken
+conforming file it was made from. 57 rules are exercised by at least one broken
 file. The validators check two more rules that have no conformance file: S11.1
 (no filter other than gzip), because R cannot read a file compressed otherwise
 at all, and T0.3 (row groups of at most a million rows), because the file would
@@ -1041,7 +1048,7 @@ and show their outputs.
 | Clearing a stage [9] | Its record and files and all later ones are removed |
 | Saved fits whose recorded method differs [9] | Not reused, with a message |
 | Every allowed column type, written by each language and read by the other [9] | Same result both ways |
-| The validators on 20 conforming, 4 readable and 63 broken files [10] | Both languages report the same rules and the same level for every file |
+| The validators on 20 conforming, 4 readable and 66 broken files [10] | Both languages report the same rules and the same level for every file |
 | A covariate with a dot in its name [9] | R and Python build the same design matrix (Python through an alias) |
 
 **Limits that remain.** These are limits of the prototype or of what was

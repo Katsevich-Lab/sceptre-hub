@@ -2,7 +2,7 @@
   "format": "0.1",
   "response_modality": "protein",
   "screen": {
-    "id": "4b8d11372056094fb4bf3ed770798b7d",
+    "id": "677d0814b82537d56aab6fd65963ba53",
     "n_cells": 500,
     "n_responses": 100,
     "n_grnas": 60,

@@ -1699,6 +1699,26 @@ def validate_screen(file) -> pd.DataFrame:
                 elif column["required"] or column.get("no_missing"):
                     if any(t is None or t == "" for t in text(column["name"])):
                         log.add(column["rule"], path, "must be text with no missing values.")
+            # target positions: 1-based, both ends included; all three or none (S8.10, S8.11)
+            n_grnas = len(features[GRNA])
+
+            def position(name, as_text):
+                if name not in group:
+                    return [None] * n_grnas if as_text else np.full(n_grnas, np.nan)
+                kind = _storage_kind(group[name])
+                if as_text:
+                    return text(name) if kind in ("string", "categorical") else None
+                return group[name][()].astype(float) if kind in ("double", "int32") else None
+
+            chromosome, start, end = position("target_chr", True), position("target_start", False), position("target_end", False)
+            if chromosome is not None and start is not None and end is not None:
+                given = np.array([c is not None for c in chromosome]).astype(int) + (~np.isnan(start)).astype(int) + (~np.isnan(end)).astype(int)
+                if np.any((given == 1) | (given == 2)):
+                    log.add("S8.11", table, "A gRNA has some of `target_chr`, `target_start`, `target_end` and not all three.")
+                both = ~np.isnan(start) & ~np.isnan(end)
+                a, b = start[both], end[both]
+                if np.any((a != np.round(a)) | (b != np.round(b)) | (a < 1) | (b < a)):
+                    log.add("S8.10", table, "Target positions must be whole numbers, 1-based with both ends included: `target_start` at least 1 and `target_end` not before it.")
             # gRNAs delivered on one vector (S8.6 to S8.8)
             if "vector_id" in group and "grna_target" in group:
                 kinds = {"string", "categorical"}

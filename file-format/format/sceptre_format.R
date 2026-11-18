@@ -1503,6 +1503,28 @@ validate_screen <- function(file) {
                 if (anyNA(values) || any(!nzchar(values))) log$add(column$rule, path, "must be text with no missing values.")
             }
         }
+        # target positions: 1-based, both ends included; all three or none (S8.10, S8.11)
+        position <- function(name, as_text) {
+            row <- columns[columns$name == name, , drop = FALSE]
+            if (nrow(row) == 0L) return(rep(NA, length(features[[GRNA]])))
+            kind <- storage_kind(as.vector(attribute(paste0(table, "/", name), "encoding-type")), row$dtype)
+            if (as_text) {
+                if (kind %in% c("string", "categorical")) text(name) else NULL
+            } else {
+                if (kind %in% c("double", "int32")) suppressMessages(as.numeric(read(paste0(table, "/", name)))) else NULL
+            }
+        }
+        chromosome <- position("target_chr", TRUE)
+        start <- position("target_start", FALSE)
+        end <- position("target_end", FALSE)
+        if (!is.null(chromosome) && !is.null(start) && !is.null(end)) {
+            given <- cbind(!is.na(chromosome), !is.na(start), !is.na(end))
+            if (any(rowSums(given) %in% 1:2)) log$add("S8.11", table, "A gRNA has some of `target_chr`, `target_start`, `target_end` and not all three.")
+            both <- !is.na(start) & !is.na(end)
+            if (any(start[both] != round(start[both]) | end[both] != round(end[both]) | start[both] < 1 | end[both] < start[both])) {
+                log$add("S8.10", table, "Target positions must be whole numbers, 1-based with both ends included: `target_start` at least 1 and `target_end` not before it.")
+            }
+        }
         # gRNAs delivered on one vector (S8.6 to S8.8)
         if ("vector_id" %in% columns$name && "grna_target" %in% columns$name) {
             vectors <- tryCatch(text("vector_id"), error = function(e) NULL)
