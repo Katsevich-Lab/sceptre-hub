@@ -1,5 +1,5 @@
 {
-  "$comment": "The tables of a sceptre analysis folder, format 0. Both prototype libraries and both validators read this file. SPEC.md sections T0 to T6 are the rules; this file is their machine-readable form.",
+  "$comment": "The tables of a sceptre analysis folder. Both prototype libraries and both validators read this file. SPEC.md sections T0 to T6 are the rules; this file is their machine-readable form. A table's name is its path in the analysis folder, without `.parquet`.",
   "format": "0.1",
   "stages": [
     "parameters",
@@ -25,17 +25,18 @@
     "list<double>": "a list of 64-bit floats per row"
   },
   "fields": {
-    "stage": "the stage that writes the table",
+    "stage": "the stage that writes the table, which is also the folder it is in; null for the fit cache, which no stage owns",
     "required": "whether the table must exist once its stage has run",
     "key": "the key columns, in sort order; a key column that is not required is part of the key when it is present",
     "extra_columns": "`ignored`: a reader takes only the columns listed. `kept`: a reader keeps further columns (diagnostics)",
     "one_of": "groups of columns of which at least one must be present",
     "present_under": "on a column: the gRNA integration strategies under which the column is present; under any other strategy it is absent",
-    "forbidden_columns": "columns the table must not have"
+    "forbidden_columns": "columns the table must not have",
+    "unique_across_parts": "false where two part files may hold the same key (the fit cache); a reader then takes either row"
   },
   "tables": [
     {
-      "name": "pairs/discovery",
+      "name": "parameters/discovery_pairs",
       "stage": "parameters",
       "required": true,
       "key": [
@@ -57,7 +58,7 @@
       ]
     },
     {
-      "name": "pairs/positive_control",
+      "name": "parameters/positive_control_pairs",
       "stage": "parameters",
       "required": true,
       "key": [
@@ -79,7 +80,7 @@
       ]
     },
     {
-      "name": "assignments",
+      "name": "assignment/assignments",
       "stage": "assignment",
       "required": true,
       "key": [
@@ -101,7 +102,7 @@
       ]
     },
     {
-      "name": "assignment_flagged_cells",
+      "name": "assignment/flagged_cells",
       "stage": "assignment",
       "required": false,
       "key": [
@@ -117,7 +118,7 @@
       ]
     },
     {
-      "name": "cells",
+      "name": "qc/cells",
       "stage": "qc",
       "required": true,
       "key": [
@@ -138,7 +139,7 @@
       ]
     },
     {
-      "name": "pair_qc/discovery",
+      "name": "qc/discovery_pair_qc",
       "stage": "qc",
       "required": true,
       "key": [
@@ -176,7 +177,7 @@
       ]
     },
     {
-      "name": "pair_qc/positive_control",
+      "name": "qc/positive_control_pair_qc",
       "stage": "qc",
       "required": true,
       "key": [
@@ -214,7 +215,7 @@
       ]
     },
     {
-      "name": "negative_control_groups",
+      "name": "calibration/negative_control_groups",
       "stage": "calibration",
       "required": true,
       "key": [
@@ -236,7 +237,7 @@
       ]
     },
     {
-      "name": "results/calibration",
+      "name": "calibration/results",
       "stage": "calibration",
       "required": true,
       "key": [
@@ -310,7 +311,7 @@
       ]
     },
     {
-      "name": "results/power",
+      "name": "power/results",
       "stage": "power",
       "required": true,
       "key": [
@@ -383,7 +384,7 @@
       ]
     },
     {
-      "name": "results/discovery",
+      "name": "discovery/results",
       "stage": "discovery",
       "required": true,
       "key": [
@@ -456,7 +457,7 @@
       ]
     },
     {
-      "name": "results/calibration_resamples",
+      "name": "calibration/resamples",
       "stage": "calibration",
       "required": false,
       "key": [
@@ -494,7 +495,7 @@
       ]
     },
     {
-      "name": "results/power_resamples",
+      "name": "power/resamples",
       "stage": "power",
       "required": false,
       "key": [
@@ -531,7 +532,7 @@
       ]
     },
     {
-      "name": "results/discovery_resamples",
+      "name": "discovery/resamples",
       "stage": "discovery",
       "required": false,
       "key": [
@@ -568,8 +569,8 @@
       ]
     },
     {
-      "name": "fits/calibration",
-      "stage": "calibration",
+      "name": "fits/response",
+      "stage": null,
       "required": false,
       "key": [
         "response_id"
@@ -592,61 +593,14 @@
           "required": true,
           "nullable": true
         }
-      ]
-    },
-    {
-      "name": "fits/power",
-      "stage": "power",
-      "required": false,
-      "key": [
-        "response_id"
       ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "coefficients",
-          "type": "list<double>",
-          "required": true
-        },
-        {
-          "name": "theta",
-          "type": "double",
-          "required": true,
-          "nullable": true
-        }
-      ]
-    },
-    {
-      "name": "fits/discovery",
-      "stage": "discovery",
-      "required": false,
-      "key": [
-        "response_id"
-      ],
-      "extra_columns": "ignored",
-      "columns": [
-        {
-          "name": "response_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "coefficients",
-          "type": "list<double>",
-          "required": true
-        },
-        {
-          "name": "theta",
-          "type": "double",
-          "required": true,
-          "nullable": true
-        }
-      ]
+      "unique_across_parts": false
     }
-  ]
+  ],
+  "fits": {
+    "folder": "fits/response",
+    "identity": "fits/response/identity.json",
+    "cleared_with": "qc",
+    "$comment": "A cache shared by the testing stages. Not listed in any stage record. Cleared when the qc stage or an earlier one is rerun. `fits/grna` is reserved."
+  }
 }

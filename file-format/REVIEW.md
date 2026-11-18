@@ -10,7 +10,7 @@ review time is best spent. It should take ten minutes to read.
 3. Counts are stored by feature, so one gene is one contiguous read.
 4. An **analysis is a folder**, separate from the data. One dataset can have any number of analyses.
 5. `analysis.json` says which dataset the analysis belongs to and which modality it tests.
-6. Each completed stage writes **Parquet tables**, then a small **JSON record** of its settings and files. The record is written last, so a stage without a record did not finish.
+6. Each completed stage has **its own folder**: Parquet tables, then a small JSON record of its settings and files. The record is written last, so a stage without a record did not finish.
 7. Every table row names cells, gRNAs and responses by identifier, never by position.
 8. Nothing is stored that follows from something else stored.
 9. R and Python read and write exactly the same files.
@@ -27,6 +27,8 @@ files. Disagreement is cheap now and costly then.
 |---|---|
 | Data and analysis are separate files | `RATIONALE.md`, S12 |
 | One record per stage, written last, instead of one settings file | A2 |
+| The layout of the analysis folder: one folder per stage, holding its record and its tables | A2 |
+| Fits as a cache outside the stages (`fits/response/`), shared by the testing stages and cleared only when QC is rerun | T6 |
 | Tables keyed by identifier, sorted by key, not by p-value | T0, T5 |
 | Counts stored by feature (column-compressed) | S3 |
 | Modality names: `grna` fixed, others named for what was measured; the analysis names its response modality | S2, A1 |

@@ -117,7 +117,7 @@ saved = sf.read_analysis("example/highmoi/analyses/left_sided")
 left_py = VALID / "analyses" / "left_sided_written_by_python"
 sf.init_analysis(left_py, saved["screen"], saved["response_modality"])
 for stage, record in saved["stages"].items():
-    tables = {f["path"].removesuffix(".parquet"): saved["tables"][f["path"].removesuffix(".parquet")] for f in record["files"]}
+    tables = {f"{stage}/{f['path'].removesuffix('.parquet')}": saved["tables"][f"{stage}/{f['path'].removesuffix('.parquet')}"] for f in record["files"]}
     body = {k: v for k, v in record.items() if k not in ("stage", "provenance", "files")}
     sf.write_stage(left_py, stage, body, tables, record["provenance"])
 case("analysis", left_py, [], "The `left_sided` analysis, written by Python", high_r)
@@ -126,15 +126,15 @@ cases[-1]["name"] += " (Python data file)"
 
 parts = VALID / "analyses" / "tables_in_parts"
 shutil.copytree("example/highmoi/analyses/left_sided", parts)
-table = pq.read_table(parts / "assignments.parquet")
-(parts / "assignments.parquet").unlink()
-(parts / "assignments.parquet").mkdir()
+table = pq.read_table(parts / "assignment/assignments.parquet")
+(parts / "assignment/assignments.parquet").unlink()
+(parts / "assignment/assignments.parquet").mkdir()
 size = -(-table.num_rows // 3)
 for i in range(3):
     part = table.slice(i * size, size)
     part = pa.table({"grna_id": part["grna_id"].dictionary_encode(), "cell_id": part["cell_id"].dictionary_encode(),
                      "score": np.linspace(0, 1, part.num_rows)})
-    pq.write_table(part, parts / "assignments.parquet" / f"part-{i:05d}.parquet")
+    pq.write_table(part, parts / "assignment/assignments.parquet" / f"part-{i:05d}.parquet")
 (parts / "notes.txt").write_text("A file the format does not define.\n")
 
 for name, change, what in (
@@ -148,11 +148,27 @@ for name, change, what in (
     (folder / "analysis.json").write_text(json.dumps(value, indent=2) + "\n")
     case("analysis", folder, [], what, high_r)
 
+# the fit cache filled by two jobs: two part files, one response in both
+two_parts = VALID / "analyses" / "fits_from_two_jobs"
+shutil.copytree("example/highmoi/analyses/left_sided", two_parts)
+first = next((two_parts / "fits/response").glob("*.parquet"))
+fits_table = pq.read_table(first)
+pq.write_table(fits_table.slice(0, 60), two_parts / "fits/response/part-job1.parquet")
+pq.write_table(fits_table.slice(59, 41), two_parts / "fits/response/part-job2.parquet")
+first.unlink()
+case("analysis", two_parts, [], "The fit cache was filled by two jobs, and one response is in both parts", high_r)
+
+# a testing stage rerun: its folder is gone, and the fit cache rightly remains
+cleared = VALID / "analyses" / "testing_stage_cleared_fits_kept"
+shutil.copytree("example/highmoi/analyses/left_sided", cleared)
+sf.clear_stage(cleared, "calibration")
+case("analysis", cleared, [], "The calibration stage was cleared for a rerun; the fit cache remains", high_r)
+
 other_language = VALID / "analyses" / "stage_written_in_another_language"
 shutil.copytree("example/highmoi/analyses/left_sided", other_language)
-record = json.loads((other_language / "stages/power.json").read_text())
+record = json.loads((other_language / "power/record.json").read_text())
 record["provenance"].update({"package": "Sceptre.jl", "language": "Julia"})
-(other_language / "stages/power.json").write_text(json.dumps(record, indent=2) + "\n")
+(other_language / "power/record.json").write_text(json.dumps(record, indent=2) + "\n")
 case("analysis", other_language, [], "A stage written by an implementation in a third language", high_r)
 case("analysis", parts, [], "A table as a folder of parts, with dictionary-encoded identifiers, an unknown column, and an unknown file beside it", high_r)
 
@@ -383,42 +399,36 @@ broken_analysis("analysis_format_from_the_future", ["A1.1"], "The analysis's for
                 lambda p: edit_json(p / "analysis.json", lambda v: v.__setitem__("format", "9.0")))
 broken_analysis("absolute_path_to_the_data", ["A1.4"], "The hint to the data file is an absolute local path",
                 lambda p: edit_json(p / "analysis.json", lambda v: v["screen"].__setitem__("path", "/home/someone/data/screen.h5mu")))
-broken_analysis("another_dataset", ["A1.2"], "The dataset identifier is that of another data file",
+broken_analysis("another_dataset", ["A1.2", "T6.3"], "The dataset identifier is that of another data file; the fit cache then belongs to another dataset too",
                 lambda p: edit_json(p / "analysis.json", lambda v: v["screen"].__setitem__("id", "0" * 32)))
-broken_analysis("record_not_named_for_a_stage", ["A2.1"], "A record named `stages/extra.json`",
-                lambda p: shutil.copy(p / "stages/power.json", p / "stages/extra.json"))
+broken_analysis("record_of_another_stage", ["A2.1"], "The record in `discovery/` says it is the record of the power stage",
+                lambda p: edit_json(p / "discovery/record.json", lambda v: v.__setitem__("stage", "power")))
 broken_analysis("side_up", ["A2.1"], "The parameters record has `side` set to `up`",
-                lambda p: edit_json(p / "stages/parameters.json", lambda v: v["settings"].__setitem__("side", "up")))
+                lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("side", "up")))
 broken_analysis("no_seed", ["A2.1"], "The parameters record has no `seed`",
-                lambda p: edit_json(p / "stages/parameters.json", lambda v: v["settings"].pop("seed")))
+                lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].pop("seed")))
 broken_analysis("stage_without_its_predecessor", ["A2.2", "A4.1"], "The assignment record is missing while later stages remain",
-                lambda p: (p / "stages/assignment.json").unlink())
+                lambda p: (p / "assignment/record.json").unlink())
 broken_analysis("listed_file_missing", ["A5.1"], "A table that a record lists is not in the folder",
-                lambda p: (p / "results/power.parquet").unlink())
+                lambda p: (p / "power/results.parquet").unlink())
 broken_analysis("table_truncated", ["A5.2", "T2.1"], "`cells.parquet` has fewer rows than its stage wrote",
-                lambda p: rewrite(p / "cells.parquet", lambda t: t.slice(0, 450)))
+                lambda p: rewrite(p / "qc/cells.parquet", lambda t: t.slice(0, 450)))
 
 
-def move_listing(p):
-    parameters, qc = p / "stages/parameters.json", p / "stages/qc.json"
-    moved = []
-    edit_json(parameters, lambda v: moved.append(v["files"].pop(0)))
-    edit_json(qc, lambda v: v["files"].append(moved[0]))
-
-
-broken_analysis("table_listed_by_the_wrong_stage", ["A5.3", "A5.4"], "The QC record lists the discovery pairs, which the parameters stage writes", move_listing)
+broken_analysis("table_listed_outside_the_stage_folder", ["A2.1"], "A record lists a table by a path that leaves the stage's folder",
+                lambda p: edit_json(p / "qc/record.json", lambda v: v["files"].append({"path": "../parameters/discovery_pairs.parquet", "rows": 1406})))
 broken_analysis("required_table_not_listed", ["A4.1", "A5.4"], "The QC record does not list `cells.parquet`, which is still in the folder",
-                lambda p: edit_json(p / "stages/qc.json", lambda v: v.__setitem__("files", [f for f in v["files"] if f["path"] != "cells.parquet"])))
+                lambda p: edit_json(p / "qc/record.json", lambda v: v.__setitem__("files", [f for f in v["files"] if f["path"] != "cells.parquet"])))
 broken_analysis("stale_results", ["A4.1"], "The discovery record is gone and its results table remains",
-                lambda p: (p / "stages/discovery.json").unlink())
+                lambda p: (p / "discovery/record.json").unlink())
 broken_analysis("column_missing", ["T0.1"], "`cells.parquet` has no `in_use` column",
-                lambda p: rewrite(p / "cells.parquet", lambda t: t.select(["cell_id"])))
+                lambda p: rewrite(p / "qc/cells.parquet", lambda t: t.select(["cell_id"])))
 broken_analysis("column_of_the_wrong_type", ["T0.1"], "`pass_qc` is stored as integers",
-                lambda p: rewrite(p / "pair_qc/discovery.parquet", lambda t: t.set_column(t.column_names.index("pass_qc"), "pass_qc", t["pass_qc"].cast(pa.int32()))))
+                lambda p: rewrite(p / "qc/discovery_pair_qc.parquet", lambda t: t.set_column(t.column_names.index("pass_qc"), "pass_qc", t["pass_qc"].cast(pa.int32()))))
 broken_analysis("rows_not_sorted", ["T0.2"], "The assignment table is in reverse order",
-                lambda p: rewrite(p / "assignments.parquet", lambda t: t.take(list(range(t.num_rows - 1, -1, -1)))))
+                lambda p: rewrite(p / "assignment/assignments.parquet", lambda t: t.take(list(range(t.num_rows - 1, -1, -1)))))
 broken_analysis("duplicate_row", ["T0.4"], "The assignment table has the same (gRNA, cell) twice",
-                lambda p: rewrite(p / "assignments.parquet", lambda t: t.take([0] + list(range(t.num_rows - 1)))))
+                lambda p: rewrite(p / "assignment/assignments.parquet", lambda t: t.take([0] + list(range(t.num_rows - 1)))))
 
 
 def unknown_cell(t):
@@ -429,27 +439,31 @@ def unknown_cell(t):
 
 
 broken_analysis("cell_not_in_the_data_file", ["T0.5"], "The assignment table names a cell the data file does not have",
-                lambda p: rewrite(p / "assignments.parquet", unknown_cell))
+                lambda p: rewrite(p / "assignment/assignments.parquet", unknown_cell))
 def with_grna_id(t):
     return t.append_column("grna_id", pa.array([f"{g}_grna" for g in t["grna_target"].to_pylist()], type=pa.string()))
 
 
 broken_analysis("grna_column_under_the_union_strategy", ["T3.3"], "A pair-QC table has a `grna_id` column in an analysis that pools gRNAs by target",
-                lambda p: rewrite(p / "pair_qc/discovery.parquet", with_grna_id))
+                lambda p: rewrite(p / "qc/discovery_pair_qc.parquet", with_grna_id))
 broken_analysis("grna_column_in_bonferroni_discovery", ["T5.6"], "The discovery results of a bonferroni analysis have a `grna_id` column",
-                lambda p: rewrite(p / "results/discovery.parquet", with_grna_id), source="example/highmoi/analyses/bonferroni")
+                lambda p: rewrite(p / "discovery/results.parquet", with_grna_id), source="example/highmoi/analyses/bonferroni")
 broken_analysis("significant_stored", ["T5.3"], "The discovery results store a `significant` column",
-                lambda p: rewrite(p / "results/discovery.parquet", lambda t: t.append_column("significant", pa.array([False] * t.num_rows))))
+                lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.append_column("significant", pa.array([False] * t.num_rows))))
 broken_analysis("no_effect_size", ["T5.1"], "The discovery results have neither `fold_change` nor `log_2_fold_change`",
-                lambda p: rewrite(p / "results/discovery.parquet", lambda t: t.drop_columns(["fold_change", "se_fold_change"])))
-broken_analysis("fits_without_their_record", ["T6.1"], "Saved fits are listed and the record does not say how they were made",
-                lambda p: edit_json(p / "stages/calibration.json", lambda v: v.__setitem__("fits", None)))
+                lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.drop_columns(["fold_change", "se_fold_change"])))
+broken_analysis("fits_without_their_record", ["T6.1"], "The fit cache has fits and no record of how they were made",
+                lambda p: (p / "fits/response/identity.json").unlink())
+broken_analysis("fits_made_with_another_method", ["T6.3"], "The fit cache says its fits were made with a method other than the analysis's",
+                lambda p: edit_json(p / "fits/response/identity.json", lambda v: v.__setitem__("response_fit_method", "sceptre")))
+broken_analysis("fits_before_qc", ["T6.3"], "An analysis that stopped after assignment holds a fit cache",
+                lambda p: [shutil.rmtree(p / s) for s in ("qc", "calibration", "power", "discovery")])
 broken_analysis("fit_with_too_few_coefficients", ["T6.2"], "A saved fit has fewer coefficients than the design has terms",
-                lambda p: rewrite(p / "fits/calibration.parquet", lambda t: t.set_column(
+                lambda p: rewrite(next((p / "fits/response").glob("*.parquet")), lambda t: t.set_column(
                     t.column_names.index("coefficients"), "coefficients",
                     pa.array([c[:-1] for c in t["coefficients"].to_pylist()], type=pa.list_(pa.float64())))))
-broken_analysis("formula_with_an_interaction", ["T7.1"], "The formula has an interaction, outside the additive subset",
-                lambda p: edit_json(p / "stages/parameters.json", lambda v: v["settings"].__setitem__("formula", "~log(rna_n_umis) * batch")))
+broken_analysis("formula_with_an_interaction", ["T6.3", "T7.1"], "The formula has an interaction, outside the additive subset; the fit cache was made for another formula",
+                lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("formula", "~log(rna_n_umis) * batch")))
 
 (ROOT / "cases.json").write_text(json.dumps(cases, indent=2) + "\n")
 levels = {level: sum(1 for c in cases if c["level"] == level) for level in ("conforming", "readable", "not readable")}

@@ -89,7 +89,7 @@ Each completed stage has a record, written after the stage's tables. It holds
 the stage's settings and lists the files the stage wrote (A2):
 
 ```{python}
-print((analyses / "left_sided/stages/calibration.json").read_text())
+print((analyses / "left_sided/calibration/record.json").read_text())
 ```
 
 The tables, with their columns:
@@ -175,14 +175,14 @@ cells = pd.Index(mdata["rna"].obs_names)
 from a table, never taken apart from the group's name.
 
 ```{python}
-groups = tables["negative_control_groups"]
+groups = tables["calibration/negative_control_groups"]
 members = groups.groupby("grna_group")["grna_id"].apply(list)
 members.head(4)
 ```
 
 ```{python}
 non_targeting = set(mdata["grna"].var.index[mdata["grna"].var["grna_target"] == "non-targeting"])
-tested_groups = set(tables["results/calibration"]["grna_target"])
+tested_groups = set(tables["calibration/results"]["grna_target"])
 pd.Series({
     "control groups": len(members),
     "gRNAs per group": sorted(set(members.map(len))),
@@ -197,7 +197,7 @@ row per (gRNA, cell). Pooling a target's gRNAs gives the cells a package tests.
 ```{python}
 grna_table = mdata["grna"].var.reset_index(names="grna_id")
 grna_table["grna_group"] = sf.grna_groups(grna_table, records["parameters"]["settings"]["grna_integration_strategy"])
-by_grna = sf.cells_by_grna(tables["assignments"], list(mdata["grna"].var_names), cells)
+by_grna = sf.cells_by_grna(tables["assignment/assignments"], list(mdata["grna"].var_names), cells)
 by_target, by_control = sf.group_cells(by_grna, grna_table)
 
 held = reference.assignment
@@ -217,7 +217,7 @@ The stage record stores one number, the largest p-value called significant.
 
 ```{python}
 threshold = records["discovery"]["significance_threshold"]
-derived = sf.add_significant(tables["results/discovery"], threshold)
+derived = sf.add_significant(tables["discovery/results"], threshold)
 theirs = reference.results["discovery"]
 both = derived.merge(theirs, on=["grna_target", "response_id"], suffixes=("", "_reference"))
 pd.Series({
@@ -236,9 +236,9 @@ only the log2 value, so there it is the stored column.
 def effect_columns(table):
     return ", ".join(c for c in ("fold_change", "se_fold_change", "log_2_fold_change") if c in table)
 
-discovery = tables["results/discovery"]
+discovery = tables["discovery/results"]
 both = sf.add_log_2_fold_change(discovery).merge(theirs, on=["grna_target", "response_id"], suffixes=("", "_reference"))
-bonferroni = sf.read_analysis(analyses / "bonferroni")["tables"]["results/discovery"]
+bonferroni = sf.read_analysis(analyses / "bonferroni")["tables"]["discovery/results"]
 pd.Series({
     "effect columns stored (union strategy)": effect_columns(discovery),
     "derived log2 identical to R's column, for every pair": np.array_equal(
@@ -276,7 +276,7 @@ In the file they are one list per pair; pysceptre gets them back as the columns
 it expects.
 
 ```{python}
-resamples = sf.read_analysis(analyses / "with_resamples")["tables"]["results/discovery_resamples"]
+resamples = sf.read_analysis(analyses / "with_resamples")["tables"]["discovery/resamples"]
 wide = sf.read_sceptre_object(screen, analyses / "with_resamples").results["discovery"]
 pd.Series({
     "pairs": len(resamples),
@@ -296,7 +296,7 @@ for dataset in ("highmoi", "lowmoi"):
     for folder in sorted(Path(f"example/{dataset}/analyses").iterdir()):
         saved_analysis = sf.read_analysis(folder)
         s = saved_analysis["stages"]
-        discovery = saved_analysis["tables"].get("results/discovery")
+        discovery = saved_analysis["tables"].get("discovery/results")
         cut = s["discovery"]["significance_threshold"] if "discovery" in s else None
         rows.append({
             "dataset": dataset,
@@ -306,7 +306,7 @@ for dataset in ("highmoi", "lowmoi"):
             "strategy": s["parameters"]["settings"]["grna_integration_strategy"],
             "control group": s["parameters"]["settings"]["control_group"],
             "assignment": s["assignment"]["settings"]["method"],
-            "cells in use": int(saved_analysis["tables"]["cells"]["in_use"].sum()),
+            "cells in use": int(saved_analysis["tables"]["qc/cells"]["in_use"].sum()),
             "discoveries": "" if discovery is None else int(sf.add_significant(discovery, cut)["significant"].sum()),
         })
 pd.DataFrame(rows)
@@ -327,7 +327,10 @@ r_written = {
     for dataset in ("highmoi", "lowmoi")
 }
 
-def column_types(path):
+def column_types(folder, table):
+    path = Path(folder) / f"{table}.parquet"
+    if table == sf.FITS:   # the fit cache is a folder of part files
+        path = sorted((Path(folder) / table).glob("*.parquet"))[0]
     return [(f.name, str(f.type)) for f in pq.read_schema(path)]
 
 rows = []
@@ -346,7 +349,7 @@ for dataset, names in r_written.items():
             "tables": len(a["tables"]),
             "tables equal": sum(sf.same_table(a["tables"][k], b["tables"][k]) for k in a["tables"]),
             "same column names and types": sum(
-                column_types(source / "analyses" / name / f"{k}.parquet") == column_types(written / f"{k}.parquet")
+                column_types(source / "analyses" / name, k) == column_types(written, k)
                 for k in a["tables"]),
         })
 pd.DataFrame(rows)
@@ -421,8 +424,8 @@ R ran the same settings to the end as `left_sided`. The two sets of discovery
 p-values:
 
 ```{python}
-mine = saved_continued["tables"]["results/discovery"]
-theirs = sf.read_analysis(analyses / "left_sided")["tables"]["results/discovery"]
+mine = saved_continued["tables"]["discovery/results"]
+theirs = sf.read_analysis(analyses / "left_sided")["tables"]["discovery/results"]
 both = mine.merge(theirs, on=["grna_target", "response_id"], suffixes=("_python", "_r"))
 tested = (both["pass_qc_python"] & both["pass_qc_r"]).to_numpy(dtype=bool)
 pd.Series({
@@ -460,9 +463,9 @@ original = sf.read_sceptre_object(screen, analyses / "left_sided")
 
 ```{python}
 folder = variant("parts")
-table = pq.read_table(folder / "assignments.parquet")
-(folder / "assignments.parquet").unlink()
-(folder / "assignments.parquet").mkdir()
+table = pq.read_table(folder / "assignment/assignments.parquet")
+(folder / "assignment/assignments.parquet").unlink()
+(folder / "assignment/assignments.parquet").mkdir()
 size = -(-table.num_rows // 3)
 for i in range(3):
     part = table.slice(i * size, size)
@@ -471,8 +474,8 @@ for i in range(3):
         "cell_id": part["cell_id"].dictionary_encode(),
         "score": np.linspace(0, 1, part.num_rows),   # a column this reader does not know
     })
-    pq.write_table(part, folder / "assignments.parquet" / f"part-{i:05d}.parquet")
-print(sorted(p.name for p in (folder / "assignments.parquet").iterdir()))
+    pq.write_table(part, folder / "assignment/assignments.parquet" / f"part-{i:05d}.parquet")
+print(sorted(p.name for p in (folder / "assignment/assignments.parquet").iterdir()))
 print(sf.comparison_summary(sf.compare_analyses(sf.read_sceptre_object(screen, folder), original)))
 ```
 
@@ -517,7 +520,7 @@ def check_other(file, folder):
     back = sf.read_sceptre_object(file, folder)
     return pd.Series({
         "response modality named by the analysis": sf.analysis_response_modality(folder),
-        "formula in the parameters record": json.loads((Path(folder) / "stages/parameters.json").read_text())["settings"]["formula"],
+        "formula in the parameters record": json.loads((Path(folder) / "parameters/record.json").read_text())["settings"]["formula"],
         "object compared with the original": sf.comparison_summary(sf.compare_analyses(back, original)),
     })
 
@@ -530,8 +533,8 @@ files and their row counts.
 
 ```{python}
 folder = variant("truncated")
-cells_table = pq.read_table(folder / "cells.parquet")
-pq.write_table(cells_table.slice(0, 450), folder / "cells.parquet")
+cells_table = pq.read_table(folder / "qc/cells.parquet")
+pq.write_table(cells_table.slice(0, 450), folder / "qc/cells.parquet")
 attempt(lambda: sf.read_analysis(folder))
 ```
 
@@ -546,16 +549,28 @@ print("after: ", sf.stages_run(folder), "-", sum(1 for p in folder.rglob("*") if
 print(sf.read_sceptre_object(screen, folder))
 ```
 
-**Saved fits (T6).** A saved fit is reused only if it was made as this
-analysis would make it. Here the record of how the fits were made is changed
-to another fitting method.
+**The fit cache (T6).** Fitted response models are kept in `fits/response/`,
+outside the stage folders: no stage owns them, and any testing stage can use
+or add to them. Clearing a testing stage leaves them; clearing QC removes them.
+
+```{python}
+folder = variant("fits_kept")
+sf.clear_stage(folder, "calibration")
+print("after clearing calibration:", sf.stages_run(folder), "- fits kept:", (folder / "fits/response/identity.json").exists())
+sf.clear_stage(folder, "qc")
+print("after clearing qc:         ", sf.stages_run(folder), "- fits kept:", (folder / "fits/response/identity.json").exists())
+```
+
+A cached fit is reused only if it was made as this analysis would make it.
+Here the record of how the fits were made is changed to another fitting
+method.
 
 ```{python}
 print("fits reused as written:", len(original.response_fits()))
 folder = variant("other_fit_method")
-record = json.loads((folder / "stages/calibration.json").read_text())
-record["fits"]["identity"]["response_fit_method"] = "sceptre"
-n = (folder / "stages/calibration.json").write_text(json.dumps(record, indent=2))
+identity = json.loads((folder / "fits/response/identity.json").read_text())
+identity["response_fit_method"] = "sceptre"
+n = (folder / "fits/response/identity.json").write_text(json.dumps(identity, indent=2))
 changed = sf.read_sceptre_object(screen, folder)
 print("fits reused after the change:", len(changed.response_fits()))
 ```

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "A stage record, stages/<stage>.json, of a sceptre analysis folder (SPEC.md, A2 and A3)",
+  "title": "A stage record, <stage>/record.json, of a sceptre analysis folder (SPEC.md, A2 and A3)",
   "type": "object",
   "required": [
     "stage",
@@ -58,7 +58,8 @@
         "properties": {
           "path": {
             "type": "string",
-            "pattern": "^[A-Za-z0-9_/]+\\.parquet$"
+            "pattern": "^[A-Za-z0-9_]+\\.parquet$",
+            "$comment": "A table in the stage's own folder."
           },
           "rows": {
             "type": "integer",
@@ -381,59 +382,6 @@
           ],
           "minimum": 0,
           "maximum": 1
-        },
-        "fits": {
-          "oneOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "object",
-              "required": [
-                "file",
-                "identity"
-              ],
-              "properties": {
-                "file": {
-                  "type": "string",
-                  "pattern": "^fits/(calibration|power|discovery)\\.parquet$"
-                },
-                "identity": {
-                  "type": "object",
-                  "required": [
-                    "screen_id",
-                    "formula",
-                    "cells_in_use_sha256",
-                    "response_fit_method",
-                    "control_group"
-                  ],
-                  "properties": {
-                    "screen_id": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "formula": {
-                      "type": "string",
-                      "pattern": "^~"
-                    },
-                    "cells_in_use_sha256": {
-                      "type": "string",
-                      "pattern": "^[0-9a-f]{64}$"
-                    },
-                    "response_fit_method": {
-                      "type": "string"
-                    },
-                    "control_group": {
-                      "enum": [
-                        "complement",
-                        "nt_cells"
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          ]
         }
       }
     },
@@ -444,59 +392,6 @@
       "properties": {
         "settings": {
           "type": "object"
-        },
-        "fits": {
-          "oneOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "object",
-              "required": [
-                "file",
-                "identity"
-              ],
-              "properties": {
-                "file": {
-                  "type": "string",
-                  "pattern": "^fits/(calibration|power|discovery)\\.parquet$"
-                },
-                "identity": {
-                  "type": "object",
-                  "required": [
-                    "screen_id",
-                    "formula",
-                    "cells_in_use_sha256",
-                    "response_fit_method",
-                    "control_group"
-                  ],
-                  "properties": {
-                    "screen_id": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "formula": {
-                      "type": "string",
-                      "pattern": "^~"
-                    },
-                    "cells_in_use_sha256": {
-                      "type": "string",
-                      "pattern": "^[0-9a-f]{64}$"
-                    },
-                    "response_fit_method": {
-                      "type": "string"
-                    },
-                    "control_group": {
-                      "enum": [
-                        "complement",
-                        "nt_cells"
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          ]
         }
       }
     },
@@ -516,59 +411,6 @@
           ],
           "minimum": 0,
           "maximum": 1
-        },
-        "fits": {
-          "oneOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "object",
-              "required": [
-                "file",
-                "identity"
-              ],
-              "properties": {
-                "file": {
-                  "type": "string",
-                  "pattern": "^fits/(calibration|power|discovery)\\.parquet$"
-                },
-                "identity": {
-                  "type": "object",
-                  "required": [
-                    "screen_id",
-                    "formula",
-                    "cells_in_use_sha256",
-                    "response_fit_method",
-                    "control_group"
-                  ],
-                  "properties": {
-                    "screen_id": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "formula": {
-                      "type": "string",
-                      "pattern": "^~"
-                    },
-                    "cells_in_use_sha256": {
-                      "type": "string",
-                      "pattern": "^[0-9a-f]{64}$"
-                    },
-                    "response_fit_method": {
-                      "type": "string"
-                    },
-                    "control_group": {
-                      "enum": [
-                        "complement",
-                        "nt_cells"
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          ]
         }
       }
     }

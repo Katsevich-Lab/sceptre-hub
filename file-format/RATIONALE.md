@@ -64,30 +64,28 @@ my_screen.h5mu                        THE DATA. Written once at import. Never mo
 
 my_analysis/                          ONE ANALYSIS. Any number per dataset, stored anywhere.
 ├── analysis.json                     which dataset, which modality is the response; format version
-├── stages/                           one small record per completed stage, written last
-│   ├── parameters.json
-│   ├── assignment.json
-│   ├── qc.json
-│   ├── calibration.json
-│   ├── power.json
-│   └── discovery.json
-├── pairs/
-│   ├── discovery.parquet             the pairs to test                     (parameters)
-│   └── positive_control.parquet                                            (parameters)
-├── assignments.parquet               one row per assigned (gRNA, cell)     (assignment)
-├── assignment_flagged_cells.parquet  optional: cells the method flags      (assignment)
-├── cells.parquet                     one row per cell: kept or not         (qc)
-├── pair_qc/
-│   ├── discovery.parquet             which pairs pass pairwise QC          (qc)
-│   └── positive_control.parquet                                            (qc)
-├── negative_control_groups.parquet   which gRNAs form each control group   (calibration)
-├── results/
-│   ├── calibration.parquet           one row per tested pair               (calibration)
-│   ├── power.parquet                                                       (power)
-│   ├── discovery.parquet                                                   (discovery)
-│   └── discovery_resamples.parquet   optional: resampled statistics        (discovery)
-└── fits/
-    └── calibration.parquet           cache of per-response model fits      (first testing stage)
+├── parameters/                       ONE FOLDER PER COMPLETED STAGE
+│   ├── record.json                   the stage's settings and files; written last
+│   ├── discovery_pairs.parquet       the pairs to test
+│   └── positive_control_pairs.parquet
+├── assignment/
+│   ├── record.json
+│   ├── assignments.parquet           one row per assigned (gRNA, cell)
+│   └── flagged_cells.parquet         optional: cells the method flags
+├── qc/
+│   ├── record.json
+│   ├── cells.parquet                 one row per cell: kept or not
+│   ├── discovery_pair_qc.parquet     which pairs pass pairwise QC
+│   └── positive_control_pair_qc.parquet
+├── calibration/
+│   ├── record.json
+│   ├── negative_control_groups.parquet   which gRNAs form each control group
+│   ├── results.parquet               one row per tested pair
+│   └── resamples.parquet             optional: resampled statistics
+├── power/                            record.json, results.parquet, resamples.parquet
+├── discovery/                        record.json, results.parquet, resamples.parquet
+└── fits/                             A CACHE, NOT A STAGE (T6)
+    └── response/                     identity.json, and one part file per job
 ```
 
 Any `.parquet` table may instead be a folder of part files with the same name.
@@ -359,7 +357,7 @@ merged file.
 
 ### A2. One record per stage, written last — *Adopted (changed from my earlier advice)*
 
-- **Decision.** `stages/<stage>.json`, one per completed stage, written after that stage's tables. It holds the settings that stage used, small summaries, provenance (package, version, language, time), and the list of files the stage wrote with their row counts.
+- **Decision.** Each completed stage has a folder named for it, holding its tables and `record.json`, which is written after the tables. The record holds the settings that stage used, small summaries, provenance (package, version, language, time), and the list of files the stage wrote with their row counts.
 - **Alternative.** One `analysis.json` holding everything, rewritten by each stage. I recommended this earlier.
 - **Why I changed.**
   - It keeps principle 3: no file is ever rewritten. The single record is the one file every stage would modify.
@@ -367,6 +365,12 @@ merged file.
   - The record is a commit marker. A stage whose record is missing did not finish, whatever files exist.
   - The calibration check, power check and discovery analysis do not depend on one another's results *(verified, same rank in both codebases)*. A pipeline could run them at once, and they would race to rewrite a single record.
 - **Cost.** Up to six small files instead of one. Reading all settings means reading several.
+- **A folder per stage** *(Decided by Eugene, 18 November)*. Earlier drafts kept the records in `stages/` and the tables elsewhere: some grouped by kind (`pairs/`, `pair_qc/`, `results/`, `fits/`), some loose at the top, with stage ownership recorded only inside the records. Folder and file names are expensive to change later, so this was settled now.
+  - *It mixed two organising ideas*, and used two vocabularies for one three-way split: pair sets were named by pair type and results by stage, so `pairs/positive_control` went with `results/power`. Some names said what they were (`pair_qc`) and some did not (`cells.parquet`).
+  - *Rules existed only to police the layout.* A record could list another stage's table, and clearing a stage meant finding its files through its record. With a folder per stage, a record names files in its own folder and nothing else (the schema enforces it), and clearing a stage is deleting its folder. Built and checked: the rule against listing another stage's table became a property of the schema; the rule against unlisted tables remains, now confined to one folder, and still catches a stage that did not finish.
+  - *Parallel testing stages write into separate folders*, which suits a pipeline.
+  - *Cost.* Results are in three folders, not one `results/` folder.
+  - *One name chosen with care:* the QC verdicts are `discovery_pair_qc.parquet` and `positive_control_pair_qc.parquet`, not `discovery_pairs.parquet`, so that a file copied out of its folder is not mistaken for the pairs-to-test table of `parameters/`.
 - **Stage names.** `parameters`, `assignment`, `qc`, `calibration`, `power`, `discovery`: neutral words, not R function names.
 - **`provenance.language` is free text** *(Adopted, 18 November)*. The two libraries here write `R` and `Python`. A list of allowed values would shut out a third implementation. A saved fit is reused only between languages that share the fitting method (T6), so a fit from an unknown language is simply not reused.
 - **IGVF.** Settings are spread over several places: a resolved run configuration (`full_run_config.json`), the resolved control regime (`inference_mode.json`), a list of covariate options in the file's `uns`, and per-step JSON files in the work folders. They describe one pipeline run. This format's stage records describe one analysis stage and are what a reader in either language needs to continue it.
@@ -432,7 +436,7 @@ be used. Readers handle all of these already.
 
 Deferred to reader code, not the format: chunked reads, filtered reads.
 
-### T1. `assignments.parquet` — *Decided*
+### T1. `assignment/assignments.parquet` — *Decided*
 
 - **Columns.** `grna_id`, `cell_id`. One row per assigned pair. Key: both.
 - **Alternatives.** A 0/1 matrix in the data file (public pysceptre); a matrix in its own `.h5ad`; lists inside the settings record (October).
@@ -442,24 +446,24 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 - **Room to grow.** A score column (a posterior probability, a p-value) can be added under rule 6.
 - **IGVF.** A 0/1 cells × guides matrix in the data file, `guide.layers['guide_assignment']`, with an optional second layer of posterior probabilities. pertpy does the same (`layers["assigned_guides"]`). The matrix and the table hold the same information. This format uses the table because the assignment belongs to an analysis, not to the data (S12), and because parallel jobs can each write a part. Since both precedents use the matrix, an export to that shape is worth providing; it is package code, not format.
 
-### T1b. `assignment_flagged_cells.parquet` (optional) — *Adopted*
+### T1b. `assignment/flagged_cells.parquet` (optional) — *Adopted*
 
 - **Column.** `cell_id`: cells the assignment method itself judges not to carry exactly one gRNA, beyond what the assignment table shows.
 - **Why it exists.** In low MOI, QC removes cells with no gRNA or several. For most methods that follows from the assignment table (a cell with zero rows or more than one). sceptre's "maximum" method is the exception: it assigns every cell its top gRNA and separately flags cells whose top gRNA has too small a share of the cell's gRNA UMIs *(verified, `R/assign_grna_functions.R`)*. Those cells have one assignment row and are still multiplets.
 - **Alternatives.** Have each reader re-apply the method's thresholds to the gRNA counts: that puts method logic in every reader, and a new method would need new reader code. Or drop the flagged cells from the assignment table: that loses which gRNA they were assigned.
 - **Derived on read.** The full set of cells without exactly one gRNA is the cells with zero or several assignment rows, plus the cells in this table.
 
-### T2. `cells.parquet` — *Adopted*
+### T2. `qc/cells.parquet` — *Adopted*
 
 - **Columns.** `cell_id`, `in_use`. One row per cell. Key: `cell_id`.
 - **No `n_grnas` column.** It is the number of assignment rows for the cell (principle 7).
 - **Flag.** sceptre records only how many cells each QC rule removed, not which rule removed which cell *(verified, `R/cellwise_qc_functs.R`)*. A `removed_by` column would be more useful and can be added later under rule 6.
 - **IGVF.** Cells that fail QC are removed from the file; only the retained cells are stored, with aggregate before-and-after counts in `uns`. A second analysis with different QC then needs a second copy of the data. Here every cell stays in the data file and each analysis says which it used.
 
-### T3. `pairs/` and `pair_qc/` — *Adopted*
+### T3. The pairs to test, and their QC — *Adopted*
 
-- **Decision.** The pairs to test are inputs, written once by the parameters stage: `pairs/discovery.parquet` and `pairs/positive_control.parquet`, columns `grna_target`, `response_id`. Pairwise QC writes its verdict separately: `pair_qc/discovery.parquet` and `pair_qc/positive_control.parquet`, the same columns plus `pass_qc`.
-- **Under the singleton and bonferroni strategies** each gRNA is tested on its own *(verified, `R/preprocessing_functions.R`)*, so the QC verdict is per gRNA and `pair_qc/` has a `grna_id` column as well. The pairs themselves stay as the user gave them, per target; a reader expands them through the gRNA table.
+- **Decision.** The pairs to test are inputs, written once by the parameters stage: `parameters/discovery_pairs.parquet` and `parameters/positive_control_pairs.parquet`, columns `grna_target`, `response_id`. Pairwise QC writes its verdict separately: `qc/discovery_pair_qc.parquet` and `qc/positive_control_pair_qc.parquet`, the same columns plus `pass_qc`.
+- **Under the singleton and bonferroni strategies** each gRNA is tested on its own *(verified, `R/preprocessing_functions.R`)*, so the QC verdict is per gRNA and the pair-QC tables have a `grna_id` column as well. The pairs themselves stay as the user gave them, per target; a reader expands them through the gRNA table.
 - **The `grna_id` column is a rule, not an option** *(Adopted, 18 November)*. Whether a pair-QC or results table has the column follows from the strategy and the stage: never under `union`; always under `singleton`; under `bonferroni` in pair QC and calibration, and not in power or discovery, whose results sceptre reports per target. A reader can therefore know a table's key without opening it. The bonferroni irregularity is sceptre's, and the rule changes when sceptre's output does (section 10).
 - **Alternative.** One table with a `pair_type` column and a `pass_qc` column filled in later (the first draft). That makes the QC stage rewrite a file from the parameters stage, against principle 3.
 - **Cost.** The key columns are stored twice. *(measured)* A sorted key-only table takes 2 bytes per row, so 0.7 GB at 339 million pairs.
@@ -467,16 +471,16 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 - **Not stored.** `grna_group` (S8).
 - **IGVF.** The pairs are a table in the data file's `uns` (`pairs_to_test`), one row per (guide, gene). sceptre's unit is the target, so IGVF's sceptre step converts guides to targets before testing (`bin/inference_sceptre.R`). This format stores the pairs as sceptre takes them, per target, in the analysis.
 
-### T4. `negative_control_groups.parquet` — *Adopted*
+### T4. `calibration/negative_control_groups.parquet` — *Adopted*
 
 - **Columns.** `grna_group` (the group's name), `grna_id`. One row per member.
 - **Why.** Today a control group's members exist only inside its name, such as `non-targeting_grna3&non-targeting_grna4`, and both codebases split the name on `&` to recover them *(verified, `R/association_testing_functions_v2.R`; fork `pipeline/calibration.py`)*. That is why `&` is forbidden in gRNA identifiers. Encoding a set in a name is a fragile pattern (principle 8), and an explicit table costs a few rows.
 - **Kept.** The names themselves, so results look as they do today. A group's name appears in the calibration results in the column that names the tested unit: `grna_target` under the union strategy, `grna_id` otherwise (where each "group" is one non-targeting gRNA).
-- **Not stored.** A separate table of negative-control pairs. `results/calibration.parquet` already has one row per such pair.
+- **Not stored.** A separate table of negative-control pairs. `calibration/results.parquet` already has one row per such pair.
 - **Honest note.** The prototype's writers fill this table by splitting the names, because the packages hold nothing else today. Readers never split.
 - **IGVF.** No counterpart. Its calibration is a separate pass over non-targeting "pseudo-elements" with its own output tables (`pipeline_outputs/calibration/`).
 
-### T5. `results/` — *Adopted*
+### T5. Results: `<stage>/results.parquet` — *Adopted*
 
 - **Decision.** Three tables, one per testing stage. Key: `grna_target`, `response_id` (and `grna_id` under the singleton strategy). Columns as sceptre reports them, less what follows from others: `pass_qc`, `p_value`, `fold_change`, `se_fold_change`. Diagnostic columns may follow (rule 6).
 - **`log_2_fold_change` is stored only where there is no `fold_change`** *(Decided, 18 November)*.
@@ -487,7 +491,7 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
   - This changes nothing a user sees: the packages' result tables keep the column.
 - **Sorted by key, not by p-value.** Sorting by key lets parts be written independently and lets a reader find one target's rows. Packages sort by p-value when they hand the table to a user. This also removes a dependence on job order among tied rows *(inferred from `bin/process_association_analysis_results.R`)*.
 - **Size.** *(measured, synthetic)* 33 bytes per row, so about 11 GB at 339 million pairs. Reading two columns of 20 million rows takes 0.05 s in Python and 0.8 s in R; as 20 part files, 1.7 s in R.
-- **Resampled statistics** (the largest output setting) go in `results/<stage>_resamples.parquet`: the key columns and one list column, `z_null`. Today packages hold them as thousands of columns `z_null_1`, `z_null_2`, ..., padded with missing values *(verified, both codebases)*. *(measured)* Asked to keep them for the example's 1,406 pairs, the R build used here failed outright; the example keeps them for 40 pairs.
+- **Resampled statistics** (the largest output setting) go in `<stage>/resamples.parquet`: the key columns and one list column, `z_null`. Today packages hold them as thousands of columns `z_null_1`, `z_null_2`, ..., padded with missing values *(verified, both codebases)*. *(measured)* Asked to keep them for the example's 1,406 pairs, the R build used here failed outright; the example keeps them for 40 pairs.
 - **The `significant` column is not stored.** It depends on the whole table, so parallel jobs could not write it. The stage record stores `significance_threshold`, the largest p-value called significant (or `null` if none was), and a reader computes `significant` as `p_value <= threshold`. This is exact for every correction sceptre offers, because each calls significant exactly the pairs up to some p-value. *(measured)* It reproduces R's column for every pair of every example.
 - **Very small p-values.** A p-value below about 1e-308 becomes zero in a double. A `log_p_value` column can be added when a method needs it (rule 6); none does today.
 - **IGVF.** Two tables per scope, per guide and per element, which correspond to this format's singleton and union strategies. They differ from this format in four ways:
@@ -498,14 +502,28 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 
   IGVF's working table format is Parquet with zstd, the same as here. Its per-row count of perturbed cells is a useful diagnostic that these tables do not carry; it is listed in [section 10](#10-fixed-now-free-to-grow).
 
-### T6. `fits/`: the fit cache — *Adopted*
+### T6. The fit cache: `fits/response/` — *Decided (placement), Adopted (details)*
 
-- **What it is.** A cache. A reader may ignore it, and deleting it changes no result beyond numerical tolerance.
-- **Columns.** `response_id`, `coefficients` (a list of doubles, in the order of the design's terms), `theta`. Key: `response_id`. One file per stage that fits, named for the stage (`fits/calibration.parquet`), so no stage rewrites another's.
-- **Alternatives.**
+- **What it is.** A cache of fitted response models. A reader may ignore it, and deleting it changes no result beyond numerical tolerance.
+- **Columns.** `response_id`, `coefficients` (a list of doubles, in the order of the design's terms), `theta`. Key: `response_id`.
+- **Alternatives for the columns.**
   - One row per coefficient, with the dispersion as the row whose term is missing (the October layout): a trick.
   - One column per term: a covariate named `theta` would collide, and the columns change with the formula.
-- **When a saved fit is valid.** The writing stage's record carries the fit's identity: the dataset `id`, the formula, a hash of the identifiers of the cells in use, the fitting method and the control group. A reader reuses a fit only if all of these match what it would use itself, and only if the method is shared between its own language and the language that made the fit, which the record's provenance names.
+- **Outside the stages** *(Decided by Eugene, 18 November)*. A response fit depends on the data, the formula, the fitting method, the control group and which cells passed QC. All of that is fixed once the parameters and QC stages have run. Which testing stage happens to compute a fit first is an accident. Earlier drafts kept fits in the folder of the stage that first made them, which would:
+  - delete still-valid fits when that stage was rerun;
+  - stop stages running in parallel from sharing them;
+  - name them after a stage that does not own them.
+
+  (The earlier prototype wrote every fit into the first testing stage's file, an artefact of writing a finished object in one go.)
+- **How the cache works.**
+  - It is a folder of part files. Each job adds a part of its own and never modifies another's, which keeps "every file is written once" and uses the rule that a table may be a folder of parts.
+  - Two parts may hold the same response, when two parallel jobs fitted it. A reader takes either. So the rule that a key is unique does not hold across the parts of this table, and the specification says so.
+  - Fits are listed in no stage's record. What makes them valid is recorded once, in `identity.json` beside them: the dataset `id`, the formula, a hash of the identifiers of the cells in use, the fitting method and the control group. Parallel writers would write the same content; a later writer checks the record and does not rewrite it.
+  - The cache is deleted when the QC stage or an earlier one is rerun, and kept when a testing stage is rerun. *(measured)* Both libraries do this, and a conformance case covers it.
+- **When a cached fit is reused.** Only if every part of `identity.json` matches what the reader would use itself, and the fitting method is one the reader's language shares. The record no longer names the language that made a fit: a method name means the same estimator in every language that lists it, and parts may come from several languages.
+- **It is the part of the layout a new reader is most likely to misunderstand**, because it looks like a seventh stage and is not: no record, it fills gradually, and it is cleared at a different moment. The specification says so at the head of its section.
+- **Room for gRNA fits** *(Eugene, 18 November: these will be wanted eventually, and this version must not step on them)*. The folder is named for its kind, `fits/response/`, and `fits/grna/` is reserved. The two would not be one table with a kind column: they have different keys (a response, against a target or a gRNA depending on the strategy), different columns (no dispersion for a gRNA fit) and different dependencies. A gRNA fit would also depend on the assignments, so its cache would be cleared when assignment is rerun *(inferred by the side session from how conditional resampling works, not read in the code; to verify before the folder is specified)*.
+- **`response` is unambiguous** because an analysis names one response modality (A1). The folder is not named for the modality (`fits/rna/`), which would put a user-chosen name beside the reserved `grna`.
 - **Fitting methods are shared, named definitions** *(Decided in principle by Eugene, 17 November: "We want these methods to be consistent across R and Python.")*
   - A method name means the same estimator in both languages, and the names written to files come from one shared list.
   - A method that exists in one language only (glmGamPoi, in R) is marked as such in that list, and its fits are never reused by the other language.
@@ -591,6 +609,8 @@ would cost.
 | 22 | The hint to the data file (A1) | A relative path or a URL, never absolute; recorded only when the file is near; an optional dataset name and source; no dataset version (Eugene, 18 November) | Loosening the form is safe for old files |
 | 23 | Several gRNAs on one vector (S8) | An optional `vector_id`; one target per vector, and readers refuse otherwise; counts per gRNA (Eugene, 18 November) | Allowing several targets later is a minor change |
 | 24 | The target molecule (S8) | No entry of its own; `perturbation_type` covers it (Eugene, 18 November) | A minor addition |
+| 26 | The layout of the analysis folder (A2) | One folder per stage, holding its record and its tables (Eugene, 18 November) | A format change: paths |
+| 27 | Where fits live (T6) | A cache outside the stages, `fits/response/`, filled by part files, with its own clearing rule; `fits/grna/` reserved (Eugene, 18 November) | A format change: paths |
 | 25 | What kind of screen it was (S10) | Optional `perturbation_type`, `organism`, `genome_build`, recorded now because they cannot be recovered later (Eugene, 18 November) | A new kind of perturbation is a minor addition |
 
 ### Outside the format
@@ -722,12 +742,13 @@ reader can safely ignore it, **major** if it could misread the file.
 | How the gRNAs were captured (IGVF's `capture_method`) | File metadata | sceptre does not use it | minor |
 | A declared type for each modality, beside its name | File metadata | No dataset needs it yet | minor |
 | A gRNA-to-target table, for a gRNA with two targets | Data file | A scientific question first (S8) | major: a file using it has gRNAs an old reader would assign to one target |
-| Why each cell was removed (`removed_by`) | `cells.parquet` | sceptre does not record it (T2) | minor |
-| An assignment score (posterior probability or p-value) | `assignments.parquet` | Depends on the assignment method | minor |
+| Why each cell was removed (`removed_by`) | `qc/cells.parquet` | sceptre does not record it (T2) | minor |
+| An assignment score (posterior probability or p-value) | `assignment/assignments.parquet` | Depends on the assignment method | minor |
 | Per-gRNA values an assignment method computes, such as fitted thresholds | A new optional table of the assignment stage, keyed by `grna_id` | They are computed by an analysis, so they are not data and not settings. Nothing needs them now: sceptre's thresholding uses one threshold, stored as a setting | minor |
 | `log_p_value`, for p-values below a double's range | Results tables | No method needs it today | minor |
 | Per-pair counts: cells carrying the perturbation, and cells with a nonzero count in each group | Results or pair-QC tables | The development builds do not put them in the result tables | minor |
 | A SHA-256 per file, and one of the data file | Stage records, `analysis.json` | For those who want IGVF's stronger integrity check | minor |
+| Cached fits of the gRNA models | `fits/grna/`, a reserved folder | Not needed yet; its key, columns and clearing rule differ from the response cache's (T6) | minor |
 | A screen that combines targets on one vector (combinatorial perturbations) | Data file, S8.7 | Out of scope: sceptre cannot analyse them | minor, because today's readers refuse such files |
 | Which package and version wrote the data file | File metadata | Stage records already say this for each stage; the data file does not. The format and the packages are versioned separately, so this is information, not a rule | minor |
 | True booleans and nullable integers in the data file | S7 | Needs the R MuData and pandas fixes upstream | major: an old R reader misreads them |
@@ -773,9 +794,9 @@ remove a workaround in the format or its readers.
 | The reasons | this document | Why each rule is what it is |
 | Data-file definition | `spec/screen.json` | The structure of a data file as data: required groups, number types, encodings, allowed column kinds, required columns and metadata. Both validators read it |
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
-| Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json` | JSON Schemas for `analysis.json` and the six stage records |
+| Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json`, `spec/fits.schema.json` | JSON Schemas for `analysis.json`, the six stage records, and the record of how cached fits were made |
 | Data-file rules that need computing | `SPEC.md`, section 2 | The order of cells within a feature, uniqueness, the same cells in every modality: code in each language |
-| Conformance files | `conformance/`, built by `make_conformance.py` | 18 conforming files, written by R and by Python; 4 readable ones; and 61 that each break one rule, with the rules and the level a validator must report |
+| Conformance files | `conformance/`, built by `make_conformance.py` | 20 conforming files, written by R and by Python; 4 readable ones; and 63 that each break one rule, with the rules and the level a validator must report |
 | Validators | `validate_screen()`, `validate_analysis()` in both prototype libraries | Check a data file or an analysis folder without building a package object, and report every problem, not only the first |
 
 **Why define it this way.**
@@ -811,8 +832,8 @@ implementation by someone who has only the specification.
 
 ### What was checked
 
-*(measured)* Both validators accept all 18 conforming files, report the 4
-readable files as readable, and report exactly the expected rules for all 61
+*(measured)* Both validators accept all 20 conforming files, report the 4
+readable files as readable, and report exactly the expected rules for all 63
 broken ones. The two languages report the same rules and the same level for
 every case. Both readers read each readable file to the same counts as the
 conforming file it was made from. 55 rules are exercised by at least one broken
@@ -1020,7 +1041,7 @@ and show their outputs.
 | Clearing a stage [9] | Its record and files and all later ones are removed |
 | Saved fits whose recorded method differs [9] | Not reused, with a message |
 | Every allowed column type, written by each language and read by the other [9] | Same result both ways |
-| The validators on 18 conforming, 4 readable and 61 broken files [10] | Both languages report the same rules and the same level for every file |
+| The validators on 20 conforming, 4 readable and 63 broken files [10] | Both languages report the same rules and the same level for every file |
 | A covariate with a dot in its name [9] | R and Python build the same design matrix (Python through an alias) |
 
 **Limits that remain.** These are limits of the prototype or of what was

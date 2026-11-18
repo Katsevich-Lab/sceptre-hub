@@ -2,11 +2,9 @@
 
 > **Draft, not accepted.** This folder is a proposal for a format, with a
 > working prototype. It has not been reviewed and is not a contract.
-> [`contracts/file-formats.md`](../contracts/file-formats.md) remains the
-> registry of released formats. The two disagree in places that have to be
-> reconciled before this draft can be accepted: the registry numbers formats
-> with one integer and names the modalities `response` and `grna`; this draft
-> uses a two-part version and names the measured modality `rna`.
+> [`contracts/file-formats.md`](../contracts/file-formats.md), the hub's
+> existing format registry, is stale and will be replaced; this draft does not
+> follow it.
 
 A proposed on-disk format for Perturb-seq data and analyses, the same files in
 R and Python, with one data file and any number of analyses of it.

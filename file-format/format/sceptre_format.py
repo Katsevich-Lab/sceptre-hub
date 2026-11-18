@@ -512,7 +512,13 @@ def analysis_response_modality(directory) -> str:
 
 
 def _stage_file(directory, stage) -> Path:
-    return Path(directory) / "stages" / f"{stage}.json"
+    """An analysis folder has one folder per stage: the stage's record and its
+    tables (A2). A table's name is its path without `.parquet`: "qc/cells"."""
+    return Path(directory) / stage / "record.json"
+
+
+def table_path(directory, name) -> Path:
+    return Path(directory) / f"{name}.parquet"
 
 
 def stages_run(directory) -> list[str]:
@@ -520,7 +526,8 @@ def stages_run(directory) -> list[str]:
 
 
 def write_stage(directory, stage, record: dict, tables=None, provenance=None) -> None:
-    """Write one stage: its tables first, then its record, which lists them (A2, A5)."""
+    """Write one stage into its folder: its tables first, then its record, which
+    lists them (A2, A5)."""
     directory = Path(directory)
     if not (directory / "analysis.json").exists():
         raise ValueError(f"{directory} is not an analysis folder.")
@@ -533,33 +540,68 @@ def write_stage(directory, stage, record: dict, tables=None, provenance=None) ->
     for name, table in (tables or {}).items():
         if name not in TABLES or TABLES[name][0] != stage:
             raise ValueError(f"Stage '{stage}' does not write the table {name}.")
-        path = f"{name}.parquet"
-        files.append({"path": path, "rows": write_table(table, directory / path, _table_key(name, table))})
+        # listed by its name within the stage's folder
+        files.append({"path": f"{name.split('/')[-1]}.parquet", "rows": write_table(table, table_path(directory, name), _table_key(name, table))})
     provenance = dict(provenance or {"package": "sceptre_format.py", "version": "prototype", "language": "Python"})
     provenance.setdefault("written_at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
     _write_json({"stage": stage, **record, "provenance": provenance, "files": files}, _stage_file(directory, stage))
 
 
 def clear_stage(directory, stage) -> None:
-    """Remove a stage and every later stage: their records and their files (A4)."""
+    """Remove a stage and every later stage: their folders, records first (A4).
+    The fit cache goes too when the QC stage or an earlier one is cleared, and
+    stays when only a testing stage is (T6)."""
     directory = Path(directory)
-    for later in STAGES:
-        if later != stage and STAGE_RANK[later] <= STAGE_RANK[stage]:
-            continue
-        path = _stage_file(directory, later)
-        if not path.exists():
-            continue
-        record = _read_json(path)
+    cleared = [s for s in STAGES if s == stage or STAGE_RANK[s] > STAGE_RANK[stage]]
+    for later in cleared:
         # the record goes first: a stage without a record has not run
-        path.unlink()
-        for file in record["files"]:
-            target = directory / file["path"]
-            shutil.rmtree(target) if target.is_dir() else target.unlink(missing_ok=True)
+        _stage_file(directory, later).unlink(missing_ok=True)
+        shutil.rmtree(directory / later, ignore_errors=True)
+    if TABLE_SPEC["fits"]["cleared_with"] in cleared:
+        shutil.rmtree(directory / FITS, ignore_errors=True)
+
+
+# The fit cache (T6): fits/response/, a folder of part files outside the stages. It
+# is no stage's output and is listed in no record. Each writer adds a part of its
+# own; what makes the fits valid is recorded once, beside them.
+FITS = TABLE_SPEC["fits"]["folder"]
+
+
+def _fits_identity_file(directory) -> Path:
+    return Path(directory) / TABLE_SPEC["fits"]["identity"]
+
+
+def write_fits(directory, table: pd.DataFrame, identity: dict) -> Path:
+    directory = Path(directory)
+    if not {"parameters", "qc"} <= set(stages_run(directory)):
+        raise ValueError("Fits can be saved once the parameters and qc stages are written.")
+    path = _fits_identity_file(directory)
+    if path.exists():
+        # a later writer checks the record; it does not rewrite it
+        if _read_json(path) != identity:
+            raise ValueError(f"The fits already saved in {FITS} were made differently.")
+    else:
+        _write_json(identity, path)
+    part = directory / FITS / f"part-{uuid.uuid4().hex[:12]}.parquet"
+    write_table(table, part, _table_key(FITS, table))
+    return part
+
+
+def read_fits(directory):
+    """The cached fits and how they were made, or None. Two parts may hold the same
+    response; a reader takes either."""
+    directory = Path(directory)
+    if not _fits_identity_file(directory).exists():
+        return None
+    table = None
+    if _table_files(directory / FITS):
+        table = read_table(directory / FITS, TABLES[FITS][2]).drop_duplicates(subset="response_id").reset_index(drop=True)
+    return {"identity": _read_json(_fits_identity_file(directory)), "table": table}
 
 
 def read_analysis(directory) -> dict:
-    """An analysis folder: its link, the record of each stage that ran, and their
-    tables (named as in TABLES)."""
+    """An analysis folder: its link, the record of each stage that ran, their
+    tables (named as in TABLES), and the fit cache if there is one."""
     directory = Path(directory)
     analysis = _read_json(directory / "analysis.json")
     check_format(analysis.get("format"), directory)
@@ -567,21 +609,23 @@ def read_analysis(directory) -> dict:
     tables = {}
     for record in stages.values():
         for file in record["files"]:
-            path = directory / file["path"]
+            name = f"{record['stage']}/{file['path'].removesuffix('.parquet')}"
+            path = table_path(directory, name)
             if not path.exists():
                 raise ValueError(f"The stage '{record['stage']}' lists {file['path']}, which is missing.")
             if table_rows(path) != file["rows"]:
-                raise ValueError(
-                    f"{file['path']} has {table_rows(path)} rows; the stage '{record['stage']}' wrote {file['rows']}."
-                )
-            name = file["path"].removesuffix(".parquet")
-            tables[name] = read_table(path, TABLES[name][2])
+                raise ValueError(f"{name}.parquet has {table_rows(path)} rows; the stage '{record['stage']}' wrote {file['rows']}.")
+            tables[name] = read_table(path, TABLES[name][2] if name in TABLES else None)
+    fits = read_fits(directory)
+    if fits is not None and fits["table"] is not None:
+        tables[FITS] = fits["table"]
     return {
         "format": analysis["format"],
         "response_modality": analysis.get("response_modality"),
         "screen": analysis["screen"],
         "stages": stages,
         "tables": tables,
+        "fits_identity": None if fits is None else fits["identity"],
     }
 
 
@@ -918,13 +962,16 @@ def _fit_identity(analysis, mdata) -> dict:
     }
 
 
-def _fit_mismatch(saved: dict, current: dict, language: str):
+def _fit_mismatch(saved: dict, current: dict):
+    """Why cached fits cannot be reused, or None. A method name means the same
+    estimator in every language that lists it; a method this language does not
+    share is never reused."""
     for name, value in current.items():
         if saved.get(name) != value:
             return f"their `{name}` differs"
     method = current["response_fit_method"]
-    if "Python" not in FIT_METHODS.get(method, ()) or language not in FIT_METHODS.get(method, ()):
-        return f"the method '{method}' is not shared between {language} and Python"
+    if "Python" not in FIT_METHODS.get(method, ()):
+        return f"the method '{method}' is not one Python shares"
     return None
 
 
@@ -990,8 +1037,8 @@ def read_sceptre_object(screen_file, directory=None, *, response_modality=None, 
                 multiple_testing_alpha=float(settings["multiple_testing_alpha"]),
                 grna_integration_strategy=strategy,
                 # counted as the user gave them, before any expansion by gRNA
-                n_discovery_pairs=len(tables["pairs/discovery"]),
-                n_positive_control_pairs=len(tables["pairs/positive_control"]),
+                n_discovery_pairs=len(tables["parameters/discovery_pairs"]),
+                n_positive_control_pairs=len(tables["parameters/positive_control_pairs"]),
                 response_fit_method=settings["response_fit_method"],
                 grna_fit_method=settings["grna_fit_method"],
                 seed=settings["seed"],
@@ -1002,17 +1049,17 @@ def read_sceptre_object(screen_file, directory=None, *, response_modality=None, 
                 assign=list(built.assign),
                 contrasts={k: [v] for k, v in built.contrasts.items()} or None,
             ),
-            expand_pairs(tables["pairs/discovery"], grna_table),
-            expand_pairs(tables["pairs/positive_control"], grna_table),
+            expand_pairs(tables["parameters/discovery_pairs"], grna_table),
+            expand_pairs(tables["parameters/positive_control_pairs"], grna_table),
         )
 
     if "assignment" in done:
         settings = records["assignment"]["settings"]
-        initial = cells_by_grna(tables["assignments"], analysis.grna_ids, cells)
+        initial = cells_by_grna(tables["assignment/assignments"], analysis.grna_ids, cells)
         raw_groups, raw_nt = group_cells(initial, grna_table)
         flagged = None
         if low_moi:
-            listed = tables.get("assignment_flagged_cells")
+            listed = tables.get("assignment/flagged_cells")
             listed = cells.get_indexer(listed["cell_id"]) if listed is not None else np.empty(0, dtype=np.int64)
             flagged = np.union1d(not_one_grna(initial, len(cells)), listed).astype(np.int64)
         analysis.set_assignment(
@@ -1031,12 +1078,12 @@ def read_sceptre_object(screen_file, directory=None, *, response_modality=None, 
 
     if "qc" in done:
         settings = records["qc"]["settings"]
-        in_use = np.flatnonzero(tables["cells"].set_index("cell_id").loc[cells, "in_use"].to_numpy(dtype=bool)).astype(np.int64)
+        in_use = np.flatnonzero(tables["qc/cells"].set_index("cell_id").loc[cells, "in_use"].to_numpy(dtype=bool)).astype(np.int64)
         nt_control = records["parameters"]["settings"]["control_group"] == "nt_cells"
         groups, nt, all_nt = qc_assignments(raw_groups, raw_nt, in_use, nt_control)
         info = {}
         for pair_type in ("discovery", "positive_control"):
-            table = tables[f"pair_qc/{pair_type}"]
+            table = tables[f"qc/{pair_type}_pair_qc"]
             frame = pd.DataFrame(
                 {
                     "response_id": table["response_id"].to_numpy(dtype=object),
@@ -1060,8 +1107,8 @@ def read_sceptre_object(screen_file, directory=None, *, response_modality=None, 
                 group_cells=groups,
                 nt_cells=nt,
                 n_nonzero_tot=n_nonzero.astype(np.int64),
-                n_ok_discovery_pairs=n_pairs_passing(tables["pair_qc/discovery"], strategy) if len(info["discovery"]) else None,
-                n_ok_positive_control_pairs=n_pairs_passing(tables["pair_qc/positive_control"], strategy) if len(info["positive_control"]) else None,
+                n_ok_discovery_pairs=n_pairs_passing(tables["qc/discovery_pair_qc"], strategy) if len(info["discovery"]) else None,
+                n_ok_positive_control_pairs=n_pairs_passing(tables["qc/positive_control_pair_qc"], strategy) if len(info["positive_control"]) else None,
                 all_nt=all_nt,
                 pairwise_qc=bool(settings["pairwise_qc"]),
             ),
@@ -1071,8 +1118,8 @@ def read_sceptre_object(screen_file, directory=None, *, response_modality=None, 
         )
 
     def result(stage):
-        table = add_log_2_fold_change(tables[f"results/{stage}"])
-        table = add_resamples(table, tables.get(f"results/{stage}_resamples"))
+        table = add_log_2_fold_change(tables[f"{stage}/results"])
+        table = add_resamples(table, tables.get(f"{stage}/resamples"))
         if stage != "power":
             table = add_significant(table, records[stage].get("significance_threshold"))
             table["significant"] = table["significant"].astype(object).where(table["significant"].notna(), None)
@@ -1082,7 +1129,7 @@ def read_sceptre_object(screen_file, directory=None, *, response_modality=None, 
 
     if "calibration" in done:
         settings = records["calibration"]["settings"]
-        calibration = tables["results/calibration"]
+        calibration = tables["calibration/results"]
         negative = pd.DataFrame(
             {
                 "response_id": calibration["response_id"].to_numpy(dtype=object),
@@ -1100,26 +1147,24 @@ def read_sceptre_object(screen_file, directory=None, *, response_modality=None, 
         if stage in done:
             analysis.set_result(STAGE_FUNCTIONS[stage], result(stage))
 
-    # a saved fit is reused only if it was made as this analysis would make it (T6)
-    for stage in RESULT_STAGES:
-        saved_fits = records.get(stage, {}).get("fits")
-        if not saved_fits:
-            continue
-        reason = _fit_mismatch(saved_fits["identity"], _fit_identity(analysis, mdata), records[stage]["provenance"]["language"])
+    # cached fits are reused only if they were made as this analysis would make them (T6)
+    identity = saved.get("fits_identity")
+    if identity is not None and "qc" in done and FITS in tables:
+        reason = _fit_mismatch(identity, _fit_identity(analysis, mdata))
         if reason:
             if verbose:
-                print(f"Saved fits in {saved_fits['file']} are not reused: {reason}.")
-            continue
-        table = tables[f"fits/{stage}"]
-        terms = list(analysis.design.terms)
-        long = pd.DataFrame(
-            {
-                "response_id": np.repeat(table["response_id"].to_numpy(dtype=object), len(terms) + 1),
-                "term": np.tile(np.array(terms + [None], dtype=object), len(table)),
-                "value": np.concatenate([np.append(np.asarray(c, dtype=float), t) for c, t in zip(table["coefficients"], table["theta"], strict=True)]),
-            }
-        )
-        analysis.add_fits(long)
+                print(f"The fits saved in {FITS} are not reused: {reason}.")
+        else:
+            table = tables[FITS]
+            terms = list(analysis.design.terms)
+            long = pd.DataFrame(
+                {
+                    "response_id": np.repeat(table["response_id"].to_numpy(dtype=object), len(terms) + 1),
+                    "term": np.tile(np.array(terms + [None], dtype=object), len(table)),
+                    "value": np.concatenate([np.append(np.asarray(c, dtype=float), t) for c, t in zip(table["coefficients"], table["theta"], strict=True)]),
+                }
+            )
+            analysis.add_fits(long)
     return analysis
 
 
@@ -1222,7 +1267,7 @@ def write_sceptre_analysis(analysis, screen_file, directory, provenance=None, re
                 },
                 "design": {"terms": to_file_names(list(design.terms), main), "sha256": design_sha256(design.matrix)},
             },
-            {"pairs/discovery": pairs["discovery"], "pairs/positive_control": pairs["positive_control"]},
+            {"parameters/discovery_pairs": pairs["discovery"], "parameters/positive_control_pairs": pairs["positive_control"]},
         )
 
     if "assignment" in done:
@@ -1237,13 +1282,13 @@ def write_sceptre_analysis(analysis, screen_file, directory, provenance=None, re
             "assignment",
             {"settings": {"method": a.method, "hyperparameters": _plain(a.hyperparameters) or {}}},
             {
-                "assignments": pd.DataFrame(
+                "assignment/assignments": pd.DataFrame(
                     {
                         "grna_id": np.repeat(np.array(list(initial), dtype=object), [len(v) for v in initial.values()]),
                         "cell_id": cells[np.concatenate(list(initial.values())).astype(np.int64)],
                     }
                 ),
-                "assignment_flagged_cells": pd.DataFrame({"cell_id": cells[flagged]}) if flagged.size else None,
+                "assignment/flagged_cells": pd.DataFrame({"cell_id": cells[flagged]}) if flagged.size else None,
             },
         )
 
@@ -1276,23 +1321,15 @@ def write_sceptre_analysis(analysis, screen_file, directory, provenance=None, re
                 },
             },
             {
-                "cells": pd.DataFrame({"cell_id": cells, "in_use": in_use}),
-                "pair_qc/discovery": pair_qc["discovery"],
-                "pair_qc/positive_control": pair_qc["positive_control"],
+                "qc/cells": pd.DataFrame({"cell_id": cells, "in_use": in_use}),
+                "qc/discovery_pair_qc": pair_qc["discovery"],
+                "qc/positive_control_pair_qc": pair_qc["positive_control"],
             },
         )
 
     fits = analysis.fits
-    fits_stage = next((s for s in RESULT_STAGES if s in done), None)
 
-    def fit_record(stage):
-        if fits is None or stage != fits_stage:
-            return None
-        return {"file": f"fits/{stage}.parquet", "identity": _fit_identity(analysis, mdata)}
-
-    def fit_table(stage):
-        if fits is None or stage != fits_stage:
-            return None
+    def fit_table():
         terms = list(analysis.design.terms)
         rows = []
         for response_id, fit in analysis.response_fits().items():
@@ -1328,32 +1365,29 @@ def write_sceptre_analysis(analysis, screen_file, directory, provenance=None, re
                     "B3": int(analysis.parameters.B3),
                 },
                 "significance_threshold": threshold("calibration"),
-                "fits": fit_record("calibration"),
             },
             {
-                "negative_control_groups": pd.DataFrame(
+                "calibration/negative_control_groups": pd.DataFrame(
                     {
                         "grna_group": np.repeat(np.array(groups, dtype=object), [len(m) for m in members]),
                         "grna_id": np.array([g for m in members for g in m], dtype=object),
                     }
                 ),
-                "results/calibration": result_table("calibration"),
-                "results/calibration_resamples": resamples("calibration"),
-                "fits/calibration": fit_table("calibration"),
+                "calibration/results": result_table("calibration"),
+                "calibration/resamples": resamples("calibration"),
             },
         )
     if "power" in done:
-        write("power", {"settings": {}, "fits": fit_record("power")}, {"results/power": result_table("power"), "results/power_resamples": resamples("power"), "fits/power": fit_table("power")})
+        write("power", {"settings": {}}, {"power/results": result_table("power"), "power/resamples": resamples("power")})
     if "discovery" in done:
         write(
             "discovery",
-            {"settings": {}, "significance_threshold": threshold("discovery"), "fits": fit_record("discovery")},
-            {
-                "results/discovery": result_table("discovery"),
-                "results/discovery_resamples": resamples("discovery"),
-                "fits/discovery": fit_table("discovery"),
-            },
+            {"settings": {}, "significance_threshold": threshold("discovery")},
+            {"discovery/results": result_table("discovery"), "discovery/resamples": resamples("discovery")},
         )
+    # the fits the analysis holds go to the cache, which no stage owns (T6)
+    if fits is not None and "qc" in done:
+        write_fits(directory, fit_table(), _fit_identity(analysis, mdata))
     return Path(directory)
 
 
@@ -1710,15 +1744,6 @@ def _schema_problems(path, schema) -> list[str]:
     return sorted({("/" + "/".join(map(str, e.absolute_path))) + " " + e.message for e in validator.iter_errors(value)})
 
 
-def _listed_paths(path) -> list[str]:
-    """The tables a stage record lists, read without trusting the rest of the record."""
-    try:
-        files = json.loads(Path(path).read_text()).get("files", [])
-        return [str(f["path"]).removesuffix(".parquet") for f in files if isinstance(f, dict) and "path" in f]
-    except (ValueError, AttributeError, TypeError):
-        return []
-
-
 def _column_kind(type_) -> str:
     import pyarrow as pa
 
@@ -1752,78 +1777,80 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
     if analysis is not None and not known_major(analysis["format"]):
         log.add("A1.1", "analysis.json", "is in a format this validator does not know.")
 
-    # stage records
-    present = sorted(p.stem for p in (directory / "stages").glob("*.json")) if (directory / "stages").is_dir() else []
-    for name in present:
-        if name not in STAGES:
-            log.add("A2.1", f"stages/{name}.json", "is not named for a stage.")
-    records, unchecked = {}, []
-    for stage in STAGES:
-        if stage not in present:
-            continue
-        where = f"stages/{stage}.json"
+    # stage records: <stage>/record.json
+    present = stages_run(directory)
+    records, unchecked = {}, []   # unchecked: stages whose record cannot be trusted
+    for stage in present:
+        where = f"{stage}/record.json"
         faults = _schema_problems(_stage_file(directory, stage), "stage.schema.json")
         for fault in faults:
             log.add("A2.1", where, fault)
         if faults:
-            # its files are still accounted for, so that they are not also reported as stale
-            unchecked += _listed_paths(_stage_file(directory, stage))
+            unchecked.append(stage)
             continue
         record = _read_json(_stage_file(directory, stage))
         if record["stage"] != stage:
             log.add("A2.1", where, f"says it is the record of the stage '{record['stage']}'.")
-            unchecked += _listed_paths(_stage_file(directory, stage))
+            unchecked.append(stage)
             continue
         records[stage] = record
-    for stage in STAGES:
-        if stage in present:
-            missing = [s for s in STAGES if STAGE_RANK[s] < STAGE_RANK[stage] and s not in present]
-            if missing:
-                log.add("A2.2", f"stages/{stage}.json", f"The stage needs the stage(s) {', '.join(missing)} first.")
+    for stage in present:
+        missing = [s for s in STAGES if STAGE_RANK[s] < STAGE_RANK[stage] and s not in present]
+        if missing:
+            log.add("A2.2", f"{stage}/record.json", f"The stage needs the stage(s) {', '.join(missing)} first.")
 
-    # the files each record lists
+    # the files each record lists, all in the stage's own folder
     listed, tables = [], {}
     for stage, record in records.items():
-        where = f"stages/{stage}.json"
-        names_listed = [f["path"].removesuffix(".parquet") for f in record["files"]]
+        where = f"{stage}/record.json"
+        names_listed = [f"{stage}/{f['path'].removesuffix('.parquet')}" for f in record["files"]]
         listed += names_listed
-        for file in record["files"]:
-            name = file["path"].removesuffix(".parquet")
-            known = TABLE_DEFINITIONS.get(name)
-            if known is not None and known["stage"] != stage:
-                log.add("A5.3", where, f"lists {file['path']}, which the stage '{known['stage']}' writes.")
-            full = directory / file["path"]
+        for file, name in zip(record["files"], names_listed, strict=True):
+            shown, full = f"{name}.parquet", table_path(directory, name)
             if not full.exists():
-                log.add("A5.1", file["path"], f"is listed by the stage '{stage}' and is missing.")
+                log.add("A5.1", shown, "is listed by its stage's record and is missing.")
                 continue
             try:
                 rows = table_rows(full)
             except Exception:
-                log.add("A5.1", file["path"], "cannot be read as Parquet.")
+                log.add("A5.1", shown, "cannot be read as Parquet.")
                 continue
             if rows != file["rows"]:
-                log.add("A5.2", file["path"], f"has {rows} rows; the stage '{stage}' wrote {file['rows']}.")
-            if known is not None:
+                log.add("A5.2", shown, f"has {rows} rows; the stage '{stage}' wrote {file['rows']}.")
+            if name in TABLE_DEFINITIONS:
                 tables[name] = full
         for name, definition in TABLE_DEFINITIONS.items():
             if definition["stage"] == stage and definition["required"] and name not in names_listed:
                 log.add("A5.4", where, f"does not list the table {name}.")
-        # saved fits and their record go together (T6)
-        fit_table = f"fits/{stage}"
-        fits = record.get("fits")
-        if fits is not None and fits["file"].removesuffix(".parquet") != fit_table:
-            log.add("T6.1", where, f"`fits` names a file other than {fit_table}.parquet.")
-        if (fits is None) != (fit_table not in names_listed):
-            log.add("T6.1", where, "Saved fits and the record of how they were made must come together.")
-    for name in TABLE_DEFINITIONS:
-        if name not in listed + unchecked and (directory / f"{name}.parquet").exists():
-            log.add("A4.1", f"{name}.parquet", "is in the folder and no stage record lists it.")
+    # a stage's table that is in its folder and that no record lists (A4.1)
+    for name, definition in TABLE_DEFINITIONS.items():
+        stage = definition["stage"]
+        if stage is None or stage in unchecked or name in listed:
+            continue
+        if table_path(directory, name).exists():
+            log.add("A4.1", f"{name}.parquet", "is in the folder and its stage's record does not list it.")
+
+    # the fit cache: parts, and one record of how the fits were made (T6)
+    fits_identity = None
+    if (directory / FITS).is_dir():
+        if not _fits_identity_file(directory).exists():
+            log.add("T6.1", FITS, "has no record of how the fits were made.")
+        else:
+            faults = _schema_problems(_fits_identity_file(directory), "fits.schema.json")
+            for fault in faults:
+                log.add("T6.1", TABLE_SPEC["fits"]["identity"], fault)
+            if not faults:
+                fits_identity = _read_json(_fits_identity_file(directory))
+        if _table_files(directory / FITS):
+            tables[FITS] = directory / FITS
+        if not {"parameters", "qc"} <= set(present):
+            log.add("T6.3", FITS, "The fit cache needs the parameters and qc stages.")
 
     # each table against its definition
     strategy = records.get("parameters", {}).get("settings", {}).get("grna_integration_strategy")
     contents = {}
     for name, full in tables.items():
-        definition, where = TABLE_DEFINITIONS[name], f"{name}.parquet"
+        definition, where = TABLE_DEFINITIONS[name], (name if name == FITS else f"{name}.parquet")
         parts = []
         for file in _table_files(full):
             parquet = pq.ParquetFile(file)
@@ -1859,25 +1886,40 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
                 log.add(column["rule"], where, f"{verb} the column `{column['name']}` under the strategy '{strategy}'.")
         if not ok:
             continue
+        # within one file the key is sorted and unique; across the parts of the fit
+        # cache it need not be unique
+        across_parts = definition.get("unique_across_parts", True)
         for part in parts:
             frame = read_table_from_arrow(part)
             key = _table_key(name, frame)
             if len(frame) > 1 and _byte_order(frame, key) != list(range(len(frame))):
                 log.add("T0.2", where, f"The rows are not sorted by {', '.join(key)}.")
+            if not across_parts and frame.duplicated(subset=key).any():
+                log.add("T0.4", where, f"Two rows of one file have the same {', '.join(key)}.")
         whole = read_table(full)
         key = _table_key(name, whole)
-        if whole.duplicated(subset=key).any():
+        if across_parts and whole.duplicated(subset=key).any():
             log.add("T0.4", where, f"Two rows have the same {', '.join(key)}.")
         contents[name] = whole
 
     parameters = records.get("parameters")
     if parameters is not None:
         if not formula_in_subset(parameters["settings"]["formula"]):
-            log.add("T7.1", "stages/parameters.json", "The formula is outside the additive subset.")
-        for stage in RESULT_STAGES:
-            fits = contents.get(f"fits/{stage}")
-            if fits is not None and any(len(c) != len(parameters["design"]["terms"]) for c in fits["coefficients"]):
-                log.add("T6.2", f"fits/{stage}.parquet", "A fit does not have one coefficient per term of the design.")
+            log.add("T7.1", "parameters/record.json", "The formula is outside the additive subset.")
+        fits = contents.get(FITS)
+        if fits is not None and any(len(c) != len(parameters["design"]["terms"]) for c in fits["coefficients"]):
+            log.add("T6.2", FITS, "A fit does not have one coefficient per term of the design.")
+        # the cache was made for this analysis's parameters (T6.3)
+        if fits_identity is not None:
+            expected = {
+                "formula": parameters["settings"]["formula"],
+                "response_fit_method": parameters["settings"]["response_fit_method"],
+                "control_group": parameters["settings"]["control_group"],
+                "screen_id": None if analysis is None else analysis["screen"]["id"],
+            }
+            for field, value in expected.items():
+                if value is not None and fits_identity.get(field) != value:
+                    log.add("T6.3", TABLE_SPEC["fits"]["identity"], f"`{field}` is not that of the analysis.")
 
     # against the data file
     if screen_file is not None and analysis is not None:
@@ -1898,12 +1940,17 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
                 for column, values in known.items():
                     if column in table and not set(table[column]) <= values:
                         log.add("T0.5", f"{name}.parquet", f"`{column}` names something the data file does not have.")
-            for name in ("assignments", "negative_control_groups"):
+            for name in ("assignment/assignments", "calibration/negative_control_groups"):
                 if name in contents and not set(contents[name]["grna_id"]) <= set(screen["grnas"]):
                     log.add("T0.5", f"{name}.parquet", "`grna_id` names something the data file does not have.")
-            for name in ("pairs/discovery", "pairs/positive_control"):
+            for name in ("parameters/discovery_pairs", "parameters/positive_control_pairs"):
                 if name in contents and not set(contents[name]["grna_target"]) <= set(screen["targets"]):
                     log.add("T0.5", f"{name}.parquet", "`grna_target` names something the data file does not have.")
-            if "cells" in contents and set(contents["cells"]["cell_id"]) != set(screen["cells"]):
-                log.add("T2.1", "cells.parquet", "does not have one row per cell of the data file.")
+            kept = contents.get("qc/cells")
+            if kept is not None and set(kept["cell_id"]) != set(screen["cells"]):
+                log.add("T2.1", "qc/cells.parquet", "does not have one row per cell of the data file.")
+            elif kept is not None and fits_identity is not None:
+                in_use = set(kept.loc[kept["in_use"].astype(bool), "cell_id"])
+                if fits_identity.get("cells_in_use_sha256") != sha256_ids([c for c in screen["cells"] if c in in_use]):
+                    log.add("T6.3", TABLE_SPEC["fits"]["identity"], "`cells_in_use_sha256` is not that of the cells in use.")
     return log.all()

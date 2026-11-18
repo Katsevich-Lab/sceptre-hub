@@ -137,6 +137,24 @@
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
+    "name": "valid/analyses/fits_from_two_jobs",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/fits_from_two_jobs",
+    "expect": [],
+    "level": "conforming",
+    "what": "The fit cache was filled by two jobs, and one response is in both parts",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/testing_stage_cleared_fits_kept",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/testing_stage_cleared_fits_kept",
+    "expect": [],
+    "level": "conforming",
+    "what": "The calibration stage was cleared for a rerun; the fit cache remains",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
     "name": "valid/analyses/stage_written_in_another_language",
     "kind": "analysis",
     "path": "conformance/valid/analyses/stage_written_in_another_language",
@@ -600,21 +618,22 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/another_dataset",
     "expect": [
-      "A1.2"
+      "A1.2",
+      "T6.3"
     ],
     "level": "not readable",
-    "what": "The dataset identifier is that of another data file",
+    "what": "The dataset identifier is that of another data file; the fit cache then belongs to another dataset too",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
-    "name": "invalid/analyses/record_not_named_for_a_stage",
+    "name": "invalid/analyses/record_of_another_stage",
     "kind": "analysis",
-    "path": "conformance/invalid/analyses/record_not_named_for_a_stage",
+    "path": "conformance/invalid/analyses/record_of_another_stage",
     "expect": [
       "A2.1"
     ],
     "level": "not readable",
-    "what": "A record named `stages/extra.json`",
+    "what": "The record in `discovery/` says it is the record of the power stage",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
@@ -675,15 +694,14 @@
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
-    "name": "invalid/analyses/table_listed_by_the_wrong_stage",
+    "name": "invalid/analyses/table_listed_outside_the_stage_folder",
     "kind": "analysis",
-    "path": "conformance/invalid/analyses/table_listed_by_the_wrong_stage",
+    "path": "conformance/invalid/analyses/table_listed_outside_the_stage_folder",
     "expect": [
-      "A5.3",
-      "A5.4"
+      "A2.1"
     ],
     "level": "not readable",
-    "what": "The QC record lists the discovery pairs, which the parameters stage writes",
+    "what": "A record lists a table by a path that leaves the stage's folder",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
@@ -816,7 +834,29 @@
       "T6.1"
     ],
     "level": "not readable",
-    "what": "Saved fits are listed and the record does not say how they were made",
+    "what": "The fit cache has fits and no record of how they were made",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/fits_made_with_another_method",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/fits_made_with_another_method",
+    "expect": [
+      "T6.3"
+    ],
+    "level": "not readable",
+    "what": "The fit cache says its fits were made with a method other than the analysis's",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/fits_before_qc",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/fits_before_qc",
+    "expect": [
+      "T6.3"
+    ],
+    "level": "not readable",
+    "what": "An analysis that stopped after assignment holds a fit cache",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
@@ -835,10 +875,11 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/formula_with_an_interaction",
     "expect": [
+      "T6.3",
       "T7.1"
     ],
     "level": "not readable",
-    "what": "The formula has an interaction, outside the additive subset",
+    "what": "The formula has an interaction, outside the additive subset; the fit cache was made for another formula",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   }
 ]

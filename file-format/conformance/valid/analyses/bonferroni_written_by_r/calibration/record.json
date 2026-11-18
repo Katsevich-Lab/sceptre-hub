@@ -1,0 +1,25 @@
+{
+  "stage": "calibration",
+  "settings": {
+    "calibration_group_size": 1,
+    "n_calibration_pairs": 1380,
+    "B3": 0
+  },
+  "significance_threshold": null,
+  "provenance": {
+    "package": "sceptre",
+    "version": "0.99.1",
+    "language": "R",
+    "written_at": "2026-11-18T17:51:39Z"
+  },
+  "files": [
+    {
+      "path": "negative_control_groups.parquet",
+      "rows": 10
+    },
+    {
+      "path": "results.parquet",
+      "rows": 983
+    }
+  ]
+}

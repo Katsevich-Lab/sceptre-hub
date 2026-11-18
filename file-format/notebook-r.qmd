@@ -70,7 +70,7 @@ Each completed stage has a record, written after the stage's tables. It holds
 the stage's settings and lists the files the stage wrote (A2):
 
 ```{r}
-cat(readLines(file.path(analyses, "left_sided/stages/calibration.json")), sep = "\n")
+cat(readLines(file.path(analyses, "left_sided/calibration/record.json")), sep = "\n")
 ```
 
 The tables, with their columns:
@@ -154,7 +154,7 @@ grna <- altExp(sce, "gRNA")
 from a table, never taken apart from the group's name.
 
 ```{r}
-groups <- tables$negative_control_groups
+groups <- tables[["calibration/negative_control_groups"]]
 members <- split(groups$grna_id, groups$grna_group)
 head(members, 4)
 ```
@@ -167,7 +167,7 @@ show_table(check = c(
 ), value = vapply(list(
     length(members), paste(sort(unique(lengths(members))), collapse = ", "),
     all(groups$grna_id %in% non_targeting),
-    setequal(tables[["results/calibration"]]$grna_target, names(members))
+    setequal(tables[["calibration/results"]]$grna_target, names(members))
 ), as.character, character(1)))
 ```
 
@@ -177,7 +177,7 @@ row per (gRNA, cell). Pooling a target's gRNAs gives the cells a package tests.
 ```{r}
 grna_table <- data.frame(grna_id = rownames(grna), as.data.frame(rowData(grna)))
 grna_table$grna_group <- grna_groups(grna_table, records$parameters$settings$grna_integration_strategy)
-by_grna <- cells_by_grna(tables$assignments, rownames(grna), cells)
+by_grna <- cells_by_grna(tables[["assignment/assignments"]], rownames(grna), cells)
 pooled <- group_cells(by_grna, grna_table)
 show_table(check = c(
     "gRNAs", "targets", "non-targeting gRNAs", "per-gRNA lists identical to the object's",
@@ -195,7 +195,7 @@ The stage record stores one number, the largest p-value called significant.
 
 ```{r}
 threshold <- records$discovery$significance_threshold
-derived <- add_significant(tables[["results/discovery"]], threshold)
+derived <- add_significant(tables[["discovery/results"]], threshold)
 theirs <- as.data.frame(get_result(original, "run_discovery_analysis"))
 both <- merge(derived, theirs, by = c("grna_target", "response_id"), suffixes = c("", "_original"))
 show_table(check = c("threshold in the record", "called significant", "identical to the column R computed, for every pair"),
@@ -209,9 +209,9 @@ only the log2 value, so there it is the stored column.
 
 ```{r}
 effect_columns <- function(table) paste(intersect(names(table), c("fold_change", "se_fold_change", "log_2_fold_change")), collapse = ", ")
-discovery <- tables[["results/discovery"]]
+discovery <- tables[["discovery/results"]]
 both <- merge(add_log_2_fold_change(discovery), theirs, by = c("grna_target", "response_id"), suffixes = c("", "_original"))
-bonferroni <- fmt_read_analysis(file.path(analyses, "bonferroni"))$tables[["results/discovery"]]
+bonferroni <- fmt_read_analysis(file.path(analyses, "bonferroni"))$tables[["discovery/results"]]
 show_table(check = c("effect columns stored (union strategy)", "derived log2 identical to R's column, for every pair",
     "effect columns stored (bonferroni strategy)"),
     value = c(effect_columns(discovery), identical(both$log_2_fold_change, both$log_2_fold_change_original), effect_columns(bonferroni)))
@@ -247,7 +247,7 @@ In the file they are one list per pair; sceptre gets them back as the columns
 it expects.
 
 ```{r}
-resamples <- fmt_read_analysis(file.path(analyses, "with_resamples"))$tables[["results/discovery_resamples"]]
+resamples <- fmt_read_analysis(file.path(analyses, "with_resamples"))$tables[["discovery/resamples"]]
 wide <- as.data.frame(get_result(read_sceptre_object(screen, file.path(analyses, "with_resamples")), "run_discovery_analysis"))
 show_table(check = c("pairs", "statistics per pair", "columns in the file's table", "z_null_ columns in the object's table"),
     value = c(nrow(resamples), paste(range(lengths(resamples$z_null)), collapse = " to "),
@@ -264,12 +264,12 @@ do.call(rbind, lapply(c("highmoi", "lowmoi"), function(dataset) {
     do.call(rbind, lapply(analysis_folders(dataset), function(folder) {
         a <- fmt_read_analysis(folder)
         s <- a$stages
-        discovery <- a$tables[["results/discovery"]]
+        discovery <- a$tables[["discovery/results"]]
         data.frame(
             dataset = dataset, analysis = basename(folder), stages_run = paste(names(s), collapse = ", "),
             side = s$parameters$settings$side, strategy = s$parameters$settings$grna_integration_strategy,
             control_group = s$parameters$settings$control_group, assignment = s$assignment$settings$method,
-            cells_in_use = sum(a$tables$cells$in_use),
+            cells_in_use = sum(a$tables[["qc/cells"]]$in_use),
             discoveries = if (is.null(discovery)) "" else as.character(sum(add_significant(discovery, s$discovery$significance_threshold)$significant, na.rm = TRUE))
         )
     }))
@@ -445,9 +445,9 @@ attempt <- function(read) {
 
 ```{r}
 folder <- variant("parts")
-table <- nanoparquet::read_parquet(file.path(folder, "assignments.parquet"))
-unlink(file.path(folder, "assignments.parquet"))
-dir.create(file.path(folder, "assignments.parquet"))
+table <- nanoparquet::read_parquet(file.path(folder, "assignment/assignments.parquet"))
+unlink(file.path(folder, "assignment/assignments.parquet"))
+dir.create(file.path(folder, "assignment/assignments.parquet"))
 pieces <- split(seq_len(nrow(table)), cut(seq_len(nrow(table)), 3, labels = FALSE))
 for (i in seq_along(pieces)) {
     part <- data.frame(
@@ -455,9 +455,9 @@ for (i in seq_along(pieces)) {
         cell_id = factor(table$cell_id[pieces[[i]]]),
         score = seq(0, 1, length.out = length(pieces[[i]]))   # a column this reader does not know
     )
-    nanoparquet::write_parquet(part, file.path(folder, "assignments.parquet", sprintf("part-%05d.parquet", i - 1L)))
+    nanoparquet::write_parquet(part, file.path(folder, "assignment/assignments.parquet", sprintf("part-%05d.parquet", i - 1L)))
 }
-list.files(file.path(folder, "assignments.parquet"))
+list.files(file.path(folder, "assignment/assignments.parquet"))
 comparison_summary(compare_objects(original, read_sceptre_object(screen, folder)))
 ```
 
@@ -502,7 +502,7 @@ attempt(fmt_read_screen(file.path(variants, "atac_with_hashing.h5mu")))
 check_other <- function(file, folder) {
     back <- read_sceptre_object(file, folder)
     show_table(check = c("response modality named by the analysis", "formula in the parameters record", "object compared with the original"),
-        value = c(fmt_response_modality(folder), read_json(file.path(folder, "stages/parameters.json"))$settings$formula,
+        value = c(fmt_response_modality(folder), read_json(file.path(folder, "parameters/record.json"))$settings$formula,
             comparison_summary(compare_objects(original, back))))
 }
 write_sceptre_analysis(original, file.path(variants, "atac_with_hashing.h5mu"), file.path(variants, "atac_analysis"), response_modality = "atac")
@@ -520,8 +520,8 @@ files and their row counts.
 
 ```{r}
 folder <- variant("truncated")
-cells_table <- nanoparquet::read_parquet(file.path(folder, "cells.parquet"))
-nanoparquet::write_parquet(cells_table[1:450, ], file.path(folder, "cells.parquet"))
+cells_table <- nanoparquet::read_parquet(file.path(folder, "qc/cells.parquet"))
+nanoparquet::write_parquet(cells_table[1:450, ], file.path(folder, "qc/cells.parquet"))
 attempt(fmt_read_analysis(folder))
 ```
 
@@ -536,16 +536,28 @@ cat("after: ", fmt_stages_run(folder), "-", length(list.files(folder, recursive 
 cat("last step of the object read from it:", sceptre:::last_function_called(read_sceptre_object(screen, folder)), "\n")
 ```
 
-**Saved fits (T6).** A saved fit is reused only if it was made as this
-analysis would make it. Here the record of how the fits were made is changed
-to another fitting method.
+**The fit cache (T6).** Fitted response models are kept in `fits/response/`,
+outside the stage folders: no stage owns them, and any testing stage can use
+or add to them. Clearing a testing stage leaves them; clearing QC removes them.
+
+```{r}
+folder <- variant("fits_kept")
+fmt_clear_stage(folder, "calibration")
+cat("after clearing calibration:", fmt_stages_run(folder), "- fits kept:", file.exists(file.path(folder, "fits/response/identity.json")), "\n")
+fmt_clear_stage(folder, "qc")
+cat("after clearing qc:         ", fmt_stages_run(folder), "- fits kept:", file.exists(file.path(folder, "fits/response/identity.json")), "\n")
+```
+
+A cached fit is reused only if it was made as this analysis would make it.
+Here the record of how the fits were made is changed to another fitting
+method.
 
 ```{r}
 cat("fits reused as written:", length(sceptre:::response_fits(object)), "\n")
 folder <- variant("other_fit_method")
-record <- read_json(file.path(folder, "stages/calibration.json"))
-record$fits$identity$response_fit_method <- "sceptre"
-write_json(record, file.path(folder, "stages/calibration.json"))
+identity <- read_json(file.path(folder, "fits/response/identity.json"))
+identity$response_fit_method <- "sceptre"
+write_json(identity, file.path(folder, "fits/response/identity.json"))
 changed <- read_sceptre_object(screen, folder)
 cat("fits reused after the change:", length(sceptre:::response_fits(changed)), "\n")
 ```

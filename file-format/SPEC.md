@@ -82,9 +82,9 @@ final; the sorting into kinds is.
 - **tests**: a check in the notebooks exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 114 statements, 79 are file rules, 27 behaviour rules and 8
-guidance. The validators check 76 of the file rules, and tests cover 3
-more. Tests cover 18 of the behaviour rules, and the validators 3; 6
+Of the 118 statements, 80 are file rules, 29 behaviour rules and 9
+guidance. The validators check 77 of the file rules, and tests cover 3
+more. Tests cover 18 of the behaviour rules, and the validators 5; 6
 have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A6.2.
 
 **The machine-readable parts** are in [`spec/`](spec/), and both validators and
@@ -96,6 +96,7 @@ both prototype libraries read them:
 | `spec/tables.json` | Every table of an analysis: its stage, key, columns and types (rules T0 to T6) |
 | `spec/analysis.schema.json` | `analysis.json` (rule A1.1), as a JSON Schema |
 | `spec/stage.schema.json` | The six stage records (rule A2.1), as a JSON Schema |
+| `spec/fits.schema.json` | The record of how cached fits were made (rule T6.1), as a JSON Schema |
 
 HDF5 has no schema language, so `spec/screen.json` is this project's own
 description. The rules that need computing (the order of cells within a
@@ -157,14 +158,36 @@ my_screen.h5mu                        the data file (section 2)
 
 my_analysis/                          one analysis (sections 3 and 4)
 ├── analysis.json
-├── stages/<stage>.json               one per completed stage
-├── pairs/discovery.parquet           pairs/positive_control.parquet
-├── assignments.parquet               assignment_flagged_cells.parquet (optional)
-├── cells.parquet
-├── pair_qc/discovery.parquet         pair_qc/positive_control.parquet
-├── negative_control_groups.parquet
-├── results/<stage>.parquet           results/<stage>_resamples.parquet (optional)
-└── fits/<stage>.parquet              (optional)
+├── parameters/                       one folder per completed stage:
+│   ├── record.json                   the stage's record, written last
+│   ├── discovery_pairs.parquet
+│   └── positive_control_pairs.parquet
+├── assignment/
+│   ├── record.json
+│   ├── assignments.parquet
+│   └── flagged_cells.parquet         (optional)
+├── qc/
+│   ├── record.json
+│   ├── cells.parquet
+│   ├── discovery_pair_qc.parquet
+│   └── positive_control_pair_qc.parquet
+├── calibration/
+│   ├── record.json
+│   ├── negative_control_groups.parquet
+│   ├── results.parquet
+│   └── resamples.parquet             (optional)
+├── power/
+│   ├── record.json
+│   ├── results.parquet
+│   └── resamples.parquet             (optional)
+├── discovery/
+│   ├── record.json
+│   ├── results.parquet
+│   └── resamples.parquet             (optional)
+└── fits/                             NOT a stage: a cache, with rules of its own (T6)
+    └── response/
+        ├── identity.json             how the fits were made
+        └── part-….parquet            one part file per job that added fits
 ```
 
 A dataset is one data file. An analysis is one folder. Any number of analyses
@@ -320,9 +343,9 @@ and `discovery`. The last three do not depend on one another.
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| A2.1 | file | A file in `stages/` MUST be named `<stage>.json` for one of the six stages, conform to `spec/stage.schema.json`, and have `stage` equal to its file name. | V |
+| A2.1 | file | A stage's record is the file `record.json` in the folder named for the stage. It MUST conform to `spec/stage.schema.json` and have `stage` equal to the folder's name. | V |
 | A2.2 | file | A stage's record MUST NOT exist unless the records of all earlier stages exist. | V |
-| A2.3 | behaviour | A stage has run if and only if its record exists. A writer MUST write the record after the stage's tables. | tests (a stage is cleared) |
+| A2.3 | behaviour | A stage has run if and only if its record exists. A writer MUST write the record after the stage's tables, all in the stage's folder. | tests (a stage is cleared) |
 | A2.4 | file | A record holds the stage's `settings` (what the user chose, with defaults filled in), `provenance` (`package`, `version`, `language`: the implementation's language, which is `R` or `Python` for the two libraries here and may be any other, and `written_at`: UTC, `YYYY-MM-DDTHH:MM:SSZ`), and `files` (A5). It MAY hold `summaries`, which a reader MUST NOT need. | V (through A2.1) |
 
 ### A3. Settings and JSON
@@ -339,17 +362,17 @@ and `discovery`. The last three do not depend on one another.
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| A4.1 | file | The folder MUST NOT hold a table of this specification that no stage record lists. | V |
-| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the records and files of that stage and of every later stage, records first. | tests (a stage is cleared) |
+| A4.1 | file | A stage's folder MUST NOT hold one of that stage's tables that its record does not list. A folder holding tables and no record is a stage that did not finish. | V |
+| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the fit cache is deleted too (T6.6). | tests (a stage is cleared) |
 | A4.3 | behaviour | A reader MUST ignore files it does not know. | V (a valid conformance case) |
 
 ### A5. Files of a stage
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| A5.1 | file | Every file a record lists in `files` MUST exist and be readable. | V |
+| A5.1 | file | Every file a record lists in `files` MUST exist in the record's folder and be readable. | V |
 | A5.2 | file | The `rows` a record gives for a file MUST equal the file's number of rows (summed over the parts of a folder). | V |
-| A5.3 | file | A record MUST NOT list a table that `spec/tables.json` assigns to another stage. | V |
+| A5.3 | file | A `files` path names a table in the record's own folder: a file name ending in `.parquet`, with no folder part. A stage cannot list a file outside its folder. | V (through A2.1) |
 | A5.4 | file | A record MUST list every table that `spec/tables.json` marks as required for its stage, even when the table has no rows. | V |
 | A5.5 | guidance | A `files` entry MAY carry a `sha256` of the file. | — |
 
@@ -364,8 +387,9 @@ and `discovery`. The last three do not depend on one another.
 
 ## 4. The tables
 
-`spec/tables.json` gives, for each table: the stage that writes it, whether it
-is required, its key, and its columns with their types. This section states
+`spec/tables.json` gives, for each table: its path, the stage that writes it
+(which is the folder it is in), whether it is required, its key, and its
+columns with their types. This section states
 the rules that apply to all tables and the meaning of each table.
 
 ### T0. Every table
@@ -375,7 +399,7 @@ the rules that apply to all tables and the meaning of each table.
 | T0.1 | file | A table MUST have every required column of its definition, each of the type given there, with no missing values except where the definition says a column is nullable. | V |
 | T0.2 | file | The rows of each file MUST be sorted by the table's key, comparing identifiers as UTF-8 bytes. | V |
 | T0.3 | file | A row group MUST NOT have more than 1,000,000 rows. | v |
-| T0.4 | file | No two rows of a table may have the same key. | V |
+| T0.4 | file | No two rows of a table may have the same key. The fit cache is the one exception: two of its part files may hold the same response (T6.4), though one file may not. | V |
 | T0.5 | file | Cells, gRNAs, responses and targets are named by identifier, and every identifier MUST exist in the data file. | V |
 | T0.6 | file | A table is one `.parquet` file, or a folder of that name holding part files with the same columns. Each part is sorted; parts need not be sorted across each other. | V (a valid conformance case) |
 | T0.7 | file | An identifier column MAY be plain text or dictionary-encoded. | V (a valid conformance case) |
@@ -387,29 +411,29 @@ present. T3.3 and T5.6 say when that is, so a table's key follows from the
 analysis's strategy and the table's stage; `spec/tables.json` records it as
 `present_under`.
 
-### T1. `assignments.parquet` and `assignment_flagged_cells.parquet`
+### T1. `assignment/assignments.parquet` and `assignment/flagged_cells.parquet`
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T1.1 | file | `assignments.parquet` has one row per assigned (gRNA, cell): `grna_id`, `cell_id`. | V (through T0) |
-| T1.2 | file | `assignment_flagged_cells.parquet` is optional. It lists, by `cell_id`, the cells that the assignment method judges not to carry exactly one gRNA beyond what the assignment table shows. | V (through T0) |
+| T1.1 | file | `assignment/assignments.parquet` has one row per assigned (gRNA, cell): `grna_id`, `cell_id`. | V (through T0) |
+| T1.2 | file | `assignment/flagged_cells.parquet` is optional. It lists, by `cell_id`, the cells that the assignment method judges not to carry exactly one gRNA beyond what the assignment table shows. | V (through T0) |
 | T1.3 | behaviour | The cells without exactly one gRNA are those with zero or several assignment rows, together with the flagged cells. | tests (low MOI) |
 
-### T2. `cells.parquet`
+### T2. `qc/cells.parquet`
 
 | Rule | Kind | | Check |
 |---|---|---|---|
 | T2.1 | file | One row per cell of the data file: `cell_id`, and `in_use`, true for the cells that passed QC. | V |
 
-### T3. `pairs/` and `pair_qc/`
+### T3. The pairs to test, and their QC
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T3.1 | file | `pairs/discovery.parquet` and `pairs/positive_control.parquet` hold the pairs to test as the user gave them: `grna_target`, `response_id`. Row order carries no meaning. | V (through T0) |
-| T3.2 | file | `pair_qc/discovery.parquet` and `pair_qc/positive_control.parquet` hold the verdict of pairwise QC: the key columns and `pass_qc`. | V (through T0) |
+| T3.1 | file | `parameters/discovery_pairs.parquet` and `parameters/positive_control_pairs.parquet` hold the pairs to test as the user gave them: `grna_target`, `response_id`. Row order carries no meaning. | V (through T0) |
+| T3.2 | file | `qc/discovery_pair_qc.parquet` and `qc/positive_control_pair_qc.parquet` hold the verdict of pairwise QC: the key columns and `pass_qc`. | V (through T0) |
 | T3.3 | file | The pair-QC tables MUST have a `grna_id` column under the `singleton` and `bonferroni` strategies, where each gRNA is tested on its own, and MUST NOT have one under `union`. | V |
 
-### T4. `negative_control_groups.parquet`
+### T4. `calibration/negative_control_groups.parquet`
 
 | Rule | Kind | | Check |
 |---|---|---|---|
@@ -417,7 +441,7 @@ analysis's strategy and the table's stage; `spec/tables.json` records it as
 | T4.2 | behaviour | A reader MUST take a group's members from this table, never from the group's name. | tests (control groups) |
 | T4.3 | file | A group's name appears in the calibration results in the column that names the tested unit: `grna_target` under the `union` strategy, `grna_id` otherwise. | tests (round trip under each strategy) |
 
-### T5. `results/`
+### T5. Results: `<stage>/results.parquet`
 
 | Rule | Kind | | Check |
 |---|---|---|---|
@@ -425,16 +449,28 @@ analysis's strategy and the table's stage; `spec/tables.json` records it as
 | T5.2 | behaviour | A reader that finds no `log_2_fold_change` MUST compute it as `log(fold_change) / log(2)` with natural logarithms, in that form. A writer MUST NOT omit the column unless it equals that expression for every row. | tests (every example row) |
 | T5.3 | file | `significant` MUST NOT be stored. The record of the `calibration` and `discovery` stages has `significance_threshold`: the largest p-value called significant, or `null` if none was. A row is significant when its `p_value` is at most the threshold. | V |
 | T5.4 | file | Rows are sorted by key (T0.2), not by p-value. | V (through T0.2) |
-| T5.5 | file | `results/<stage>_resamples.parquet` is optional: the key columns and `z_null`, a list of the pair's resampled statistics. | V (through T0) |
+| T5.5 | file | `<stage>/resamples.parquet` is optional: the key columns and `z_null`, a list of the pair's resampled statistics. | V (through T0) |
 | T5.6 | file | A results table and its resamples table MUST have a `grna_id` column under the `singleton` strategy and, for the calibration stage, under `bonferroni`. They MUST NOT have one otherwise: not under `union`, and not for the power and discovery stages under `bonferroni`, whose results are per target. | V |
 
-### T6. `fits/`
+### T6. The fit cache: `fits/response/`
+
+**The fit cache follows different rules from the stage folders.** It holds
+fitted models for the responses, which the three testing stages share. No
+stage owns it: it has no stage record, no stage lists its files, it fills as
+jobs add to it, and it is cleared at a different moment from any testing
+stage. A fit depends on the data, the formula, the fitting method, the control
+group and the cells that passed QC, all of which are fixed once the parameters
+and QC stages have run.
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T6.1 | file | `fits/<stage>.parquet` is listed by a stage if and only if that stage's record has a `fits` entry, which names the file and gives the fits' `identity`: `screen_id`, `formula`, `cells_in_use_sha256`, `response_fit_method`, `control_group`. | V |
-| T6.2 | file | One row per response: `response_id`, `coefficients` (one per term of the design, in the design's order), `theta`. | V |
-| T6.3 | behaviour | The fits are a cache. A reader MAY ignore them. A reader MUST NOT reuse a fit unless every part of its `identity` matches what the reader would use itself, and the fitting method is one that the reader's language shares with the language that made the fit (the record's `provenance.language`). | tests (a changed fit record) |
+| T6.1 | file | If `fits/response/` exists, it MUST hold `identity.json`, conforming to `spec/fits.schema.json`: `screen_id`, `formula`, `cells_in_use_sha256`, `response_fit_method`, `control_group`. | V |
+| T6.2 | file | The fits are the part files of `fits/response/`: one row per response, with `response_id`, `coefficients` (one per term of the design, in the design's order) and `theta`. | V |
+| T6.3 | file | `identity.json` MUST describe this analysis: its data file's `id`, the formula, fitting method and control group of its parameters record, and the hash (A1.3) of the identifiers of the cells in use. A fit cache MUST NOT exist before the parameters and QC stages have run. | V |
+| T6.4 | behaviour | Each writer adds a part file of its own and MUST NOT modify another's. Two parts MAY hold the same response; a reader takes either. A writer that finds `identity.json` MUST check that it matches what it would write, and MUST NOT rewrite it. | V (a valid conformance case with two parts); tests |
+| T6.5 | behaviour | The fits are a cache. A reader MAY ignore them, and deleting them changes no result beyond numerical tolerance. A reader MUST NOT reuse them unless every part of `identity.json` matches what it would use itself and the fitting method is one its language shares. | tests (a changed identity record) |
+| T6.6 | behaviour | The cache is deleted when the `qc` stage or an earlier stage is rerun. It is kept when a testing stage is rerun. | V (a valid conformance case); tests |
+| T6.7 | guidance | `fits/grna/` is reserved for fitted models of the gRNAs, which this version does not define. A table of another kind of fit is a folder of its own, never a column in this one. | — |
 
 ### T7. The design matrix
 

@@ -1,0 +1,16 @@
+{
+  "stage": "power",
+  "settings": {},
+  "provenance": {
+    "package": "sceptre",
+    "version": "0.99.1",
+    "language": "R",
+    "written_at": "2026-11-18T17:51:39Z"
+  },
+  "files": [
+    {
+      "path": "results.parquet",
+      "rows": 10
+    }
+  ]
+}

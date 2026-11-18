@@ -443,11 +443,14 @@ fmt_response_modality <- function(directory) {
     name
 }
 
-stage_file <- function(directory, stage) file.path(directory, "stages", paste0(stage, ".json"))
+# An analysis folder has one folder per stage: the stage's record and its
+# tables (A2). A table's name is its path without `.parquet`: "qc/cells".
+stage_file <- function(directory, stage) file.path(directory, stage, "record.json")
 fmt_stages_run <- function(directory) STAGES[file.exists(stage_file(directory, STAGES))]
+table_path <- function(directory, name) file.path(directory, paste0(name, ".parquet"))
 
-# Write one stage: its tables first, then its record, which lists them (A2, A5).
-# `record` holds settings, and optionally summaries and anything else of the stage.
+# Write one stage into its folder: its tables first, then its record, which
+# lists them (A2, A5). `record` holds settings, and optionally summaries.
 fmt_write_stage <- function(directory, stage, record, tables = list(), provenance = NULL) {
     if (!file.exists(file.path(directory, "analysis.json"))) fmt_stop(directory, " is not an analysis folder.")
     earlier <- names(STAGE_RANK)[STAGE_RANK < STAGE_RANK[[stage]]]
@@ -455,9 +458,9 @@ fmt_write_stage <- function(directory, stage, record, tables = list(), provenanc
     if (length(missing) > 0L) fmt_stop("Stage '", stage, "' needs the stage(s) ", paste(missing, collapse = ", "), " first.")
     if (file.exists(stage_file(directory, stage))) fmt_stop("Stage '", stage, "' is already written; clear it first.")
     files <- lapply(names(tables), function(name) {
-        if (is.null(TABLES[[name]]) || TABLES[[name]]$stage != stage) fmt_stop("Stage '", stage, "' does not write the table ", name, ".")
-        path <- paste0(name, ".parquet")
-        list(path = path, rows = write_table(tables[[name]], file.path(directory, path), table_key(name, tables[[name]])))
+        if (is.null(TABLES[[name]]) || !identical(TABLES[[name]]$stage, stage)) fmt_stop("Stage '", stage, "' does not write the table ", name, ".")
+        # listed by its name within the stage's folder
+        list(path = paste0(basename(name), ".parquet"), rows = write_table(tables[[name]], table_path(directory, name), table_key(name, tables[[name]])))
     })
     if (is.null(provenance)) provenance <- list(package = "sceptre_format.R", version = "prototype", language = "R")
     if (is.null(provenance$written_at)) provenance$written_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
@@ -465,21 +468,54 @@ fmt_write_stage <- function(directory, stage, record, tables = list(), provenanc
     invisible(directory)
 }
 
-# Remove a stage and every later stage: their records and their files (A4).
+# Remove a stage and every later stage: their folders, records first (A4). The
+# fit cache goes too when the QC stage or an earlier one is cleared, and stays
+# when only a testing stage is (T6).
 fmt_clear_stage <- function(directory, stage) {
-    for (later in names(STAGE_RANK)[STAGE_RANK > STAGE_RANK[[stage]] | names(STAGE_RANK) == stage]) {
-        path <- stage_file(directory, later)
-        if (!file.exists(path)) next
-        record <- read_json(path)
+    cleared <- names(STAGE_RANK)[STAGE_RANK > STAGE_RANK[[stage]] | names(STAGE_RANK) == stage]
+    for (later in cleared) {
         # the record goes first: a stage without a record has not run
-        unlink(path)
-        unlink(file.path(directory, vapply(record$files, function(f) f$path, character(1))), recursive = TRUE)
+        unlink(stage_file(directory, later))
+        unlink(file.path(directory, later), recursive = TRUE)
     }
+    if (TABLE_SPEC$fits$cleared_with %in% cleared) unlink(file.path(directory, FITS), recursive = TRUE)
     invisible(directory)
 }
 
-# Read an analysis folder: its link, the record of each stage that ran, and
-# their tables (named as in TABLES).
+# ---- the fit cache (T6): fits/response/, a folder of part files outside the
+# stages. It is no stage's output and is listed in no record. Each writer adds
+# a part of its own; what makes the fits valid is recorded once, beside them.
+FITS <- TABLE_SPEC$fits$folder
+fits_identity_file <- function(directory) file.path(directory, TABLE_SPEC$fits$identity)
+same_identity <- function(a, b) {
+    all(vapply(union(names(a), names(b)), function(name) identical(as.character(a[[name]]), as.character(b[[name]])), logical(1)))
+}
+fmt_write_fits <- function(directory, table, identity) {
+    missing <- setdiff(c("parameters", "qc"), fmt_stages_run(directory))
+    if (length(missing) > 0L) fmt_stop("Fits can be saved once the parameters and qc stages are written.")
+    path <- fits_identity_file(directory)
+    if (file.exists(path)) {
+        # a later writer checks the record; it does not rewrite it
+        if (!same_identity(read_json(path), identity)) fmt_stop("The fits already saved in ", FITS, " were made differently.")
+    } else {
+        write_json(identity, path)
+    }
+    part <- file.path(directory, FITS, paste0("part-", substr(new_id(), 1L, 12L), ".parquet"))
+    write_table(table, part, table_key(FITS, table))
+    invisible(part)
+}
+# The cached fits and how they were made, or NULL. Two parts may hold the same
+# response; a reader takes either.
+fmt_read_fits <- function(directory) {
+    if (!file.exists(fits_identity_file(directory))) return(NULL)
+    folder <- file.path(directory, FITS)
+    table <- if (length(table_files(folder)) > 0L) read_table(folder, TABLES[[FITS]]$columns) else NULL
+    if (!is.null(table)) table <- table[!duplicated(table$response_id), , drop = FALSE]
+    list(identity = read_json(fits_identity_file(directory)), table = table)
+}
+
+# Read an analysis folder: its link, the record of each stage that ran, their
+# tables (named as in TABLES), and the fit cache if there is one.
 fmt_read_analysis <- function(directory) {
     analysis <- read_json(file.path(directory, "analysis.json"))
     check_format(analysis$format, directory)
@@ -487,18 +523,20 @@ fmt_read_analysis <- function(directory) {
     tables <- list()
     for (record in stages) {
         for (file in record$files) {
-            path <- file.path(directory, file$path)
+            name <- paste0(record$stage, "/", sub("\\.parquet$", "", file$path))
+            path <- table_path(directory, name)
             if (!file.exists(path)) fmt_stop("The stage '", record$stage, "' lists ", file$path, ", which is missing.")
             if (table_rows(path) != file$rows) {
-                fmt_stop(file$path, " has ", table_rows(path), " rows; the stage '", record$stage, "' wrote ", file$rows, ".")
+                fmt_stop(name, ".parquet has ", table_rows(path), " rows; the stage '", record$stage, "' wrote ", file$rows, ".")
             }
-            name <- sub("\\.parquet$", "", file$path)
             tables[[name]] <- read_table(path, TABLES[[name]]$columns)
         }
     }
+    fits <- fmt_read_fits(directory)
+    tables[[FITS]] <- fits$table
     list(
         format = analysis$format, response_modality = analysis$response_modality,
-        screen = analysis$screen, stages = stages, tables = tables
+        screen = analysis$screen, stages = stages, tables = tables, fits_identity = fits$identity
     )
 }
 
@@ -825,7 +863,7 @@ write_sceptre_analysis <- function(object, screen_file, directory, provenance = 
                 grna_fit_method = field(object, "grna_fit_method")
             ),
             design = list(terms = I(to_file_names(colnames(design), modality)), sha256 = design_sha256(design))
-        ), list("pairs/discovery" = pairs$discovery, "pairs/positive_control" = pairs$positive_control))
+        ), list("parameters/discovery_pairs" = pairs$discovery, "parameters/positive_control_pairs" = pairs$positive_control))
     }
 
     if ("assignment" %in% done) {
@@ -845,10 +883,10 @@ write_sceptre_analysis <- function(object, screen_file, directory, provenance = 
             method = field(object, "grna_assignment_method"),
             hyperparameters = if (length(hyperparameters) == 0L) stats::setNames(list(), character()) else hyperparameters
         )), list(
-            assignments = data.frame(
+            "assignment/assignments" = data.frame(
                 grna_id = rep(names(initial), lengths(initial)), cell_id = cells[unlist(initial, use.names = FALSE)]
             ),
-            assignment_flagged_cells = if (length(flagged) > 0L) data.frame(cell_id = cells[flagged])
+            "assignment/flagged_cells" = if (length(flagged) > 0L) data.frame(cell_id = cells[flagged])
         ))
     }
 
@@ -870,19 +908,13 @@ write_sceptre_analysis <- function(object, screen_file, directory, provenance = 
             settings = c(field(object, "cellwise_qc_thresholds"), list(pairwise_qc = field(object, "pairwise_qc"), B3 = field(object, "B3"))),
             summaries = list(cells_removed = as.list(stats::setNames(removed, sub("^n_cells_rm_", "", names(removed)))))
         ), list(
-            cells = data.frame(cell_id = cells, in_use = seq_along(cells) %in% in_use),
-            "pair_qc/discovery" = pair_qc$discovery, "pair_qc/positive_control" = pair_qc$positive_control
+            "qc/cells" = data.frame(cell_id = cells, in_use = seq_along(cells) %in% in_use),
+            "qc/discovery_pair_qc" = pair_qc$discovery, "qc/positive_control_pair_qc" = pair_qc$positive_control
         ))
     }
 
     fits <- ns$response_fits(object)
-    fits_stage <- intersect(c("calibration", "power", "discovery"), done)[1]
-    fit_record <- function(stage) {
-        if (length(fits) == 0L || !identical(stage, fits_stage)) return(NULL)
-        list(file = paste0("fits/", stage, ".parquet"), identity = fit_identity(object, sce))
-    }
-    fit_table <- function(stage) {
-        if (length(fits) == 0L || !identical(stage, fits_stage)) return(NULL)
+    fit_table <- function() {
         terms <- colnames(field(object, "covariate_matrix"))
         table <- data.frame(response_id = names(fits), theta = vapply(fits, function(f) f$theta, numeric(1)))
         table$coefficients <- lapply(fits, function(f) {
@@ -921,28 +953,24 @@ write_sceptre_analysis <- function(object, screen_file, directory, provenance = 
                 calibration_group_size = field(object, "calibration_group_size"),
                 n_calibration_pairs = field(object, "n_calibration_pairs"), B3 = field(object, "B3")
             ),
-            significance_threshold = significance_threshold(result),
-            fits = fit_record("calibration")
+            significance_threshold = significance_threshold(result)
         ), list(
-            negative_control_groups = data.frame(grna_group = rep(groups, lengths(members)), grna_id = unlist(members)),
-            "results/calibration" = result_table("calibration"), "results/calibration_resamples" = resamples("calibration"),
-            "fits/calibration" = fit_table("calibration")
+            "calibration/negative_control_groups" = data.frame(grna_group = rep(groups, lengths(members)), grna_id = unlist(members)),
+            "calibration/results" = result_table("calibration"), "calibration/resamples" = resamples("calibration")
         ))
     }
     if ("power" %in% done) {
-        write("power", list(settings = stats::setNames(list(), character()), fits = fit_record("power")),
-            list("results/power" = result_table("power"), "results/power_resamples" = resamples("power"), "fits/power" = fit_table("power")))
+        write("power", list(settings = stats::setNames(list(), character())),
+            list("power/results" = result_table("power"), "power/resamples" = resamples("power")))
     }
     if ("discovery" %in% done) {
         write("discovery", list(
             settings = stats::setNames(list(), character()),
-            significance_threshold = significance_threshold(as.data.frame(ns$analysis_result(object, "discovery"))),
-            fits = fit_record("discovery")
-        ), list(
-            "results/discovery" = result_table("discovery"), "results/discovery_resamples" = resamples("discovery"),
-            "fits/discovery" = fit_table("discovery")
-        ))
+            significance_threshold = significance_threshold(as.data.frame(ns$analysis_result(object, "discovery")))
+        ), list("discovery/results" = result_table("discovery"), "discovery/resamples" = resamples("discovery")))
     }
+    # the fits the object holds go to the cache, which no stage owns (T6)
+    if (length(fits) > 0L && "qc" %in% done) fmt_write_fits(directory, fit_table(), fit_identity(object, sce))
     invisible(directory)
 }
 
@@ -1033,11 +1061,11 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
         }
         set("covariate_matrix", design)
         for (type in c("discovery", "positive_control")) {
-            pairs <- expand_pairs(tables[[paste0("pairs/", type)]], grna_table)
+            pairs <- expand_pairs(tables[[paste0("parameters/", type, "_pairs")]], grna_table)
             rownames(pairs) <- NULL
             set(paste0(type, "_pairs"), pairs)
             # counted as the user gave them, before any expansion by gRNA
-            set(paste0("n_", type, "_pairs"), nrow(tables[[paste0("pairs/", type)]]))
+            set(paste0("n_", type, "_pairs"), nrow(tables[[paste0("parameters/", type, "_pairs")]]))
         }
     }
 
@@ -1045,7 +1073,7 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
         settings <- records$assignment$settings
         set("grna_assignment_method", settings$method)
         set("grna_assignment_hyperparameters", text_formula(as.list(settings$hyperparameters)))
-        initial <- cells_by_grna(tables$assignments, rownames(grna), cells)
+        initial <- cells_by_grna(tables[["assignment/assignments"]], rownames(grna), cells)
         raw <- group_cells(initial, grna_table)
         set("initial_grna_assignment_list", initial)
         set("grna_assignments_raw", raw)
@@ -1053,7 +1081,7 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
         # the "maximum" method does not count gRNAs per cell
         if (!identical(settings$method, "maximum")) set("grnas_per_cell", grnas_per_cell(initial, length(cells)))
         if (low_moi) {
-            flagged <- match(tables$assignment_flagged_cells$cell_id, cells)
+            flagged <- match(tables[["assignment/flagged_cells"]]$cell_id, cells)
             set("cells_w_zero_or_twoplus_grnas", sort(union(not_one_grna(initial, length(cells)), flagged)))
         }
     }
@@ -1065,12 +1093,12 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
         set("B3", as.integer(settings$B3))
         removed <- unlist(records$qc$summaries$cells_removed)
         set("cell_removal_metrics", stats::setNames(as.integer(removed), paste0("n_cells_rm_", names(removed))))
-        table_cells <- tables$cells[match(cells, tables$cells$cell_id), , drop = FALSE]
+        table_cells <- tables[["qc/cells"]][match(cells, tables[["qc/cells"]]$cell_id), , drop = FALSE]
         in_use <- which(table_cells$in_use)
         set("cells_in_use", in_use)
         set("grna_assignments", qc_assignments(raw, in_use, identical(records$parameters$settings$control_group, "nt_cells")))
         for (type in c("discovery", "positive_control")) {
-            pair_qc <- tables[[paste0("pair_qc/", type)]]
+            pair_qc <- tables[[paste0("qc/", type, "_pair_qc")]]
             info <- data.frame(response_id = pair_qc$response_id, grna_group = unit_group(pair_qc, strategy), pass_qc = pair_qc$pass_qc)
             # the order a package tests in: by response, in the data file's order
             info <- info[order(match(info$response_id, response_ids)), , drop = FALSE]
@@ -1084,8 +1112,8 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
     }
 
     result <- function(stage) {
-        table <- add_log_2_fold_change(tables[[paste0("results/", stage)]])
-        table <- add_resamples(table, tables[[paste0("results/", stage, "_resamples")]])
+        table <- add_log_2_fold_change(tables[[paste0(stage, "/results")]])
+        table <- add_resamples(table, tables[[paste0(stage, "/resamples")]])
         if (stage != "power") table <- add_significant(table, records[[stage]]$significance_threshold)
         # as sceptre returns results: by p-value, then response
         table <- table[do.call(order, c(list(table$p_value, table$response_id), unname(as.list(table[unit_key(table)])), list(method = "radix"))), , drop = FALSE]
@@ -1101,7 +1129,7 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
         set("calibration_group_size", as.integer(settings$calibration_group_size))
         set("n_calibration_pairs", as.integer(settings$n_calibration_pairs))
         set("B3", as.integer(settings$B3))
-        calibration <- tables[["results/calibration"]]
+        calibration <- tables[["calibration/results"]]
         set("negative_control_pairs", data.table::as.data.table(data.frame(
             response_id = calibration$response_id, grna_group = unit_group(calibration, strategy), pass_qc = calibration$pass_qc
         )))
@@ -1110,22 +1138,21 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
     if ("power" %in% done) set_result("power")
     if ("discovery" %in% done) set_result("discovery")
 
-    # a saved fit is reused only if it was made as this analysis would make it (T6)
-    for (stage in intersect(c("calibration", "power", "discovery"), done)) {
-        saved <- records[[stage]]$fits
-        if (is.null(saved)) next
-        reason <- fit_mismatch(saved$identity, fit_identity(object, sce), records[[stage]]$provenance$language)
+    # cached fits are reused only if they were made as this analysis would make them (T6)
+    saved <- if (is.null(directory)) NULL else analysis$fits_identity
+    if (!is.null(saved) && "qc" %in% done && !is.null(tables[[FITS]])) {
+        reason <- fit_mismatch(saved, fit_identity(object, sce))
         if (!is.null(reason)) {
-            message("Saved fits in ", saved$file, " are not reused: ", reason, ".")
-            next
+            message("The fits saved in ", FITS, " are not reused: ", reason, ".")
+        } else {
+            table <- tables[[FITS]]
+            terms <- colnames(field(object, "covariate_matrix"))
+            fits <- lapply(stats::setNames(seq_len(nrow(table)), table$response_id), function(i) {
+                list(fitted_coefs = stats::setNames(table$coefficients[[i]], terms), theta = table$theta[i])
+            })
+            setter <- get("response_fits<-", envir = ns)
+            object <- setter(object, value = c(ns$response_fits(object), fits))
         }
-        table <- tables[[paste0("fits/", stage)]]
-        terms <- colnames(field(object, "covariate_matrix"))
-        fits <- lapply(stats::setNames(seq_len(nrow(table)), table$response_id), function(i) {
-            list(fitted_coefs = stats::setNames(table$coefficients[[i]], terms), theta = table$theta[i])
-        })
-        setter <- get("response_fits<-", envir = ns)
-        object <- setter(object, value = c(ns$response_fits(object), fits))
     }
 
     status <- stats::setNames(c(TRUE, STAGE_FUNCTIONS %in% STAGE_FUNCTIONS[done]), c("import_data", STAGE_FUNCTIONS))
@@ -1138,14 +1165,15 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
     object
 }
 
-fit_mismatch <- function(saved, current, language) {
+# Why cached fits cannot be reused, or NULL. A method name means the same
+# estimator in every language that lists it; a method this language does not
+# share is never reused.
+fit_mismatch <- function(saved, current) {
     for (name in names(current)) {
-        if (!identical(saved[[name]], current[[name]])) return(paste0("their `", name, "` differs"))
+        if (!identical(as.character(saved[[name]]), as.character(current[[name]]))) return(paste0("their `", name, "` differs"))
     }
     method <- current$response_fit_method
-    if (!"R" %in% FIT_METHODS[[method]] || !language %in% FIT_METHODS[[method]]) {
-        return(paste0("the method '", method, "' is not shared between ", language, " and R"))
-    }
+    if (!"R" %in% FIT_METHODS[[method]]) return(paste0("the method '", method, "' is not one R shares"))
     NULL
 }
 
@@ -1521,13 +1549,6 @@ schema_problems <- function(path, schema) {
     unique(paste0(ifelse(nzchar(errors$instancePath), errors$instancePath, "/"), " ", errors$message))
 }
 
-# The tables a stage record lists, read without trusting the rest of the record.
-listed_paths <- function(path) {
-    files <- tryCatch(read_json(path)$files, error = function(e) NULL)
-    paths <- unlist(lapply(files, function(f) if (is.list(f)) f$path))
-    sub("\\.parquet$", "", as.character(paths))
-}
-
 column_kind <- function(column) {
     if (is.character(column) || is.factor(column)) return("string")
     if (is.logical(column)) return("boolean")
@@ -1549,68 +1570,78 @@ validate_analysis <- function(directory, screen_file = NULL) {
     analysis <- if (length(faults) == 0L) read_json(path) else NULL
     if (!is.null(analysis) && !known_major(analysis$format)) log$add("A1.1", "analysis.json", "is in a format this validator does not know.")
 
-    # stage records
-    present <- sub("\\.json$", "", list.files(file.path(directory, "stages"), pattern = "\\.json$"))
-    for (name in setdiff(present, STAGES)) log$add("A2.1", paste0("stages/", name, ".json"), "is not named for a stage.")
+    # stage records: <stage>/record.json
+    present <- fmt_stages_run(directory)
     records <- list()
-    unchecked <- character()
-    for (stage in intersect(STAGES, present)) {
-        where <- paste0("stages/", stage, ".json")
+    unchecked <- character()   # stages whose record cannot be trusted
+    for (stage in present) {
+        where <- paste0(stage, "/record.json")
         faults <- schema_problems(stage_file(directory, stage), "stage.schema.json")
         for (fault in faults) log$add("A2.1", where, fault)
         if (length(faults) > 0L) {
-            # its files are still accounted for, so that they are not also reported as stale
-            unchecked <- c(unchecked, listed_paths(stage_file(directory, stage)))
+            unchecked <- c(unchecked, stage)
             next
         }
         record <- read_json(stage_file(directory, stage))
         if (!identical(record$stage, stage)) {
             log$add("A2.1", where, "says it is the record of the stage '", record$stage, "'.")
-            unchecked <- c(unchecked, listed_paths(stage_file(directory, stage)))
+            unchecked <- c(unchecked, stage)
             next
         }
         records[[stage]] <- record
     }
-    for (stage in intersect(STAGES, present)) {
+    for (stage in present) {
         missing <- setdiff(names(STAGE_RANK)[STAGE_RANK < STAGE_RANK[[stage]]], present)
-        if (length(missing) > 0L) log$add("A2.2", paste0("stages/", stage, ".json"), "The stage needs the stage(s) ", paste(missing, collapse = ", "), " first.")
+        if (length(missing) > 0L) log$add("A2.2", paste0(stage, "/record.json"), "The stage needs the stage(s) ", paste(missing, collapse = ", "), " first.")
     }
 
-    # the files each record lists
+    # the files each record lists, all in the stage's own folder
     listed <- character()
     tables <- list()
     for (stage in names(records)) {
         record <- records[[stage]]
-        where <- paste0("stages/", stage, ".json")
-        paths <- vapply(record$files, function(f) f$path, character(1))
-        names_listed <- sub("\\.parquet$", "", paths)
+        where <- paste0(stage, "/record.json")
+        names_listed <- paste0(stage, "/", sub("\\.parquet$", "", vapply(record$files, function(f) f$path, character(1))))
         listed <- c(listed, names_listed)
         for (file in record$files) {
-            name <- sub("\\.parquet$", "", file$path)
-            known <- TABLES[[name]]
-            if (!is.null(known) && known$stage != stage) log$add("A5.3", where, "lists ", file$path, ", which the stage '", known$stage, "' writes.")
-            full <- file.path(directory, file$path)
+            name <- paste0(stage, "/", sub("\\.parquet$", "", file$path))
+            shown <- paste0(name, ".parquet")
+            full <- table_path(directory, name)
             if (!file.exists(full)) {
-                log$add("A5.1", file$path, "is listed by the stage '", stage, "' and is missing.")
+                log$add("A5.1", shown, "is listed by its stage's record and is missing.")
                 next
             }
             rows <- tryCatch(table_rows(full), error = function(e) NA)
             if (is.na(rows)) {
-                log$add("A5.1", file$path, "cannot be read as Parquet.")
+                log$add("A5.1", shown, "cannot be read as Parquet.")
                 next
             }
-            if (rows != file$rows) log$add("A5.2", file$path, "has ", rows, " rows; the stage '", stage, "' wrote ", file$rows, ".")
-            if (!is.null(known)) tables[[name]] <- full
+            if (rows != file$rows) log$add("A5.2", shown, "has ", rows, " rows; the stage '", stage, "' wrote ", file$rows, ".")
+            if (!is.null(TABLES[[name]])) tables[[name]] <- full
         }
-        required <- names(TABLES)[vapply(TABLES, function(t) t$stage == stage && isTRUE(t$required), logical(1))]
+        required <- names(TABLES)[vapply(TABLES, function(t) identical(t$stage, stage) && isTRUE(t$required), logical(1))]
         for (name in setdiff(required, names_listed)) log$add("A5.4", where, "does not list the table ", name, ".")
-        # saved fits and their record go together (T6)
-        fit_table <- paste0("fits/", stage)
-        if (!is.null(record$fits) && !identical(sub("\\.parquet$", "", record$fits$file), fit_table)) log$add("T6.1", where, "`fits` names a file other than ", fit_table, ".parquet.")
-        if (is.null(record$fits) != !(fit_table %in% names_listed)) log$add("T6.1", where, "Saved fits and the record of how they were made must come together.")
     }
-    for (name in setdiff(names(TABLES), c(listed, unchecked))) {
-        if (file.exists(file.path(directory, paste0(name, ".parquet")))) log$add("A4.1", paste0(name, ".parquet"), "is in the folder and no stage record lists it.")
+    # a stage's table that is in its folder and that no record lists (A4.1)
+    for (name in names(TABLES)) {
+        stage <- TABLES[[name]]$stage
+        if (is.null(stage) || stage %in% unchecked || name %in% listed) next
+        if (file.exists(table_path(directory, name))) log$add("A4.1", paste0(name, ".parquet"), "is in the folder and its stage's record does not list it.")
+    }
+
+    # the fit cache: parts, and one record of how the fits were made (T6)
+    fits_identity <- NULL
+    fits_folder <- file.path(directory, FITS)
+    if (dir.exists(fits_folder)) {
+        if (!file.exists(fits_identity_file(directory))) {
+            log$add("T6.1", FITS, "has no record of how the fits were made.")
+        } else {
+            faults <- schema_problems(fits_identity_file(directory), "fits.schema.json")
+            for (fault in faults) log$add("T6.1", TABLE_SPEC$fits$identity, fault)
+            if (length(faults) == 0L) fits_identity <- read_json(fits_identity_file(directory))
+        }
+        if (length(table_files(fits_folder)) > 0L) tables[[FITS]] <- fits_folder
+        if (!all(c("parameters", "qc") %in% present)) log$add("T6.3", FITS, "The fit cache needs the parameters and qc stages.")
     }
 
     # each table against its definition
@@ -1618,7 +1649,7 @@ validate_analysis <- function(directory, screen_file = NULL) {
     contents <- list()
     for (name in names(tables)) {
         definition <- TABLES[[name]]$definition
-        where <- paste0(name, ".parquet")
+        where <- if (identical(name, FITS)) name else paste0(name, ".parquet")
         parts <- lapply(table_files(tables[[name]]), function(file) {
             part <- as.data.frame(nanoparquet::read_parquet(file), stringsAsFactors = FALSE)
             class(part) <- "data.frame"
@@ -1658,25 +1689,39 @@ validate_analysis <- function(directory, screen_file = NULL) {
             }
         }
         if (!ok) next
+        # within one file the key is sorted and unique; across the parts of the
+        # fit cache it need not be unique
+        across_parts <- !identical(definition$unique_across_parts, FALSE)
         for (part in parts) {
             factors <- vapply(part, is.factor, logical(1))
             part[factors] <- lapply(part[factors], as.character)
             key <- table_key(name, part)
             if (nrow(part) > 1L && !identical(byte_order(part, key), seq_len(nrow(part)))) log$add("T0.2", where, "The rows are not sorted by ", paste(key, collapse = ", "), ".")
+            if (!across_parts && anyDuplicated(part[key]) > 0L) log$add("T0.4", where, "Two rows of one file have the same ", paste(key, collapse = ", "), ".")
         }
         whole <- read_table(tables[[name]])
         key <- table_key(name, whole)
-        if (anyDuplicated(whole[key]) > 0L) log$add("T0.4", where, "Two rows have the same ", paste(key, collapse = ", "), ".")
+        if (across_parts && anyDuplicated(whole[key]) > 0L) log$add("T0.4", where, "Two rows have the same ", paste(key, collapse = ", "), ".")
         contents[[name]] <- whole
     }
 
     parameters <- records$parameters
     if (!is.null(parameters)) {
-        if (!formula_in_subset(parameters$settings$formula)) log$add("T7.1", "stages/parameters.json", "The formula is outside the additive subset.")
-        for (stage in c("calibration", "power", "discovery")) {
-            fits <- contents[[paste0("fits/", stage)]]
-            if (!is.null(fits) && any(lengths(fits$coefficients) != length(parameters$design$terms))) {
-                log$add("T6.2", paste0("fits/", stage, ".parquet"), "A fit does not have one coefficient per term of the design.")
+        if (!formula_in_subset(parameters$settings$formula)) log$add("T7.1", "parameters/record.json", "The formula is outside the additive subset.")
+        fits <- contents[[FITS]]
+        if (!is.null(fits) && any(lengths(fits$coefficients) != length(parameters$design$terms))) {
+            log$add("T6.2", FITS, "A fit does not have one coefficient per term of the design.")
+        }
+        # the cache was made for this analysis's parameters (T6.3)
+        if (!is.null(fits_identity)) {
+            expected <- list(
+                formula = parameters$settings$formula, response_fit_method = parameters$settings$response_fit_method,
+                control_group = parameters$settings$control_group, screen_id = analysis$screen$id
+            )
+            for (field in names(expected)) {
+                if (!is.null(expected[[field]]) && !identical(as.character(fits_identity[[field]]), as.character(expected[[field]]))) {
+                    log$add("T6.3", TABLE_SPEC$fits$identity, "`", field, "` is not that of the analysis.")
+                }
             }
         }
     }
@@ -1700,13 +1745,19 @@ validate_analysis <- function(directory, screen_file = NULL) {
                     if (!all(contents[[name]][[column]] %in% known[[column]])) log$add("T0.5", paste0(name, ".parquet"), "`", column, "` names something the data file does not have.")
                 }
             }
-            for (name in intersect(c("assignments", "negative_control_groups"), names(contents))) {
+            for (name in intersect(c("assignment/assignments", "calibration/negative_control_groups"), names(contents))) {
                 if (!all(contents[[name]]$grna_id %in% screen$grnas)) log$add("T0.5", paste0(name, ".parquet"), "`grna_id` names something the data file does not have.")
             }
-            for (name in intersect(c("pairs/discovery", "pairs/positive_control"), names(contents))) {
+            for (name in intersect(c("parameters/discovery_pairs", "parameters/positive_control_pairs"), names(contents))) {
                 if (!all(contents[[name]]$grna_target %in% screen$targets)) log$add("T0.5", paste0(name, ".parquet"), "`grna_target` names something the data file does not have.")
             }
-            if (!is.null(contents$cells) && !setequal(contents$cells$cell_id, screen$cells)) log$add("T2.1", "cells.parquet", "does not have one row per cell of the data file.")
+            kept <- contents[["qc/cells"]]
+            if (!is.null(kept) && !setequal(kept$cell_id, screen$cells)) {
+                log$add("T2.1", "qc/cells.parquet", "does not have one row per cell of the data file.")
+            } else if (!is.null(kept) && !is.null(fits_identity)) {
+                in_use <- screen$cells[screen$cells %in% kept$cell_id[kept$in_use]]
+                if (!identical(fits_identity$cells_in_use_sha256, sha256_ids(in_use))) log$add("T6.3", TABLE_SPEC$fits$identity, "`cells_in_use_sha256` is not that of the cells in use.")
+            }
         }
     }
     log$all()
