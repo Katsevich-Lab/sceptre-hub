@@ -951,13 +951,8 @@ independent readers reduce that weakness and only an outside implementer
 removes it. The suite has run on one operating system: a workflow file for
 Linux and macOS is in the hub and has not been run.
 
-**A question for Eugene: what the prototype's reader and writer become.**
-Either throwaway, with each package writing its own and the conformance set
-keeping them equivalent; or a kept reference implementation living with the
-specification, explicitly not authoritative. The side session leans to the
-second, because otherwise the only writers in existence are inside the two
-packages and the format is in practice whatever they do. It is more code to
-maintain. Not decided.
+**The prototype's reader and writer are temporary** *(Decided by Eugene, 18
+November)*. See "Where this lives" below.
 
 ### What a code review found
 
@@ -991,17 +986,68 @@ Not taken: a voting process, a separate repository of test files, a folder of
 proposals. An archive of files written by each released version is worth
 starting at the freeze, so that later readers can be tested against them.
 
-### Where this lives later
+### Where this lives
 
-For this draft everything is in this folder. The plan, not yet carried out:
+*(Decided by Eugene, 18 November.)*
 
-- The specification, the files of `spec/` and the conformance files move to
-  the `sceptre-hub` repository, in a folder of their own. They move to a
-  separate repository only if groups outside sceptre start using the format.
-- Each package validates what it reads and exposes the check. The packages
-  carry a copy of `spec/`, with a test that fails when the copy differs from
-  the hub's.
-- Not planned now: a third, standalone validator or command-line tool.
+- **Now, while the format is being decided:** the readers and writers live
+  outside the packages, in `format/`. That is the right place while the format
+  still changes: the layout, the names, the version and the coordinate
+  convention each changed in one edit, with no package release or review.
+- **They are a demonstration, not a reference.** Prototype code by one author.
+  Nobody should depend on it as a package's reader.
+- **When this phase ends:** the plain layer (files to standard containers)
+  moves into sceptre and pysceptre and becomes their real reader and writer.
+  The layer that reaches into package internals (`package-suite/`) is replaced
+  by a small adapter in each package. The copy here is retired once both
+  packages pass the conformance suite.
+- **sceptre and pysceptre are then the two reference implementations.** That
+  fits the change rule of the specification: nothing enters it until both
+  implement it and a conformance file exercises it.
+- **What stays with the specification for good:** the specification, `spec/`,
+  the conformance files with their expected results, the validators, and a
+  harness that runs any reader or writer against them (`verify/README.md`).
+
+**Precedents** *(read by a side session on 18 November from each project's own
+repository; I did not re-read them)*. In all seven, the reference
+implementations are the real libraries, and what sits beside the specification
+is neutral: test files, expected values, a harness, sometimes a validator.
+None keeps a separate, non-production reference reader and writer once real
+libraries exist. Seven is a small sample.
+
+| Project | What it does |
+|---|---|
+| Apache Parquet | A format change needs two implementations that interoperate, one of them the Java library; a prototype is allowed while a change is discussed. A separate repository holds test files |
+| Apache Arrow | At least two reference implementations, each inside a complete library, with integration tests. Test data is described in a neutral JSON form, and every producer is tested against every consumer |
+| CommonMark | Two named reference implementations, which are also the libraries people use; the examples in the specification are the conformance tests, with a runner that takes any program |
+| JSON Schema, TOML | No reference implementation; a test suite that does not depend on a language |
+| BIDS | No reference writer; one official validator |
+| SOMA | A specification and its first implementation, with Python and R interfaces |
+| GeoParquet | A specification, a folder of examples, and a list of implementations |
+
+Two things here go beyond those sources and are a judgement, not a precedent:
+the harness takes any reader or writer as an input, so that a package can be
+tested against this suite without the suite importing it; and there is one
+validator per language, kept in agreement by the conformance set, with no
+third to be added.
+
+### How adoption would go
+
+For the record. None of this has started, and it is not a format question.
+
+1. **Finish the format side first**: the package-free suite, the harness, and
+   a review of structure and names. Package code written before that review
+   risks being rewritten.
+2. **Settle what the package branches start from.** The package layer of the
+   prototype is written against unreviewed `sceptre3` builds, and the plan for
+   rebuilding the packages is not decided. This is the real blocker.
+3. **In each package, two layers**: the plain layer, lifted from the prototype,
+   and a small new adapter to the package's own object.
+4. **Small changes in this order**: R writer, R reader, Python reader, Python
+   writer. The writer comes first in R because R is the reference
+   implementation and a writer has independent evidence at once (the validators
+   and the standard Python libraries), while a reader has nothing real to read
+   until a writer exists.
 
 ---
 

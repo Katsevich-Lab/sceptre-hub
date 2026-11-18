@@ -1,9 +1,15 @@
-"""Two writers, one file. R and Python each wrote the same random content
+"""Two writers, one file. Two implementations each wrote the same random content
 (verify/random_inputs.py, verify/two_writers.R). This compares the two sets of
 files array by array and table by table, checks both with the validator, and
-reads R's files back to compare them with the source, not with a rewrite.
+reads the first one's files back to compare them with the source, not with a
+rewrite.
 
-    python verify/two_writers.py
+    python verify/two_writers.py            # the R library against the Python one
+    python verify/two_writers.py A B        # any two implementations
+
+An implementation is tested by having it read verify/out/random/seed-*/input.json
+and write `screen-<name>.h5mu` and `analysis-<name>/` beside it; nothing here
+imports the implementation. See verify/README.md.
 """
 import json
 import sys
@@ -103,15 +109,16 @@ def same_tables(a, b):
 
 if __name__ == "__main__":
     results = Results("two-writers")
+    A, B = (sys.argv[1:3] if len(sys.argv) >= 3 else ["r", "python"])
     for folder in sorted((OUT / "random").glob("seed-*")):
         seed = folder.name
         inputs = json.loads((folder / "input.json").read_text())
-        r_file, py_file = folder / "screen-r.h5mu", folder / "screen-python.h5mu"
+        r_file, py_file = folder / f"screen-{A}.h5mu", folder / f"screen-{B}.h5mu"
         with h5py.File(r_file) as a, h5py.File(py_file) as b:
             for modality in ("rna", "grna"):
                 arrays = all(a[f"mod/{modality}/X/{k}"].dtype == b[f"mod/{modality}/X/{k}"].dtype and np.array_equal(a[f"mod/{modality}/X/{k}"][()], b[f"mod/{modality}/X/{k}"][()])
                              for k in ("data", "indices", "indptr"))
-                results.add(f"{seed}: {modality} count arrays identical in R's file and Python's", bool(arrays))
+                results.add(f"{seed}: {modality} count arrays identical in {A}'s file and {B}'s", bool(arrays))
                 for table in ("obs", "var"):
                     verdict = same_tables(a[f"mod/{modality}/{table}"], b[f"mod/{modality}/{table}"])
                     results.add(f"{seed}: {modality} {table} table has the same columns, encodings and values", verdict is True, "" if verdict is True else verdict)
@@ -119,14 +126,14 @@ if __name__ == "__main__":
             results.add(f"{seed}: shared cell table has the same columns, encodings and values", verdict is True, "" if verdict is True else verdict)
             stamp = lambda f: {k: (f["uns/sceptre"][k].asstr()[()], str(f["uns/sceptre"][k].dtype)) for k in f["uns/sceptre"]}
             results.add(f"{seed}: file metadata identical", stamp(a) == stamp(b), f"{stamp(a)} / {stamp(b)}")
-        for language, file in (("R", r_file), ("Python", py_file)):
+        for language, file in ((A, r_file), (B, py_file)):
             problems = sf.validate_screen(file)
             results.add(f"{seed}: Python validator passes the file {language} wrote", len(problems) == 0, problems.to_string() if len(problems) else "")
-            problems = sf.validate_analysis(folder / f"analysis-{language.lower()}", file)
+            problems = sf.validate_analysis(folder / f"analysis-{language}", file)
             results.add(f"{seed}: Python validator passes the analysis {language} wrote", len(problems) == 0, problems.to_string() if len(problems) else "")
 
         # the analysis folders, table by table
-        r_folder, py_folder = folder / "analysis-r", folder / "analysis-python"
+        r_folder, py_folder = folder / f"analysis-{A}", folder / f"analysis-{B}"
         r_tables = sorted(str(p.relative_to(r_folder)) for p in r_folder.rglob("*.parquet") if "fits" not in p.parts)
         py_tables = sorted(str(p.relative_to(py_folder)) for p in py_folder.rglob("*.parquet") if "fits" not in p.parts)
         results.add(f"{seed}: the two analyses have the same tables", r_tables == py_tables, f"{r_tables} / {py_tables}")
@@ -142,21 +149,21 @@ if __name__ == "__main__":
                 x, y = json.loads((r_folder / stage / "record.json").read_text()), json.loads((py_folder / stage / "record.json").read_text())
                 results.add(f"{seed}: {stage} record equal apart from the writer's language", strip(x) == strip(y), f"{x} / {y}" if strip(x) != strip(y) else "")
 
-        # R's file read back and compared with the source
+        # the first implementation's file read back and compared with the source
         back = sf.read_screen(r_file)
         for modality, key in (("rna", "rna"), ("grna", "grna")):
             coo = back[modality].X.tocoo()
             read = sorted([int(r), int(c), int(v)] for r, c, v in zip(coo.row, coo.col, coo.data))
-            results.add(f"{seed}: {modality} counts read from R's file equal the source", read == sorted(inputs[key]))
-        results.add(f"{seed}: identifiers read from R's file equal the source",
+            results.add(f"{seed}: {modality} counts read from {A}'s file equal the source", read == sorted(inputs[key]))
+        results.add(f"{seed}: identifiers read from {A}'s file equal the source",
                     [list(back["rna"].obs_names), list(back["rna"].var_names), list(back["grna"].var_names)] == [inputs["cells"], inputs["genes"], inputs["grnas"]])
         batch = back.obs["batch"]
-        results.add(f"{seed}: factor levels and values read from R's file equal the source",
+        results.add(f"{seed}: factor levels and values read from {A}'s file equal the source",
                     list(batch.cat.categories) == inputs["batch"]["levels"] and list(batch) == inputs["batch"]["values"])
         quality = [None if np.isnan(v) else float(v) for v in back.obs["quality"]]
-        results.add(f"{seed}: doubles with missing values read from R's file equal the source", quality == inputs["quality"])
+        results.add(f"{seed}: doubles with missing values read from {A}'s file equal the source", quality == inputs["quality"])
         starts = [None if pd.isna(v) else int(v) for v in back["grna"].var["target_start"]]
-        results.add(f"{seed}: gRNA table read from R's file equals the source",
+        results.add(f"{seed}: gRNA table read from {A}'s file equals the source",
                     list(back["grna"].var["grna_target"]) == inputs["grna_target"] and starts == inputs["target_start"]
                     and [None if v is None or pd.isna(v) else v for v in back["grna"].var["target_chr"]] == inputs["target_chr"])
         saved = sf.read_analysis(r_folder)
@@ -165,7 +172,7 @@ if __name__ == "__main__":
         equal = all(
             [None if pd.isna(v) else v for v in got[c]] == [None if v is None or (isinstance(v, float) and np.isnan(v)) else v for v in want[c]]
             for c in ("grna_target", "response_id", "pass_qc", "p_value", "fold_change", "se_fold_change"))
-        results.add(f"{seed}: results read from R's analysis equal the source, to the last bit", bool(equal))
-        results.add(f"{seed}: assignments read from R's analysis equal the source",
+        results.add(f"{seed}: results read from {A}'s analysis equal the source, to the last bit", bool(equal))
+        results.add(f"{seed}: assignments read from {A}'s analysis equal the source",
                     sorted(map(list, saved["tables"]["assignment/assignments"][["grna_id", "cell_id"]].itertuples(index=False))) == sorted(inputs["assignments"]))
     results.save()

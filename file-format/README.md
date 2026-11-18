@@ -9,13 +9,21 @@
 A proposed on-disk format for Perturb-seq data and analyses, the same files in
 R and Python, with one data file and any number of analyses of it.
 
+**The code here is a prototype by one author, not a reference implementation.**
+It exists to show that the format works in both languages while the format is
+still being decided. When that is done, the reader and writer move into
+sceptre and pysceptre, which become the two reference implementations, and the
+copy here is retired. What stays is the specification, `spec/`, the
+conformance files, the validators and a harness for testing any implementation
+(`verify/README.md`).
+
 | Folder or file | What it is |
 |---|---|
 | `REVIEW.md` | One page for reviewers: the format in ten lines, what is expensive to change later, the open questions, and what can be skipped |
 | `SPEC.md` | The specification: scope, terms, and numbered statements sorted into file rules, behaviour rules and guidance; no reasons |
 | `RATIONALE.md` | The reasons: every choice with its alternatives, evidence, what it locks in, and how it compares with the IGVF pipeline's format |
 | `spec/` | The machine-readable parts: `screen.json` (the structure of a data file), `tables.json` (every table's columns, types and key) and JSON Schemas for the JSON records |
-| `format/` | The format code: reader, writer and validators in R (`sceptre_format.R`) and Python (`sceptre_format.py`), with the same names. It uses neither sceptre nor pysceptre |
+| `format/` | The prototype's format code: reader, writer and validators in R (`sceptre_format.R`) and Python (`sceptre_format.py`), with the same names. It uses neither sceptre nor pysceptre. Temporary: the reader and writer are to move into the packages |
 | `example/` | Files in the format: a high-MOI dataset with seven analyses, a low-MOI dataset with one, and a small synthetic data file with every kind of column. `example/*/expected/` holds what sceptre itself held for each analysis, captured once |
 | `conformance/` | Files that conform, files a reader must still accept, and files that each break one rule, with what a validator must report (`cases.json`) |
 | `verify/` | **The package-free suite**: every check of the format that needs neither sceptre nor pysceptre |
