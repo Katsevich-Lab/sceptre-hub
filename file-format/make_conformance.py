@@ -1,6 +1,7 @@
 """Builds conformance/: files that conform to SPEC.md and files that each break
 one of its rules, with the rules a validator must report for each
-(conformance/cases.json). Run from this folder after make_example.R:
+(conformance/cases.json). It builds from the committed files in example/, which
+are frozen: nothing here regenerates them. Run from this folder:
 
     python make_conformance.py
 

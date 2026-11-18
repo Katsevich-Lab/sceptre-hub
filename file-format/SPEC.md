@@ -67,7 +67,7 @@ its table says which:
 | Kind | What it is | How it is tested |
 |---|---|---|
 | **file** | True of every conforming file | By the validators, `validate_screen()` and `validate_analysis()`, in R and in Python |
-| **behaviour** | What a reader or a writer does | By the conformance run, the package-free checks in `verify/`, and the notebooks of `package-suite/` |
+| **behaviour** | What a reader or a writer does | By the conformance run and the package-free checks in `verify/` |
 | **guidance** | Advice or a definition. Not binding, and not tested | — |
 
 **Key words.** In file and behaviour rules, **MUST**, **MUST NOT**, **SHOULD**
@@ -79,7 +79,7 @@ final; the sorting into kinds is.
 
 - **V**: the validators check it, and a file in `conformance/` exercises it;
 - **v**: the validators check it, with no conformance file;
-- **tests**: a check in `verify/` or in the notebooks of `package-suite/` exercises it, named in brackets;
+- **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
 Of the 122 statements, 82 are file rules, 29 behaviour rules and 11
@@ -539,8 +539,9 @@ and QC stages have run.
 
 ## 7. What the two libraries support
 
-"Tested" means a check in the notebooks or the conformance set passes in that
-language, on the small examples. "At scale" means the one run on 207,324 cells
+"Tested" means a check in `verify/` or the conformance set passes in that
+language, on the small examples, or that the package suite passed it before it
+was removed (after commit `7e10af4`; see `README.md`). "At scale" means the one run on 207,324 cells
 reported in `RATIONALE.md`, Appendix A.
 
 | Feature | R | Python |

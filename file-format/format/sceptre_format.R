@@ -10,8 +10,7 @@
 #   2. Checking files against SPEC.md, without building any object:
 #        validate_screen(), validate_analysis()
 #
-# Nothing in this file uses the sceptre package. Building a sceptre_object from
-# these files, and writing one, is in package-suite/sceptre_objects.R.
+# Nothing in this file uses the sceptre package.
 #
 # The tables of an analysis, the stages and the shape of the JSON records are
 # not written here: they are read from spec/ (tables.json, screen.json and two

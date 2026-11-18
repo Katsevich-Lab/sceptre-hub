@@ -2,8 +2,8 @@
 files (which cells each gRNA and each target has, which cells are in use, which
 pairs pass QC, the log2 fold change, which results are significant, the control
 groups) is compared with what sceptre itself held, captured once into
-example/<dataset>/expected/ by package-suite/make_example.R. Running this loads
-neither sceptre nor pysceptre.
+example/<dataset>/expected/ by the package suite, which was removed after commit
+7e10af4 (see README.md). Running this loads neither sceptre nor pysceptre.
 
     python verify/derived.py
 """

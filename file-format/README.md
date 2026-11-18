@@ -21,15 +21,14 @@ conformance files, the validators and a harness for testing any implementation
 | `RATIONALE.md` | The reasons: every choice with its alternatives, evidence, what it locks in, and how it compares with the IGVF pipeline's format |
 | `spec/` | The machine-readable parts: `screen.json` (the structure of a data file), `tables.json` (every table's columns, types and key) and JSON Schemas for the JSON records |
 | `format/` | The prototype's format code: reader, writer and validators in R (`sceptre_format.R`) and Python (`sceptre_format.py`), with the same names. It uses neither sceptre nor pysceptre. Temporary: the reader and writer are to move into the packages |
-| `example/` | Files in the format: a high-MOI dataset with seven analyses, a low-MOI dataset with one, and a small synthetic data file with every kind of column. `example/*/expected/` holds what sceptre itself held for each analysis, captured once |
+| `example/` | Files in the format: a high-MOI dataset with seven analyses, a low-MOI dataset with one, and a small synthetic data file with every kind of column. `example/*/expected/` holds what sceptre itself held for each analysis, captured once. The example files are frozen: the code that made them needed sceptre and was removed after commit `7e10af4` |
 | `conformance/` | Files that conform, files a reader must still accept, and files that each break one rule, with what a validator must report (`cases.json`) |
 | `verify/` | **The package-free suite**: every check of the format that needs neither sceptre nor pysceptre |
-| `package-suite/` | **The package suite**: checks that build sceptre and pysceptre objects from the files. They depend on unreviewed branch builds of both packages |
 | `scale-test/` | The scripts and recorded results of one run on a real screen of 207,324 cells |
 | `make_conformance.py`, `check_conformance.R`, `check_conformance.py` | Build `conformance/` from `example/`, and run each language's validators and readers over every case |
 
 Start with `REVIEW.md`. Then `SPEC.md` for what the format is, or sections 1 and 2 of
-`RATIONALE.md` for the idea in two pages, then either notebook. In
+`RATIONALE.md` for the idea in two pages. In
 `RATIONALE.md`:
 
 - section 9 compares the format with IGVF's and with pertpy's conventions;
@@ -40,7 +39,7 @@ Start with `REVIEW.md`. Then `SPEC.md` for what the format is, or sections 1 and
 
 The format is a draft (version 0.1) until sceptre's first release that uses it, which freezes it as 1.0.
 
-## Two suites
+## The package-free suite, and what was removed
 
 **The package-free suite** (`verify/run.sh`) is the evidence about the format.
 It loads neither sceptre nor pysceptre, uses the committed files in `example/`
@@ -66,31 +65,30 @@ It needs, in R: `MuData`, `rhdf5`, `HDF5Array`, `SingleCellExperiment`,
 `mudata`, `anndata`, `h5py`, `pyarrow`, `pandas`, `scipy`, `jsonschema`,
 `scanpy`, `polars`, `duckdb`.
 
-**The package suite** (`package-suite/run.sh`) answers a different question:
-do the files hold everything an analysis needs? That can only be tested by
-rebuilding each package's object and comparing it with the original. It also
-holds checks that are about the packages and not the format: that an analysis
-stopped in R and finished in pysceptre gives the same p-values, and that the
-two build the same design matrix. Those are parity results.
+**The package suite was removed for now** (Eugene, 18 November). It rebuilt
+sceptre and pysceptre objects from the files, and it needed unreviewed
+`sceptre3` builds of both packages that exist on one machine, with code that
+reached into internals the rebuild of the packages will change. It is in git
+history up to commit `7e10af4` and comes back inside the packages when they adopt
+the format. What that costs:
 
-```sh
-package-suite/run.sh                 # rebuild example/ with sceptre, then render both notebooks
-package-suite/run.sh --keep-example  # render only
-```
+- **The sufficiency check is gone.** Rebuilding a real sceptre object is the
+  only test that the files hold everything an analysis needs, and it found most
+  of the gaps in earlier drafts. The format passed it at every step up to
+  commit `7e10af4`. Changes after that commit are not covered until the packages
+  test them.
+- **The example files are frozen.** The code that generated them ran sceptre.
+  A format change from now on converts the committed files in place with
+  package-free code, written as part of that change and kept: it is a direct
+  test that old files can be carried forward.
+- **The frozen expectations stay.** `example/*/expected/` holds what sceptre
+  itself held for each analysis, produced once by the removed code.
+- **The parity checks are gone**: an analysis stopped in R and finished in
+  pysceptre, and the agreement of the two design matrices. Those compare the
+  packages, which is not the format's job.
 
-It needs the `sceptre3` builds of both packages:
-
-- R sceptre (branch `sceptre3`) from `~/code/research/sceptre-tour-rlib`
-  (`SCEPTRE_TOUR_RLIB`);
-- pysceptre (fork branch `sceptre3`) from `~/code/research/sceptre-tour-venv`
-  (`SCEPTRE_TOUR_PYTHON`);
-- quarto, and `reticulate` in R.
-
-The Python notebook renders first, because the R notebook reads what it writes.
-This suite is meant to move into the packages when they adopt the format.
-
-Generated and not committed: `rlib/`, `roundtrip/`, `reference-october-layout/`,
-`verify/out/`, the rendered notebooks and `package-suite/example-objects.rds`.
+Generated and not committed: `rlib/`, `verify/out/` and
+`conformance/results-*.json`.
 
 ## Scope
 

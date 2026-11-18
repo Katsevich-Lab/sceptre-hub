@@ -29,8 +29,7 @@ Each choice is labelled:
 Sections 3 to 6 defend each choice in a fixed form: the decision, the
 alternatives, why, and what it locks into files. Where this document and
 `SPEC.md` disagree, `SPEC.md` is the rule and the disagreement is a mistake to
-fix. The two notebooks beside this
-file exercise every part of it in R and in Python. Evidence is tagged:
+fix. Evidence is tagged:
 
 - *(verified)*: read in the code, with the file named;
 - *(measured)*: a test run for this document, listed in [Appendix A](#appendix-a-measurements);
@@ -542,7 +541,7 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
     - Parts only: everything works. *(measured here)* All six readers open the cache folder of every example directly.
     - Both directions across languages, with the libraries already in use: pyarrow writes the key and nanoparquet reads it; nanoparquet writes it and pyarrow reads it. Arrow adds a key of its own, `ARROW:schema`, which is ignored. duckdb and R's arrow show the key too.
   - **Costs.**
-    - It cannot be read with a text editor, so the validators and the notebooks show it.
+    - It cannot be read with a text editor, so the validators show it, and `fit_parts()` in both libraries returns it.
     - It is a mechanism the format uses nowhere else.
     - A tool that rewrites a part may drop the metadata. The part is then ignored, which is the safe direction. *(measured here)* This happened while building the conformance set: pyarrow's `read_table` exposes only the metadata that Arrow's own schema record holds, so a part written by R, read and written back with pyarrow, lost the key until the builder copied it from the file's metadata. A reader must take the key from the file's metadata, not from the table.
   - **Parts that are not the analysis's are not reported.** A part with another identity is legal and unused, so the validators say nothing about it. They do report a part with no identity, or one that does not conform, and anything in the folder that is not a part file.
@@ -961,10 +960,29 @@ checked:
   - the validators and readers on the conformance set;
   - what a reader derives from the files, against values sceptre held, captured
     once and stored beside the examples.
-- *The package suite* (`package-suite/`) rebuilds each package's object from
-  the files and compares it with the original, which is the sufficiency test.
-  It found most of the gaps in earlier drafts. It also holds the parity checks.
-  It depends on unreviewed branch builds and is meant to move into the packages.
+- *The package suite* rebuilt each package's object from the files and
+  compared it with the original, which is the sufficiency test. It found most
+  of the gaps in earlier drafts. It also held the parity checks.
+
+**The package suite was removed for now** *(Decided by Eugene, 18 November)*.
+Nobody else could run it: it needed the unreviewed `sceptre3` builds of both
+packages on one machine, and its code reached into internals that the rebuild
+of the packages will change. It is in git history up to commit `7e10af4` and
+returns inside the packages when they adopt the format. The costs are real:
+
+- **No sufficiency check.** Rebuilding a real sceptre object is the only test
+  that the files hold everything an analysis needs. The format passed it at
+  every step up to commit `7e10af4`. Changes after that are not covered until the
+  packages test them.
+- **Frozen examples.** The example generator ran sceptre, so the committed
+  example files can no longer be regenerated. A format change from now on
+  converts them in place with package-free code, written with the change and
+  kept. That is also a direct test that old files can be carried forward.
+- **Frozen expectations.** `example/*/expected/` was produced by sceptre once,
+  by the removed code, and stays.
+- **No parity checks here.** The continuation across languages and the
+  agreement of the design matrices went with it. They compare the packages,
+  which point 3 above already puts outside the format.
 
 **What the package-free suite found.** Writing it changed one thing and raised
 two questions, both since settled:
@@ -1042,7 +1060,8 @@ starting at the freeze, so that later readers can be tested against them.
   Nobody should depend on it as a package's reader.
 - **When this phase ends:** the plain layer (files to standard containers)
   moves into sceptre and pysceptre and becomes their real reader and writer.
-  The layer that reaches into package internals (`package-suite/`) is replaced
+  The layer that reached into package internals (the package suite, removed
+  for now) is replaced
   by a small adapter in each package. The copy here is retired once both
   packages pass the conformance suite.
 - **sceptre and pysceptre are then the two reference implementations.** That
@@ -1218,14 +1237,13 @@ run again.
 
 Everything in sections 3 to 6, and the validators of section 11. The code is
 `format/sceptre_format.R` and `format/sceptre_format.py`; `example/` holds
-files in the format; the two notebooks run the checks below in R and in Python
-and show their outputs.
+files in the format.
 
-The checks fall into two suites, described in section 11: `verify/`, which
-loads neither package, and `package-suite/`, whose notebooks are tabulated
-here.
+The checks that remain are the package-free suite, `verify/`, described in
+section 11. The table below is a record of what the package suite showed when
+it last ran, at commit `7e10af4`, before it was removed. Nothing reruns it.
 
-**Checked in both languages by the package suite** (notebook section in brackets):
+**Checked in both languages by the package suite, as of commit `7e10af4`** (notebook section in brackets):
 
 | What | Result |
 |---|---|
@@ -1286,4 +1304,5 @@ tested, not open choices:
 | `example/lowmoi` | sceptre's built-in low-MOI data: 1,000 cells, 100 responses, 50 gRNAs | `default`: the "maximum" assignment method and the NT cells as controls |
 | `example/types` | 6 cells, synthetic | none: a data file with a factor whose levels are not alphabetical, a text covariate, a true/false covariate, a covariate with missing values, and a gRNA table with missing text and a missing integer |
 
-`./render.sh` rebuilds all of it and both notebooks from scratch.
+These files are frozen: the code that generated them needed sceptre and was
+removed after commit `7e10af4`.

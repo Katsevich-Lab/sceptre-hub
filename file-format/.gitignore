@@ -1,8 +1,5 @@
-# generated or local: rebuilt by ./render.sh
+# generated or local
 rlib/
-roundtrip/
-reference-october-layout/
-package-suite/example-objects.rds
 verify/out/
 conformance/results-*.json
 *.html
