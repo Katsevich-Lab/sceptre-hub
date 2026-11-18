@@ -62,7 +62,7 @@ need review now:
 ## What has and has not been tested
 
 - **Tested** (`verify/run.sh`, with neither package): R and Python write identical files from the same content; each reads the other's and gets the source back; tools outside this code (anndata, scanpy, pandas, polars, duckdb, HDF5Array, arrow) read them; two validators agree on a set of valid and deliberately broken files.
-- **A notebook** (`notebook.qmd`, rendered with `./render.sh`) walks through the format in R and Python. It was rendered on macOS only.
+- **A notebook** (`notebook.qmd`, rendered with `./render.sh`) shows what a data file and an analysis look like on disk. Start there. It was rendered on macOS only.
 - **Whether the files hold everything an analysis needs** was checked once, by rebuilding sceptre and pysceptre objects from the example files (`RATIONALE.md`, Appendix B). Nothing here repeats that check; it returns when the packages adopt the format.
 - **Tested once at scale:** the data file, on a real screen of 207,324 cells, written by both languages to identical files and read back in memory and from disk (`RATIONALE.md`, Appendix A).
 - **Not tested:** an analysis larger than 1,000 cells; a second operating system; real data in a second measured modality.

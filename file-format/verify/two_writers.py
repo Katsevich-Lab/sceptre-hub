@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 import h5py
+import mudata as md
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
@@ -36,7 +37,6 @@ STAMP = "2026-01-01T00:00:00Z"
 def write_all(inputs, folder, language):
     """Write the dataset and the analysis of `inputs` with the Python library."""
     import anndata as ad
-    import mudata as md
     from scipy import sparse
 
     def counts(triplets, n_features):
@@ -60,7 +60,7 @@ def write_all(inputs, folder, language):
 
     analysis = folder / f"analysis-{language}"
     provenance = {"package": "verify", "version": "0", "language": "Python", "written_at": STAMP}
-    back = sf.read_screen(screen)
+    back = md.read_h5mu(screen)
     sf.init_analysis(analysis, sf.screen_link(back), "rna")
     pairs = pd.DataFrame(inputs["pairs"], columns=["grna_target", "response_id"]).astype(object)
     none = pairs.iloc[:0]
@@ -150,7 +150,7 @@ if __name__ == "__main__":
                 results.add(f"{seed}: {stage} record equal apart from the writer's language", strip(x) == strip(y), f"{x} / {y}" if strip(x) != strip(y) else "")
 
         # the first implementation's file read back and compared with the source
-        back = sf.read_screen(r_file)
+        back = md.read_h5mu(r_file)
         for modality, key in (("rna", "rna"), ("grna", "grna")):
             coo = back[modality].X.tocoo()
             read = sorted([int(r), int(c), int(v)] for r, c, v in zip(coo.row, coo.col, coo.data))

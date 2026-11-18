@@ -1,4 +1,4 @@
-# The sceptre file format: specification and prototype
+# The sceptre file format
 
 > **Draft.** It has not been reviewed and is not a contract. The format is
 > version 0.1 until sceptre's first release that uses it, which freezes it as
@@ -9,8 +9,9 @@ Python, with one data file and any number of analyses of it.
 
 The format is defined by `SPEC.md` and `spec/`, and the validators decide
 whether a file conforms. The code in `format/` is a prototype by one author,
-not a reference implementation: its reader and writer are to move into sceptre
-and pysceptre, which become the two reference implementations.
+not a reference implementation: its writers are to move into sceptre and
+pysceptre, which become the two reference implementations. A data file is a
+standard `.h5mu`, read with `mudata.read_h5mu` or `MuData::readH5MU`.
 
 | Folder or file | What it is |
 |---|---|
@@ -18,11 +19,11 @@ and pysceptre, which become the two reference implementations.
 | `SPEC.md` | The specification: scope, terms, and numbered statements sorted into file rules, behaviour rules and guidance; no reasons |
 | `RATIONALE.md` | The reasons: every choice with its alternatives and evidence, comparisons with the IGVF pipeline's format and with pertpy, what is fixed and what can grow, and the measurements |
 | `spec/` | The machine-readable parts: `screen.json` (the structure of a data file), `tables.json` (every table's columns, types and key) and JSON Schemas for the JSON records |
-| `format/` | The prototype: reader, writer and validators in R (`sceptre_format.R`) and Python (`sceptre_format.py`), with the same names. It uses neither sceptre nor pysceptre |
+| `format/` | The prototype: writers and validators in R (`sceptre_format.R`) and Python (`sceptre_format.py`), with the same names. It uses neither sceptre nor pysceptre |
 | `example/` | Files in the format: a high-MOI dataset with six analyses, a low-MOI dataset with one, and a small synthetic data file with every kind of column. `example/*/expected/` holds values that sceptre itself computed for each analysis |
 | `conformance/` | Files that conform and files that each break a rule, with what a validator must report (`cases.json`) |
 | `verify/` | The verification suite: every check of the format, and the scripts that build and check `conformance/` |
-| `notebook.qmd`, `render.sh` | One document that walks through the format in R and in Python, in tabs. Its render stops if a comparison fails |
+| `notebook.qmd`, `render.sh` | An introduction: the example data file and one analysis as annotated trees, and how to open them with standard libraries in R and in Python |
 | `scale-test/` | Recorded results of one run on a real screen of 207,324 cells |
 
 Start with `REVIEW.md`, then `SPEC.md` for what the format is and
@@ -40,7 +41,7 @@ Both use standard libraries only and the committed files in `example/` and
 
 | Check | What it shows |
 |---|---|
-| conformance | Both validators and both readers on every file of `conformance/` |
+| conformance | Both validators on every file of `conformance/`, and the standard readers on the files that must still be read |
 | `encodings` | Every kind of value, written by each language's standard libraries and read by the other's. The kinds the format allows come back correct; the kinds it forbids still break, as recorded in `verify/expected_encodings.json` |
 | `two_writers` | R and Python each write the same seeded random content. The files are compared array by array and column by column, and each language reads the other's file and compares it with the source |
 | `independent_readers` | Tools outside this code read the files: anndata, scanpy, pandas, polars and duckdb in Python; HDF5Array and arrow in R |

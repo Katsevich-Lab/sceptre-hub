@@ -4,9 +4,10 @@
 # must give the same counts as the conforming file it was made from.
 #     Rscript verify/check_conformance.R
 source("format/setup.R")
+source("verify/as_sce.R")
 same_counts <- function(a, b) {
-    x <- fmt_read_screen(a)
-    y <- fmt_read_screen(b)
+    x <- read_as_sce(a)
+    y <- read_as_sce(b)
     rhdf5::h5closeAll()   # MuData's reader leaves a handle open
     identical(counts(x), counts(y)) && identical(counts(altExp(x, "gRNA")), counts(altExp(y, "gRNA")))
 }
@@ -33,15 +34,17 @@ for (case in cases) {
     }
     if (isTRUE(case$reader_refuses)) {
         result$reader_refused <- tryCatch({
-            if (case$kind == "screen") fmt_read_screen(case$path) else fmt_read_analysis(case$path)
+            if (case$kind == "screen") check_screen(suppressWarnings(MuData::readH5MU(case$path))) else fmt_read_analysis(case$path)
             FALSE
         }, error = function(e) TRUE)
+        rhdf5::h5closeAll()
     }
     if (!is.null(case$copy_keeps_modalities)) {
         copy <- tempfile(fileext = ".h5mu")
-        fmt_write_screen(fmt_read_screen(case$path, case$copy_keeps_modalities), copy)
+        fmt_write_screen(read_as_sce(case$path, case$copy_keeps_modalities), copy)
         modalities <- function(file) sort(subset(rhdf5::h5ls(file, recursive = 2L), group == "/mod")$name)
-        result$copy_kept_modalities <- identical(modalities(case$path), modalities(copy)) && nrow(validate_screen(copy)) == 0L
+        same_id <- identical(as.vector(rhdf5::h5read(case$path, "uns/sceptre/id")), as.vector(rhdf5::h5read(copy, "uns/sceptre/id")))
+        result$copy_kept_modalities <- identical(modalities(case$path), modalities(copy)) && same_id && nrow(validate_screen(copy)) == 0L
         rhdf5::h5closeAll()
         unlink(copy)
     }
@@ -78,7 +81,7 @@ if (!clean) {
 # modality come out 64-bit, the file conforms under that limit, and it reads back equal.
 wide <- tempfile(fileext = ".h5mu")
 wide_source <- "conformance/valid/types_written_by_r.h5mu"
-fmt_write_screen(fmt_read_screen(wide_source), wide, index_limit = 1)
+fmt_write_screen(read_as_sce(wide_source), wide, index_limit = 1)
 listing <- rhdf5::h5ls(wide, all = TRUE)
 types <- listing$dtype[grepl("/X$", listing$group) & listing$name %in% c("indices", "indptr")]
 holds <- length(types) == 4L && all(grepl("^H5T_STD_I64", types)) && nrow(validate_screen(wide, index_limit = 1)) == 0L && same_counts(wide, wide_source)

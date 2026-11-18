@@ -2,6 +2,7 @@
 # Loads neither sceptre nor anything built on it.
 #     Rscript verify/derived.R
 source("format/setup.R")
+source("verify/as_sce.R")
 source("verify/common.R")
 ids_sha <- function(lists, cells) {
     text <- paste(paste0(names(lists), "\t", vapply(lists, function(idx) paste(cells[idx], collapse = ","), character(1))), collapse = "\n")
@@ -12,7 +13,7 @@ for (expected_file in sort(Sys.glob("example/*/expected/*/expected.json"))) {
     dataset <- parts[2]; name <- parts[4]
     label <- paste0(dataset, "/", name)
     expected <- read_json(expected_file)
-    sce <- fmt_read_screen(file.path("example", dataset, "screen.h5mu"))
+    sce <- read_as_sce(file.path("example", dataset, "screen.h5mu"))
     rhdf5::h5closeAll()
     saved <- fmt_read_analysis(file.path("example", dataset, "analyses", name))
     tables <- saved$tables; records <- saved$stages

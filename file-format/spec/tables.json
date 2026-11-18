@@ -17,6 +17,21 @@
   "power": 4,
   "discovery": 4
  },
+ "descriptions": {
+  "analysis": "one analysis of a data file",
+  "analysis.json": "which data file this analysis belongs to, and which modality it tests",
+  "record.json": "the stage's settings and its list of files; written last, so a folder without one did not finish",
+  "stages": {
+   "parameters": "what the user asked to test",
+   "assignment": "which cells received which gRNA",
+   "qc": "which cells and pairs passed quality control",
+   "calibration": "tests of negative-control pairs, which should find nothing",
+   "power": "tests of positive-control pairs, which should find their known effects",
+   "discovery": "tests of the discovery pairs"
+  },
+  "fits": "a cache of regression fits shared by the testing stages; not a stage, and deleting it changes no result",
+  "part": "the fits one job added; the file says inside how they were made"
+ },
  "max_rows_per_row_group": 1000000,
  "column_types": {
   "string": "UTF-8 text, plain or dictionary-encoded; never missing",
@@ -25,6 +40,7 @@
   "list<double>": "a list of 64-bit floats per row"
  },
  "fields": {
+  "description": "what the table holds, in plain words",
   "stage": "the stage that writes the table, which is also the folder it is in; null for the fit cache, which no stage owns",
   "required": "whether the table must exist once its stage has run",
   "key": "the key columns, in sort order; a key column that is not required is part of the key when it is present",
@@ -37,6 +53,7 @@
  "tables": [
   {
    "name": "parameters/discovery_pairs",
+   "description": "the pairs to test, as the user gave them",
    "stage": "parameters",
    "required": true,
    "key": [
@@ -59,6 +76,7 @@
   },
   {
    "name": "parameters/positive_control_pairs",
+   "description": "pairs with a known effect, as the user gave them",
    "stage": "parameters",
    "required": true,
    "key": [
@@ -81,6 +99,7 @@
   },
   {
    "name": "assignment/assignments",
+   "description": "which gRNA is in which cell: one row per gRNA assigned to a cell",
    "stage": "assignment",
    "required": true,
    "key": [
@@ -103,6 +122,7 @@
   },
   {
    "name": "assignment/flagged_cells",
+   "description": "cells the assignment method judges not to carry exactly one gRNA",
    "stage": "assignment",
    "required": false,
    "key": [
@@ -119,6 +139,7 @@
   },
   {
    "name": "qc/cells",
+   "description": "every cell, and whether it passed quality control",
    "stage": "qc",
    "required": true,
    "key": [
@@ -140,6 +161,7 @@
   },
   {
    "name": "qc/discovery_pair_qc",
+   "description": "every discovery pair, and whether it passed quality control",
    "stage": "qc",
    "required": true,
    "key": [
@@ -178,6 +200,7 @@
   },
   {
    "name": "qc/positive_control_pair_qc",
+   "description": "every positive-control pair, and whether it passed quality control",
    "stage": "qc",
    "required": true,
    "key": [
@@ -216,6 +239,7 @@
   },
   {
    "name": "calibration/negative_control_groups",
+   "description": "the groups of non-targeting gRNAs tested as if they were targets",
    "stage": "calibration",
    "required": true,
    "key": [
@@ -238,6 +262,7 @@
   },
   {
    "name": "calibration/results",
+   "description": "test results for the negative-control pairs",
    "stage": "calibration",
    "required": true,
    "key": [
@@ -312,6 +337,7 @@
   },
   {
    "name": "power/results",
+   "description": "test results for the positive-control pairs",
    "stage": "power",
    "required": true,
    "key": [
@@ -385,6 +411,7 @@
   },
   {
    "name": "discovery/results",
+   "description": "test results for the discovery pairs",
    "stage": "discovery",
    "required": true,
    "key": [
@@ -458,6 +485,7 @@
   },
   {
    "name": "calibration/resamples",
+   "description": "the resampled test statistics behind the calibration results",
    "stage": "calibration",
    "required": false,
    "key": [
@@ -496,6 +524,7 @@
   },
   {
    "name": "power/resamples",
+   "description": "the resampled test statistics behind the power results",
    "stage": "power",
    "required": false,
    "key": [
@@ -533,6 +562,7 @@
   },
   {
    "name": "discovery/resamples",
+   "description": "the resampled test statistics behind the discovery results",
    "stage": "discovery",
    "required": false,
    "key": [
@@ -570,6 +600,7 @@
   },
   {
    "name": "fits/response",
+   "description": "saved regression fits, one row per response",
    "stage": null,
    "required": false,
    "key": [

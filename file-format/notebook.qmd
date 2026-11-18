@@ -1,534 +1,244 @@
 ---
-title: "The sceptre file format, in R and in Python"
+title: "The sceptre file format: what is on disk"
 format:
   html:
-    toc: true
-    toc-depth: 2
+    toc: false
     embed-resources: true
     code-overflow: wrap
-    df-print: default
+    page-layout: article
 execute:
-  echo: true
   warning: false
   message: false
 ---
 
-This notebook walks through the format with **standard libraries only**. It
-loads neither sceptre nor pysceptre. Every step is shown in R and in Python:
-choose a language in any tab set and every tab set on the page follows.
+A screen is **one file**. An analysis of it is **one folder**, kept apart from
+the data. This page shows one of each, taken from `example/highmoi/`. Click a
+line to see what it holds.
 
-The files it reads are the committed ones in `example/` and `conformance/`.
-The code that does the reading and writing is the prototype in `format/`
-(`sceptre_format.R`, `sceptre_format.py`). What it writes goes to
-`verify/out/notebook/`, which is not committed.
-
-R and Python run in **one process** here (knitr, with reticulate for Python),
-each with its own copy of the HDF5 library. That was tested on macOS only and
-is not known to work on Linux. One constraint holds on any platform: a
-language cannot write a file the other still holds open, so each side closes
-its handles before the other writes.
+`SPEC.md` has the rules and `RATIONALE.md` the reasons.
 
 ```{r}
-#| label: setup-r
 #| include: false
-source("format/setup.R")
+if (dir.exists("rlib")) .libPaths(c("rlib", .libPaths()))
 library(reticulate)
-out <- "verify/out/notebook"
-unlink(out, recursive = TRUE)
-dir.create(out, recursive = TRUE)
-options(width = 110)
+options(width = 100)
 ```
 
 ```{python}
-#| label: setup-python
 #| include: false
+import html
 import json
-import shutil
-import sys
+import re
 from pathlib import Path
 
+import anndata as ad
 import h5py
-import numpy as np
+import pandas as pd
+import pyarrow.parquet as pq
+
+SCREEN = Path("example/highmoi/screen.h5mu")
+ANALYSIS = Path("example/highmoi/analyses/left_sided")
+# every description on this page is read from the specification's own files
+screen_spec = json.loads(Path("spec/screen.json").read_text())
+table_spec = json.loads(Path("spec/tables.json").read_text())
+ROWS = 5
+pd.set_option("display.width", 120)
+pd.set_option("display.max_columns", 12)
+
+
+def text(value) -> str:
+    """Plain text as HTML, with `code` spans."""
+    return re.sub(r"`([^`]+)`", r"<code>\1</code>", html.escape(str(value)))
+
+
+def n(count, noun) -> str:
+    return f"{count:,} {noun}{'' if count == 1 else 's'}"
+
+
+def cell(value) -> str:
+    if isinstance(value, float):
+        return f"{value:.4g}"
+    if hasattr(value, "__len__") and not isinstance(value, str):
+        shown = ", ".join(f"{v:.3g}" for v in list(value)[:4])
+        return f"[{shown}{', …' if len(value) > 4 else ''}]"
+    return str(value)
+
+
+def rows(frame: pd.DataFrame, index_name=None) -> str:
+    """The first rows of a table."""
+    head = frame.head(ROWS)
+    if index_name is not None:
+        head = head.rename_axis(index_name).reset_index()
+    body = head.map(cell).to_html(index=False, border=0, classes="rows", escape=True)
+    more = f"<p class='more'>… {n(len(frame) - len(head), 'more row')}</p>" if len(frame) > len(head) else ""
+    return body + more
+
+
+def columns(described: dict, present) -> str:
+    """What the specification says about the columns that are present."""
+    items = [f"<li><code>{html.escape(c)}</code>: {text(described[c])}</li>" for c in present if c in described]
+    return f"<ul class='columns'>{''.join(items)}</ul>" if items else ""
+
+
+def as_json(value) -> str:
+    return f"<pre>{html.escape(json.dumps(value, indent=2, ensure_ascii=False))}</pre>"
+
+
+def leaf(name, what, size, body) -> str:
+    return (f"<li><details><summary><code>{html.escape(name)}</code><span class='what'>{text(what)}</span>"
+            f"<span class='size'>{html.escape(size)}</span></summary><div class='body'>{body}</div></details></li>")
+
+
+def branch(name, what, size, children) -> str:
+    return (f"<li><div class='branch'><code>{html.escape(name)}</code><span class='what'>{text(what)}</span>"
+            f"<span class='size'>{html.escape(size)}</span></div><ul>{''.join(children)}</ul></li>")
+
+
+def kilobytes(path) -> str:
+    files = [path] if path.is_file() else [f for f in path.rglob("*") if f.is_file()]
+    return f"{sum(f.stat().st_size for f in files) / 1024:,.0f} KB"
+
+
+def screen_tree() -> str:
+    says = screen_spec["descriptions"]
+    in_every_modality = {c["name"]: c["description"] for c in screen_spec["cell_tables"]["every_modality"]}
+    in_grna_table = {c["name"]: c["description"] for c in screen_spec["grna_table"]}
+    children = []
+    with h5py.File(SCREEN) as f:
+        for name in sorted(f["mod"], key=lambda m: m == screen_spec["modalities"]["grna"]):
+            grna = name == screen_spec["modalities"]["grna"]
+            counts = ad.io.read_elem(f[f"mod/{name}/X"])
+            obs, var = ad.io.read_elem(f[f"mod/{name}/obs"]), ad.io.read_elem(f[f"mod/{name}/var"])
+            corner = pd.DataFrame(counts[:ROWS, :6].toarray(), index=obs.index[:ROWS], columns=var.index[:6])
+            shape = f"{n(counts.shape[0], 'cell')} × {n(counts.shape[1], 'gRNA' if grna else 'feature')}"
+            children.append(branch(f"mod/{name}", says["grna_modality" if grna else "modality"], shape, [
+                leaf("X", says["counts"], n(counts.nnz, "nonzero count"),
+                     "<p class='more'>The first cells and features:</p>" + rows(corner, "cell") + "<p class='more'>…</p>"),
+                leaf("obs", says["cell_table"], f"{n(len(obs), 'row')} × {n(obs.shape[1], 'column')}",
+                     columns(in_every_modality, obs.columns) + rows(obs, "cell")),
+                leaf("var", says["grna_table" if grna else "feature_table"], f"{n(len(var), 'row')} × {n(var.shape[1], 'column')}",
+                     (columns(in_grna_table, var.columns) if grna else "") + rows(var, "gRNA" if grna else "feature")),
+            ]))
+        shared = ad.io.read_elem(f["obs"])
+        children.append(leaf("obs", says["shared_cell_table"], f"{n(len(shared), 'row')} × {n(shared.shape[1], 'column')}", rows(shared, "cell")))
+        stamp = ad.io.read_elem(f[screen_spec["metadata"]["path"]])
+        entries = screen_spec["metadata"]["entries"]
+        values = pd.DataFrame([{"entry": k, "value": str(v), "meaning": entries.get(k, {}).get("description", "")} for k, v in stamp.items()])
+        children.append(leaf(screen_spec["metadata"]["path"], says["metadata"], f"{len(values)} entries", "".join(
+            f"<p class='more'><code>{html.escape(r.entry)}</code> = {html.escape(r.value)}<br>{text(r.meaning)}</p>" for r in values.itertuples())))
+    return f"<ul class='tree'>{branch(SCREEN.name, says['file'], kilobytes(SCREEN), children)}</ul>"
+
+
+def table_leaf(path, what) -> str:
+    file = pq.ParquetFile(path)
+    frame = file.read().to_pandas()
+    body = rows(frame)
+    identity = (file.metadata.metadata or {}).get(table_spec["fits"]["identity_key"].encode())
+    if identity is not None:
+        body = "<p class='more'>How these fits were made, stored inside the file:</p>" + as_json(json.loads(identity)) + body
+    return leaf(path.name, what, f"{n(len(frame), 'row')} × {n(frame.shape[1], 'column')}", body)
+
+
+def analysis_tree() -> str:
+    says = table_spec["descriptions"]
+    of_table = {t["name"]: t["description"] for t in table_spec["tables"]}
+    children = [leaf("analysis.json", says["analysis.json"], "", as_json(json.loads((ANALYSIS / "analysis.json").read_text())))]
+    for stage in table_spec["stages"]:
+        folder = ANALYSIS / stage
+        if not folder.is_dir():
+            continue
+        inside = [table_leaf(folder / f"{name.split('/')[1]}.parquet", what)
+                  for name, what in of_table.items() if name.startswith(f"{stage}/") and (folder / f"{name.split('/')[1]}.parquet").exists()]
+        inside.append(leaf("record.json", says["record.json"], "", as_json(json.loads((folder / "record.json").read_text()))))
+        children.append(branch(f"{stage}/", says["stages"][stage], "", inside))
+    fits = ANALYSIS / table_spec["fits"]["folder"]
+    if fits.is_dir():
+        children.append(branch(f"{table_spec['fits']['folder']}/", says["fits"], "", [table_leaf(p, says["part"]) for p in sorted(fits.glob("*.parquet"))]))
+    return f"<ul class='tree'>{branch(f'{ANALYSIS.name}/', says['analysis'], kilobytes(ANALYSIS), children)}</ul>"
+```
+
+```{=html}
+<style>
+ul.tree, ul.tree ul { list-style: none; margin: 0; padding-left: 0; }
+ul.tree ul { margin-left: 0.6em; padding-left: 1em; border-left: 1px solid rgba(120, 130, 150, 0.45); }
+ul.tree li { margin: 0.15em 0; }
+ul.tree summary, ul.tree .branch { display: flex; flex-wrap: wrap; gap: 0 0.8em; align-items: baseline; padding: 0.15em 0.3em; border-radius: 4px; }
+ul.tree summary { cursor: pointer; list-style: none; }
+ul.tree summary:hover { background: rgba(120, 130, 150, 0.15); }
+ul.tree summary::before { content: "▸"; width: 0.6em; opacity: 0.6; }
+ul.tree details[open] > summary::before { content: "▾"; }
+ul.tree .branch::before { content: ""; width: 0.6em; }
+ul.tree summary::-webkit-details-marker { display: none; }
+ul.tree code { font-weight: 600; background: none; padding: 0; color: inherit; }
+ul.tree .what { flex: 1 1 16em; }
+ul.tree .size { opacity: 0.65; font-size: 0.9em; white-space: nowrap; }
+ul.tree .body { margin: 0.3em 0 0.8em 1.6em; overflow-x: auto; font-size: 0.85em; }
+ul.tree .body pre { margin: 0; padding: 0.6em; }
+ul.tree table.rows { width: auto; margin: 0.2em 0; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+ul.tree table.rows th, ul.tree table.rows td { padding: 0.15em 0.7em; text-align: left; border-bottom: 1px solid rgba(120, 130, 150, 0.3); white-space: nowrap; }
+ul.tree .more, ul.tree ul.columns { margin: 0.2em 0; opacity: 0.8; }
+ul.tree ul.columns { border: none; padding-left: 1.2em; list-style: disc; }
+ul.tree ul.columns code { font-weight: 400; }
+</style>
+```
+
+## The data file
+
+A standard MuData `.h5mu` file. It holds raw counts and what is known about
+the cells and the gRNAs, and nothing that an analysis computes.
+
+```{python}
+#| echo: false
+#| output: asis
+print(screen_tree())
+```
+
+## An analysis
+
+A folder with one subfolder per completed stage. Tables are Parquet files, and
+every row names cells, gRNAs and responses by identifier. This data file has
+six analyses in `example/highmoi/analyses/`; this is `left_sided`.
+
+```{python}
+#| echo: false
+#| output: asis
+print(analysis_tree())
+```
+
+## Open it yourself
+
+Standard libraries read both. Nothing here is specific to sceptre.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+screen <- MuData::readH5MU("example/highmoi/screen.h5mu")
+screen
+```
+
+```{r}
+results <- nanoparquet::read_parquet("example/highmoi/analyses/left_sided/discovery/results.parquet")
+head(results, 3)
+```
+
+## Python
+
+```{python}
+import mudata
+
+screen = mudata.read_h5mu("example/highmoi/screen.h5mu")
+print(screen)
+```
+
+```{python}
 import pandas as pd
 
-sys.path.insert(0, "format")
-import sceptre_format as sf
-
-pd.set_option("display.width", 110)
-pd.set_option("display.max_columns", 12)
-pd.set_option("display.max_colwidth", 90)
-out = Path("verify/out/notebook")
-```
-
-## 1. What is on disk
-
-A dataset is one data file, `screen.h5mu`. An analysis of it is one folder,
-with a folder per stage and a cache of fitted models. Any number of analyses
-can sit beside one data file.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-file_listing("example/highmoi/analyses/left_sided")
-```
-
-The data file is a MuData file: one group per modality under `mod/`.
-
-```{r}
-layout <- rhdf5::h5ls("example/highmoi/screen.h5mu", recursive = 3)
-layout[layout$group %in% c("/", "/mod", "/mod/rna", "/mod/grna", "/uns"), c("group", "name", "otype")]
-```
-
-## Python
-
-```{python}
-sf.file_listing("example/highmoi/analyses/left_sided")
-```
-
-The data file is a MuData file: one group per modality under `mod/`.
-
-```{python}
-with h5py.File("example/highmoi/screen.h5mu") as f:
-    for group in ("/", "mod", "mod/rna", "mod/grna", "uns"):
-        print(f"{group:10}", ", ".join(f[group].keys()))
+results = pd.read_parquet("example/highmoi/analyses/left_sided/discovery/results.parquet")
+print(results.head(3))
 ```
 
 :::
 
-## 2. Reading the data file
-
-R reads it as a `SingleCellExperiment` with the gRNA counts as an alternative
-experiment. Python reads it as a `MuData` object. Both are the standard
-containers of their language.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-sce <- fmt_read_screen("example/highmoi/screen.h5mu")
-rhdf5::h5closeAll()   # MuData's reader leaves a handle open
-sce
-```
-
-Cell covariates, with each modality's measurements under its name:
-
-```{r}
-head(as.data.frame(colData(sce)), 3)
-```
-
-The gRNA table and the file's metadata:
-
-```{r}
-head(as.data.frame(rowData(altExp(sce, "gRNA"))), 3)
-str(S4Vectors::metadata(sce)$sceptre)
-```
-
-## Python
-
-```{python}
-mdata = sf.read_screen("example/highmoi/screen.h5mu")
-mdata
-```
-
-Cell covariates, with each modality's measurements under its name:
-
-```{python}
-sf.covariate_table(mdata).head(3)
-```
-
-The gRNA table and the file's metadata:
-
-```{python}
-print(mdata["grna"].var.head(3))
-mdata.uns["sceptre"]
-```
-
-:::
-
-## 3. Reading an analysis
-
-An analysis folder has one `record.json` per stage, written last, which lists
-the stage's tables with their row counts. The tables are Parquet files.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-saved <- fmt_read_analysis("example/highmoi/analyses/left_sided")
-names(saved$stages)
-data.frame(table = names(saved$tables), rows = vapply(saved$tables, nrow, integer(1)), row.names = NULL)
-```
-
-The settings of the parameters stage, and the first discovery results:
-
-```{r}
-str(saved$stages$parameters$settings)
-head(saved$tables[["discovery/results"]], 3)
-```
-
-## Python
-
-```{python}
-saved = sf.read_analysis("example/highmoi/analyses/left_sided")
-print(list(saved["stages"]))
-pd.DataFrame({"table": list(saved["tables"]), "rows": [len(t) for t in saved["tables"].values()]})
-```
-
-The settings of the parameters stage, and the first discovery results:
-
-```{python}
-print(json.dumps(saved["stages"]["parameters"]["settings"], indent=1))
-saved["tables"]["discovery/results"].head(3)
-```
-
-:::
-
-## 4. What the files imply
-
-The format stores each fact once. A reader computes the rest: which cells
-carry each target, the groups of control gRNAs, which results are
-significant, and the log2 fold change. Each is compared here with what
-sceptre itself held, captured once in `example/highmoi/expected/`.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-expected <- read_json("example/highmoi/expected/left_sided/expected.json")
-tables <- saved$tables
-cells <- colnames(sce)
-grna <- altExp(sce, "gRNA")
-strategy <- saved$stages$parameters$settings$grna_integration_strategy
-grna_table <- data.frame(grna_id = rownames(grna), as.data.frame(rowData(grna)), stringsAsFactors = FALSE)
-grna_table$grna_group <- grna_groups(grna_table, strategy)
-
-# cells of each gRNA, from the assignments table, pooled by target
-by_grna <- cells_by_grna(tables[["assignment/assignments"]], rownames(grna), cells)
-pooled <- group_cells(by_grna, grna_table)
-head(lengths(pooled$grna_group_idxs), 4)
-
-# the cells in use after QC
-kept <- tables[["qc/cells"]]
-in_use <- kept$in_use[match(cells, kept$cell_id)]
-c(cells = length(cells), in_use = sum(in_use), same_as_sceptre = identical(sha256_ids(cells[in_use]), expected$cells_in_use_sha256))
-
-# significance comes from the threshold the stage recorded; log2 fold change from the fold change
-results <- add_significant(add_log_2_fold_change(tables[["discovery/results"]]), saved$stages$discovery$significance_threshold)
-want <- read_table("example/highmoi/expected/left_sided/discovery.parquet")
-both <- merge(want, results, by = unit_key(want), suffixes = c("_expected", ""))
-derived <- c(pairs = nrow(both), significant = sum(both$significant, na.rm = TRUE),
-  significant_same_as_sceptre = identical(both$significant, both$significant_expected),
-  log2_same_as_sceptre = isTRUE(all.equal(both$log_2_fold_change, both$log_2_fold_change_expected, tolerance = 1e-12)))
-stopifnot(derived[3:4] == 1, identical(sha256_ids(cells[in_use]), expected$cells_in_use_sha256))   # the render stops if a comparison fails
-derived
-```
-
-## Python
-
-```{python}
-expected = json.loads(Path("example/highmoi/expected/left_sided/expected.json").read_text())
-tables = saved["tables"]
-cells = np.asarray(mdata["grna"].obs_names, dtype=object)
-strategy = saved["stages"]["parameters"]["settings"]["grna_integration_strategy"]
-grna_table = mdata["grna"].var.reset_index(names="grna_id")
-grna_table["grna_group"] = sf.grna_groups(grna_table, strategy)
-
-# cells of each gRNA, from the assignments table, pooled by target
-by_grna = sf.cells_by_grna(tables["assignment/assignments"], list(mdata["grna"].var_names), pd.Index(cells))
-by_group, by_control = sf.group_cells(by_grna, grna_table)
-print({name: len(idx) for name, idx in list(by_group.items())[:4]})
-
-# the cells in use after QC
-in_use = tables["qc/cells"].set_index("cell_id").loc[cells, "in_use"].to_numpy(dtype=bool)
-print({"cells": len(cells), "in_use": int(in_use.sum()), "same_as_sceptre": sf.sha256_ids(cells[in_use]) == expected["cells_in_use_sha256"]})
-
-# significance comes from the threshold the stage recorded; log2 fold change from the fold change
-results = sf.add_significant(sf.add_log_2_fold_change(tables["discovery/results"]), saved["stages"]["discovery"].get("significance_threshold"))
-want = sf.read_table("example/highmoi/expected/left_sided/discovery.parquet")
-both = want.merge(results, on=sf.unit_key(want), suffixes=("_expected", ""))
-derived = {"pairs": len(both), "significant": int(both["significant"].sum()),
- "significant_same_as_sceptre": bool((both["significant"] == both["significant_expected"]).all()),
- "log2_same_as_sceptre": bool(np.allclose(both["log_2_fold_change"], both["log_2_fold_change_expected"], rtol=1e-12, equal_nan=True))}
-assert derived["significant_same_as_sceptre"] and derived["log2_same_as_sceptre"]   # the render stops if a comparison fails
-assert sf.sha256_ids(cells[in_use]) == expected["cells_in_use_sha256"]
-derived
-```
-
-:::
-
-## 5. One language writes, the other reads
-
-Each language writes its own copy of the data file and of the analysis, from
-what it read above.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-copy_analysis_r <- function(saved, directory) {
-    fmt_init_analysis(directory, saved$screen, saved$response_modality)
-    for (stage in names(saved$stages)) {
-        record <- saved$stages[[stage]]
-        listed <- paste0(stage, "/", sub("\\.parquet$", "", vapply(record$files, function(f) f$path, character(1))))
-        fmt_write_stage(directory, stage, record[setdiff(names(record), c("stage", "provenance", "files"))], saved$tables[listed], record$provenance)
-    }
-    fmt_write_fits(directory, saved$tables[[FITS]], saved$fits_identity)
-}
-fmt_write_screen(sce, file.path(out, "screen-r.h5mu"))
-copy_analysis_r(saved, file.path(out, "analysis-r"))
-rhdf5::h5closeAll()
-list.files(out)
-```
-
-## Python
-
-```{python}
-def copy_analysis(saved, directory):
-    sf.init_analysis(directory, saved["screen"], saved["response_modality"])
-    for stage, record in saved["stages"].items():
-        listed = [f"{stage}/{f['path'].removesuffix('.parquet')}" for f in record["files"]]
-        body = {k: v for k, v in record.items() if k not in ("stage", "provenance", "files")}
-        sf.write_stage(directory, stage, body, {name: saved["tables"][name] for name in listed}, record["provenance"])
-    sf.write_fits(directory, saved["tables"][sf.FITS], saved["fits_identity"])
-
-sf.write_screen(mdata, out / "screen-python.h5mu")
-copy_analysis(saved, out / "analysis-python")
-sorted(p.name for p in out.iterdir())
-```
-
-:::
-
-Then each reads what the other wrote, and compares it with what it read from
-the example.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-theirs <- fmt_read_screen(file.path(out, "screen-python.h5mu"))
-theirs_analysis <- fmt_read_analysis(file.path(out, "analysis-python"))
-rhdf5::h5closeAll()
-crossed <- c(
-    counts = identical(counts(theirs), counts(sce)),
-    grna_counts = identical(counts(altExp(theirs, "gRNA")), counts(altExp(sce, "gRNA"))),
-    covariates = isTRUE(all.equal(as.data.frame(colData(theirs)), as.data.frame(colData(sce)))),
-    tables = all(vapply(names(saved$tables), function(name) same_table(theirs_analysis$tables[[name]], saved$tables[[name]]), logical(1))),
-    conforms = nrow(validate_screen(file.path(out, "screen-python.h5mu"))) == 0L &&
-        nrow(validate_analysis(file.path(out, "analysis-python"), file.path(out, "screen-python.h5mu"))) == 0L
-)
-stopifnot(crossed, grepl("^rna_", grep("n_umis", names(colData(theirs)), value = TRUE)[1]))
-crossed
-```
-
-## Python
-
-```{python}
-theirs = sf.read_screen(out / "screen-r.h5mu")
-theirs_analysis = sf.read_analysis(out / "analysis-r")
-crossed = {
-    "counts": (theirs["rna"].X != mdata["rna"].X).nnz == 0,
-    "grna_counts": (theirs["grna"].X != mdata["grna"].X).nnz == 0,
-    "covariates": sf.covariate_table(theirs).equals(sf.covariate_table(mdata)),
-    "tables": all(sf.same_table(theirs_analysis["tables"][name], saved["tables"][name]) for name in saved["tables"]),
-    "conforms": len(sf.validate_screen(out / "screen-r.h5mu")) == 0
-                and len(sf.validate_analysis(out / "analysis-r", out / "screen-r.h5mu")) == 0,
-}
-assert all(crossed.values()) and "rna_n_umis" in sf.covariate_table(theirs)
-crossed
-```
-
-:::
-
-The two data files hold the same arrays in the same number types:
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-arrays <- as.vector(outer(c("data", "indices", "indptr"), c("rna", "grna"), function(a, m) paste0("mod/", m, "/X/", a)))
-same <- vapply(arrays, function(path) identical(
-    as.vector(rhdf5::h5read(file.path(out, "screen-r.h5mu"), path)),
-    as.vector(rhdf5::h5read(file.path(out, "screen-python.h5mu"), path))), logical(1))
-rhdf5::h5closeAll()
-listing <- rhdf5::h5ls(file.path(out, "screen-r.h5mu"), all = TRUE)
-type <- vapply(arrays, function(path) listing$dtype[paste0(listing$group, "/", listing$name) == paste0("/", path)], character(1))
-stopifnot(same)
-data.frame(array = arrays, identical = unname(same), type = unname(type))
-```
-
-## Python
-
-```{python}
-rows = []
-with h5py.File(out / "screen-r.h5mu") as a, h5py.File(out / "screen-python.h5mu") as b:
-    for modality in ("rna", "grna"):
-        for array in ("data", "indices", "indptr"):
-            path = f"mod/{modality}/X/{array}"
-            rows.append({"array": path, "identical": bool(np.array_equal(a[path][()], b[path][()])),
-                         "type_r": str(a[path].dtype), "type_python": str(b[path].dtype)})
-assert all(row["identical"] and row["type_r"] == row["type_python"] for row in rows)
-pd.DataFrame(rows)
-```
-
-:::
-
-## 6. What a reader tolerates, and what it refuses
-
-Writers are strict and readers are lenient. A file whose counts or index
-arrays are stored in another number type does not conform, and a reader
-still reads it to the same counts (rule S4.4). Other files a reader must
-refuse, because reading them would give wrong answers silently.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-cases <- jsonlite::fromJSON("conformance/cases.json", simplifyVector = FALSE)
-tolerated <- Filter(function(case) !is.null(case$reads_as), cases)
-do.call(rbind, lapply(tolerated, function(case) {
-    a <- fmt_read_screen(case$path)
-    b <- fmt_read_screen(case$reads_as)
-    rhdf5::h5closeAll()
-    data.frame(file = basename(case$path), rules_broken = paste(unlist(case$expect), collapse = ", "), same_counts = identical(counts(a), counts(b)))
-}))
-```
-
-```{r}
-refused <- Filter(function(case) isTRUE(case$reader_refuses), cases)
-do.call(rbind, lapply(refused, function(case) {
-    message <- tryCatch({
-        if (case$kind == "screen") fmt_read_screen(case$path) else fmt_read_analysis(case$path)
-        "READ, AND SHOULD NOT HAVE BEEN"
-    }, error = function(e) conditionMessage(e))
-    rhdf5::h5closeAll()
-    data.frame(file = basename(case$path), reader_says = substr(message, 1, 80))
-}))
-```
-
-## Python
-
-```{python}
-cases = json.loads(Path("conformance/cases.json").read_text())
-rows = []
-for case in cases:
-    if "reads_as" in case:
-        a, b = sf.read_screen(case["path"]), sf.read_screen(case["reads_as"])
-        rows.append({"file": Path(case["path"]).name, "rules_broken": ", ".join(case["expect"]),
-                     "same_counts": all((a[m].X != b[m].X).nnz == 0 for m in b.mod)})
-pd.DataFrame(rows)
-```
-
-```{python}
-rows = []
-for case in cases:
-    if case.get("reader_refuses"):
-        try:
-            sf.read_screen(case["path"]) if case["kind"] == "screen" else sf.read_analysis(case["path"])
-            says = "READ, AND SHOULD NOT HAVE BEEN"
-        except ValueError as error:
-            says = str(error)
-        rows.append({"file": Path(case["path"]).name, "reader_says": says[:80]})
-pd.DataFrame(rows)
-```
-
-:::
-
-## 7. The validators
-
-`validate_screen()` and `validate_analysis()` check files against the
-numbered rules of `SPEC.md` without building any object. They return one row
-per problem, and no rows when the files conform.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-nrow(validate_screen("example/highmoi/screen.h5mu"))
-nrow(validate_analysis("example/highmoi/analyses/left_sided", "example/highmoi/screen.h5mu"))
-validate_screen("conformance/invalid/screens/stored_zero.h5mu")
-validate_analysis("conformance/invalid/analyses/significant_stored", "conformance/valid/highmoi_written_by_r.h5mu")
-```
-
-## Python
-
-```{python}
-print(len(sf.validate_screen("example/highmoi/screen.h5mu")))
-print(len(sf.validate_analysis("example/highmoi/analyses/left_sided", "example/highmoi/screen.h5mu")))
-print(sf.validate_screen("conformance/invalid/screens/stored_zero.h5mu").to_string(index=False))
-print(sf.validate_analysis("conformance/invalid/analyses/significant_stored", "conformance/valid/highmoi_written_by_r.h5mu").to_string(index=False))
-```
-
-:::
-
-## 8. Rerunning a stage, and the cache of fits
-
-Rerunning a stage removes its folder and every later stage's. Fitted models
-live outside the stages, in `fits/response/`, because the three testing
-stages share them: clearing a testing stage keeps them, and clearing QC
-removes them.
-
-Each part file of the cache says inside itself how its fits were made, in the
-Parquet file's own metadata. A reader takes fits only from a part made as it
-would make them, and ignores any other part.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-folder <- file.path(out, "analysis-r")
-str(fit_parts(folder)[[1]]$identity)
-fmt_clear_stage(folder, "calibration")
-cat("after clearing calibration:", fmt_stages_run(folder), "| parts of fits kept:", length(fit_parts(folder)), "\n")
-fmt_clear_stage(folder, "qc")
-cat("after clearing qc:         ", fmt_stages_run(folder), "| parts of fits kept:", length(fit_parts(folder)), "\n")
-```
-
-A part made with another fitting method is allowed and unused:
-
-```{r}
-other <- "conformance/valid/analyses/fits_made_with_another_method"
-c(parts = length(fit_parts(other)), fits_a_reader_takes = NROW(fmt_read_analysis(other)$tables[[FITS]]),
-  problems_reported = nrow(validate_analysis(other, "conformance/valid/highmoi_written_by_r.h5mu")))
-```
-
-## Python
-
-```{python}
-folder = out / "analysis-python"
-print(json.dumps(sf.fit_parts(folder)[0][1], indent=1))
-sf.clear_stage(folder, "calibration")
-print("after clearing calibration:", sf.stages_run(folder), "| parts of fits kept:", len(sf.fit_parts(folder)))
-sf.clear_stage(folder, "qc")
-print("after clearing qc:         ", sf.stages_run(folder), "| parts of fits kept:", len(sf.fit_parts(folder)))
-```
-
-A part made with another fitting method is allowed and unused:
-
-```{python}
-other = "conformance/valid/analyses/fits_made_with_another_method"
-{"parts": len(sf.fit_parts(other)), "fits_a_reader_takes": len(sf.read_analysis(other)["tables"].get(sf.FITS, [])),
- "problems_reported": len(sf.validate_analysis(other, "conformance/valid/highmoi_written_by_r.h5mu"))}
-```
-
-:::
-
-## What this notebook does not show
-
-- **Whether the files hold everything an analysis needs.** Only rebuilding a
-  real sceptre object tests that, which happens when the packages adopt the
-  format.
-- **Anything about results**: whether sceptre and pysceptre compute the same
-  p-values from these files is a question about the packages.
-- **Scale.** These examples have 500 and 1,000 cells. One run on 207,324 cells
-  is reported in `RATIONALE.md`, Appendix A.
+The checks that the format works, in both languages, are in `verify/`.

@@ -12,14 +12,16 @@ import sys
 import tempfile
 from pathlib import Path
 
+import anndata as ad
 import h5py
+import mudata as md
 
 sys.path.insert(0, "format")
 import sceptre_format as sf
 
 
 def same_counts(a, b) -> bool:
-    x, y = sf.read_screen(a), sf.read_screen(b)
+    x, y = md.read_h5mu(a), md.read_h5mu(b)
     return all((x[m].X != y[m].X).nnz == 0 for m in y.mod)
 
 
@@ -46,16 +48,17 @@ for case in cases:
         result["fits_as_expected"] = fits is not None and len(fits["table"]) == case["fits_for"]["rows"]
     if case.get("reader_refuses"):
         try:
-            sf.read_screen(case["path"]) if case["kind"] == "screen" else sf.read_analysis(case["path"])
+            sf.check_screen(md.read_h5mu(case["path"])) if case["kind"] == "screen" else sf.read_analysis(case["path"])
             result["reader_refused"] = False
         except ValueError:
             result["reader_refused"] = True
     if case.get("copy_keeps_modalities"):
         with tempfile.TemporaryDirectory() as folder:
             copy = Path(folder) / "copy.h5mu"
-            sf.write_screen(sf.read_screen(case["path"], case["copy_keeps_modalities"]), copy)
+            sf.write_screen(md.read_h5mu(case["path"]), copy)
             with h5py.File(case["path"]) as a, h5py.File(copy) as b:
-                result["copy_kept_modalities"] = sorted(a["mod"]) == sorted(b["mod"]) and len(sf.validate_screen(copy)) == 0
+                same_id = ad.io.read_elem(a["uns/sceptre/id"]) == ad.io.read_elem(b["uns/sceptre/id"])
+                result["copy_kept_modalities"] = sorted(a["mod"]) == sorted(b["mod"]) and same_id and len(sf.validate_screen(copy)) == 0
     results[case["name"]] = result
     failed = [k for k in ("reads_correctly", "reader_refused", "copy_kept_modalities", "wide_branch", "fits_as_expected") if result.get(k) is False]
     if result["rules"] != case["expect"] or result["conforms"] != case["conforms"] or failed:
@@ -83,7 +86,7 @@ with tempfile.TemporaryDirectory() as folder:
 with tempfile.TemporaryDirectory() as folder:
     wide = Path(folder) / "wide.h5mu"
     source = "conformance/valid/types_written_by_python.h5mu"
-    sf.write_screen(sf.read_screen(source), wide, index_limit=1)
+    sf.write_screen(md.read_h5mu(source), wide, index_limit=1)
     with h5py.File(wide) as f:
         types = {str(f[f"mod/{m}/X/{a}"].dtype) for m in f["mod"] for a in ("indices", "indptr")}
     holds = types == {"int64"} and len(sf.validate_screen(wide, index_limit=1)) == 0 and same_counts(wide, source)

@@ -4,6 +4,7 @@
 # compare them with the source. Also a plain round trip of an analysis folder.
 #     Rscript verify/two_writers.R
 source("format/setup.R")
+source("verify/as_sce.R")
 source("verify/common.R")
 formula <- "~log(rna_n_umis) + batch"
 settings <- list(formula = formula, side = "both", resampling_mechanism = "permutations", resampling_approximation = "spa",
@@ -36,7 +37,7 @@ for (folder in sort(Sys.glob("verify/out/random/seed-*"))) {
     analysis <- file.path(folder, "analysis-r")
     unlink(analysis, recursive = TRUE)
     provenance <- list(package = "verify", version = "0", language = "R", written_at = "2026-01-01T00:00:00Z")
-    back <- fmt_read_screen(screen)
+    back <- read_as_sce(screen)
     rhdf5::h5closeAll()
     fmt_init_analysis(analysis, screen_link(back), "rna")
     pairs <- data.frame(grna_target = vapply(inputs$pairs, `[[`, "", 1L), response_id = vapply(inputs$pairs, `[[`, "", 2L))
@@ -70,7 +71,7 @@ for (folder in sort(Sys.glob("verify/out/random/seed-*"))) {
     }
 
     # Python's file read back and compared with the source
-    python <- fmt_read_screen(file.path(folder, "screen-python.h5mu"))
+    python <- read_as_sce(file.path(folder, "screen-python.h5mu"))
     rhdf5::h5closeAll()
     triplets <- function(matrix) {
         t <- methods::as(methods::as(matrix, "generalMatrix"), "TsparseMatrix")

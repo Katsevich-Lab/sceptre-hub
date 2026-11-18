@@ -11,6 +11,7 @@ import json
 import sys
 from pathlib import Path
 
+import mudata as md
 import numpy as np
 import pandas as pd
 
@@ -31,7 +32,7 @@ for expected_file in sorted(Path("example").glob("*/expected/*/expected.json")):
     dataset, name = expected_file.parts[1], expected_file.parts[3]
     label = f"{dataset}/{name}"
     expected = json.loads(expected_file.read_text())
-    screen = sf.read_screen(f"example/{dataset}/screen.h5mu")
+    screen = md.read_h5mu(f"example/{dataset}/screen.h5mu")
     saved = sf.read_analysis(f"example/{dataset}/analyses/{name}")
     tables, records = saved["tables"], saved["stages"]
     cells = np.asarray(screen["grna"].obs_names, dtype=object)

@@ -158,7 +158,7 @@ one rule, and no rounding between what a package computed and what it reads back
   - No vocabulary is settled beyond `rna`: IGVF uses `gene`, `guide` and `hashing`; pertpy's one MuData example uses `rna`, `adt`, `hto` and `gdo` *(verified, pertpy tutorials at commit `4924c25`)*. So the format fixes only `grna` and leaves the rest free.
   - `grna` is kept because sceptre's vocabulary uses it throughout (`grna_id`, `grna_target`).
 - **What stays in role words.** Table columns (`response_id`, `grna_id`, `grna_target`) and setting names (`response_fit_method`, `response_n_umis_range`). A pair is a target and a response whatever was measured.
-- **In the packages.** Both packages call the response modality `response` in memory today, and users write `response_n_umis` in formulas. The prototype's readers and writers translate between that and the file's names, so no package behaviour changes *(measured: every round trip in Appendix B still passes)*.
+- **In the packages.** Both packages call the response modality `response` in memory today, and users write `response_n_umis` in formulas. The packages' own readers and writers translate between that and the file's names, so no package behaviour changes *(measured: every round trip in Appendix B passed)*.
 - **Locks in.** The name `grna`, and the rule that names are otherwise free.
 - **Not in this format.** Testing two modalities in one analysis. Under this naming it is two analyses of one file.
 - **IGVF.** Modalities `gene` and `guide`, with `hashing` when present. This format takes IGVF's idea of a file that may carry more than two modalities, and not its names. An importer from IGVF files renames the two modalities.
@@ -572,8 +572,7 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 ## 7. Code changes this implies
 
 The format is chosen on its merits; these are the places where package code
-would follow. The prototype's readers and writers already do the file side of
-each.
+would follow. The prototype's writers already do the file side of each.
 
 | Where | Change | Why |
 |---|---|---|
@@ -736,7 +735,7 @@ remove a workaround in the format or its readers.
 | Accept modality-name covariates (`rna_n_umis`), keeping `response_n_umis` as an alias; add a response-modality argument and a modality name at import | The translation layer in the readers and writers (S2, S5) | — |
 | Rename `chr`, `start`, `end` in the gRNA table, or accept both | The same (S8) | — |
 | Resolve a dataset's `id` to a location from the user's configuration (a search path or a small registry) | Passing the data file's path by hand every time (A1) | Not built |
-| Let pysceptre's formula parser take covariate names with dots | The alias in the prototype's Python reader; a pysceptre analysis with such a covariate fails today (S5) | *(measured)* `model_matrix` raises on `S.Score` |
+| Let pysceptre's formula parser take covariate names with dots | An alias where pysceptre reads the file; a pysceptre analysis with such a covariate fails today (S5) | *(measured)* `model_matrix` raises on `S.Score` |
 | Decide what a gRNA under two targets means | The refusal (S8) | R warns, pysceptre counts |
 | Combine a vector's gRNAs in the assignment stage, not at import: a setting in the assignment record, and an assignment table that names the unit assigned | Summing at import, which a written-once data file of per-gRNA counts cannot hold (S8) | sceptre sums within a vector in `import_data()` |
 | Report the R MuData and pandas problems upstream | The restrictions of S7 | Appendix A |
@@ -768,7 +767,7 @@ against.
 are kept apart, because a MUST that no program can test is not a rule. Every
 statement is a **file rule** (true of every conforming file, tested by the
 validators), a **behaviour rule** (what a reader or writer does, tested by the
-conformance run, the verification suite or the notebook) or **guidance**
+conformance run or the verification suite) or **guidance**
 (advice or a definition, binding nobody). `SPEC.md` gives the counts and names
 the rules that nothing tests.
 
@@ -794,6 +793,7 @@ someone who has only the specification.
    not do is interpret it: the version check, the link between an analysis and
    its data, the refusals the specification requires, the covariate table with
    modality prefixes, true/false arriving as a categorical, and derived values.
+   That interpretation is each package's own, so the format has no reader.
    The reason is that the format allows only what both languages read
    correctly today and makes the writers stay inside that set. The burden
    falls on the writers, which are few, and not on readers, which include
@@ -842,12 +842,12 @@ passing:
 - what a reader derives from the files, against values sceptre computed,
   stored beside the examples.
 
-**The notebook** (`notebook.qmd`) shows each step in R and in Python in one
-document, and its render stops if a comparison fails. R and Python run in one
-process, each with its own HDF5 library. *(measured, macOS only)* Each read
-and wrote the other's files with no failure; it is not known to work on Linux.
-A language cannot write a file the other still holds open, so each side closes
-its handles first.
+**The notebook** (`notebook.qmd`) is an introduction, not a check: it shows
+the example data file and one analysis as annotated trees, with descriptions
+read from `spec/`, and how to open both with standard libraries. It renders R
+and Python in one process *(measured, macOS only)*. R's arrow and Python's
+pyarrow cannot both be loaded in that process, so its R side reads Parquet
+with nanoparquet.
 
 **What these cannot show.**
 
@@ -883,9 +883,9 @@ that later readers can be tested against them.
 - **The prototype in `format/` is a demonstration, not a reference.** It lives
   outside the packages because the format can then change in one edit, with no
   package release.
-- **Its reader and writer move into sceptre and pysceptre**, as a plain layer
-  (files to standard containers) with a small adapter to each package's own
-  object. The copy here is retired once both packages pass the conformance
+- **Its writers move into sceptre and pysceptre**, each taking its package's
+  own object. The data file has no reader here: it is a standard `.h5mu`, and
+  each package builds its object from what the standard reader returns. The copy here is retired once both packages pass the conformance
   suite.
 - **sceptre and pysceptre are then the two reference implementations**, which
   fits the change rule above.

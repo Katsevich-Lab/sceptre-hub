@@ -1,10 +1,11 @@
 # The 64-bit branch of S4, R side. verify/wide_index.py wrote the highmoi example
 # with both index arrays 64-bit (the writer's limit lowered). R's readers open
-# it: the prototype's reader in memory, MuData's backed reader, and HDF5Array. R's own writer is run the same way. This
+# it: MuData's reader in memory, MuData's backed reader, and HDF5Array. R's own writer is run the same way. This
 # shows the types are handled; it cannot show that values above 2,147,483,647
 # are, which needs a file of that size.
 #     Rscript verify/wide_index.R
 source("format/setup.R")
+source("verify/as_sce.R")
 source("verify/common.R")
 wide <- "verify/out/wide/screen-wide.h5mu"
 narrow <- "example/highmoi/screen.h5mu"
@@ -19,13 +20,13 @@ outcome <- function(expr) tryCatch(withCallingHandlers(expr, warning = function(
     invokeRestart("muffleWarning")
 }), error = function(e) paste0("FAILS (", conditionMessage(e), ")"))
 
-# 1. the prototype's reader, in memory
-a <- outcome(fmt_read_screen(wide))
-b <- fmt_read_screen(narrow)
+# 1. MuData's reader, in memory
+a <- outcome(read_as_sce(wide))
+b <- read_as_sce(narrow)
 rhdf5::h5closeAll()
 ok <- !is.character(a) && identical(SingleCellExperiment::counts(a), SingleCellExperiment::counts(b)) &&
     identical(SingleCellExperiment::counts(SingleCellExperiment::altExp(a, "gRNA")), SingleCellExperiment::counts(SingleCellExperiment::altExp(b, "gRNA")))
-check("the prototype's reader returns the same counts as from the 32-bit file", ok, if (is.character(a)) a else "")
+check("MuData's reader returns the same counts as from the 32-bit file", ok, if (is.character(a)) a else "")
 
 # 2. MuData's backed reader: one response at a time, and a block
 for (modality in c("rna", "grna")) {
@@ -49,7 +50,7 @@ for (modality in c("rna", "grna")) {
 # warnings the same readers give on the 32-bit file are not about the index type
 baseline <- character()
 invisible(withCallingHandlers({
-    fmt_read_screen(narrow)
+    read_as_sce(narrow)
     MuData::readH5MU(narrow, backed = TRUE)
 }, warning = function(w) {
     baseline <<- c(baseline, conditionMessage(w))
@@ -62,7 +63,7 @@ check("no reader gave a warning it does not give on the 32-bit file", length(ext
 # 4. R's writer on the same branch, and its file against Python's
 mine <- "verify/out/wide/screen-wide-r.h5mu"
 unlink(mine)
-fmt_write_screen(fmt_read_screen(narrow), mine, index_limit = 1)
+fmt_write_screen(read_as_sce(narrow), mine, index_limit = 1)
 check("R's writer, with the limit lowered, writes 64-bit index arrays", all(grepl("^H5T_STD_I64", types_of(mine))), paste(types_of(mine), collapse = ", "))
 check("R's validator passes R's file under the lowered limit", nrow(validate_screen(mine, index_limit = 1)) == 0L)
 check("R's validator passes Python's file under the lowered limit", nrow(validate_screen(wide, index_limit = 1)) == 0L)

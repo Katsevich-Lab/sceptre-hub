@@ -1,11 +1,13 @@
-"""The sceptre file format (draft, format 0.1): Python reader and writer.
+"""The sceptre file format (draft, format 0.1): Python writer and validators.
 
 SPEC.md states the rules and RATIONALE.md the reasons. Section numbers below
 (S4, T3, ...) refer to both.
 
 Two layers, as in sceptre_format.R:
   1. Files <-> standard Python containers, with no use of pysceptre:
-       write_screen(), read_screen()   data file <-> MuData
+       write_screen()                  MuData -> data file; `mudata.read_h5mu`
+                                       reads it back, and check_screen() says
+                                       whether it must be refused
        init_analysis(), write_stage(), read_analysis(), clear_stage()
   2. Checking files against SPEC.md, without building any object:
        validate_screen(), validate_analysis()
@@ -234,15 +236,6 @@ def _as_file_frame(frame: pd.DataFrame, covariates: bool) -> pd.DataFrame:
     return frame
 
 
-def _from_file_frame(frame: pd.DataFrame, covariates: bool) -> pd.DataFrame:
-    frame = frame.copy()
-    for name in frame.columns:
-        column = frame[name]
-        if not covariates and (isinstance(column.dtype, pd.CategoricalDtype) or _is_text(column)):
-            frame[name] = column.astype(object).where(column.notna(), None)
-    return frame
-
-
 def vector_faults(grna_ids, vectors, targets) -> list[tuple[str, str]]:
     """Several gRNAs may be delivered on one vector, named by the optional column
     `vector_id` of the gRNA table (S8.6). A vector has one target, and a vector is
@@ -274,33 +267,9 @@ def response_modality_of(modalities, requested=None, what="The data file") -> st
 
 
 def response_of(mdata) -> str:
-    """The name of the response modality of a MuData that `read_screen` returned."""
-    return mdata.uns["sceptre"]["response_modality"]
-
-
-def covariate_table(mdata) -> pd.DataFrame:
-    """The model's covariate table (S5). Facts about the cell are in the shared cell
-    table, `mdata.obs`; measurements of a modality are in that modality's `obs`. The
-    table is all of them, a modality's columns prefixed with its name and an
-    underscore (`rna_n_umis`, `grna_n_umis`). Only the response modality and `grna`
-    contribute."""
-    used = (response_of(mdata), GRNA)
-    cells = mdata[used[0]].obs_names
-    frames = [mdata[m].obs.loc[cells].add_prefix(f"{m}_") for m in used]
-    shared = mdata.obs.loc[cells, [c for c in mdata.obs.columns if ":" not in str(c)]]
-    frames.append(shared)
-    return pd.concat([f for f in frames if f.shape[1]] or [shared], axis=1)
-
-
-def split_covariates(covariates: pd.DataFrame, modalities) -> dict:
-    """The inverse of `covariate_table`."""
-    out, taken = {}, []
-    for m in modalities:
-        names = [c for c in covariates.columns if str(c).startswith(f"{m}_")]
-        out[m] = covariates[names].rename(columns=lambda c, m=m: c[len(m) + 1 :])
-        taken += names
-    out["shared"] = covariates.drop(columns=taken)
-    return out
+    """The modality an analysis of this MuData tests: `uns["sceptre"]["response_modality"]`
+    if the caller set it, else the only modality besides ``grna``."""
+    return response_modality_of(mdata.mod, dict(mdata.uns["sceptre"]).get("response_modality"))
 
 
 def index_type(n_stored, n_cells, n_features, index_limit=None) -> str:
@@ -315,7 +284,7 @@ def index_type(n_stored, n_cells, n_features, index_limit=None) -> str:
 
 
 def write_screen(mdata, file, index_limit=None) -> None:
-    """Write a MuData (as `read_screen` returns it) as a data file. `uns["sceptre"]`
+    """Write a MuData as a data file. `uns["sceptre"]`
     holds `moi`, and `id` if the dataset already has one. Every modality is written
     under its own name; `grna` is the gRNA modality."""
     import anndata as ad
@@ -442,58 +411,17 @@ def check_format(version, what) -> None:
     if format_parts(version) is None:
         raise ValueError(f"{what} has no sceptre format version.")
     if not known_major(version):
-        raise ValueError(f"{what} is in format {version}; this reader knows format {FORMAT_VERSION} and its minor versions.")
+        raise ValueError(f"{what} is in format {version}; this software knows format {FORMAT_VERSION} and its minor versions.")
 
 
-def _scalar(value):
-    value = np.asarray(value).reshape(-1)[0]
-    return value.item() if isinstance(value, np.generic) else value
-
-
-def _same_index_width(counts) -> None:
-    """A reader accepts any whole-number type for the index arrays (S4.4). A conforming file already holds both
-    index arrays in one type, and this does nothing to it. A file from another
-    writer may hold them in two, which scipy rejects in some operations; both are
-    then brought to the type the size requires."""
-    width = np.dtype(index_type(counts.nnz, *counts.shape))
-    if counts.indptr.dtype != width or counts.indices.dtype != width:
-        counts.indptr = counts.indptr.astype(width, copy=False)
-        counts.indices = counts.indices.astype(width, copy=False)
-
-
-def read_screen(file, response_modality=None):
-    """A data file as a MuData: its modalities under their own names (cells x
-    features), cell facts in ``mdata.obs``, modality measurements in each modality's
-    ``obs``, the gRNA table in ``mdata["grna"].var``, and ``mdata.uns["sceptre"]`` =
-    format, moi, id, response_modality.
-
-    `response_modality` says which modality an analysis will test; it may be left
-    out when the file has one modality besides ``grna``. Modalities other than that
-    one and ``grna`` are carried along and otherwise ignored."""
-    import mudata as md
-
-    mdata = md.read_h5mu(file)
-    stamp = {k: _scalar(v) for k, v in dict(mdata.uns.get("sceptre", {})).items()}
-    check_format(stamp.get("format"), file)
-    main = response_modality_of(mdata.mod, response_modality, file)
-    if list(mdata[main].obs_names) != list(mdata[GRNA].obs_names):
-        raise ValueError("The modalities must hold the same cells in the same order.")
-    # every modality, used by an analysis or not, so that the object can be written again
-    for name in mdata.mod:
-        mdata[name].obs = _from_file_frame(mdata[name].obs, True)
-        mdata[name].var = _from_file_frame(mdata[name].var, False)
-        _same_index_width(mdata[name].X)
-    mdata.obs = _from_file_frame(mdata.obs, True)
-    # a reader refuses a file whose vectors break S8.7 or S8.8 (S8.9)
-    _check_vectors(mdata[GRNA].var, file)
-    mdata.uns["sceptre"] = {
-        "format": str(stamp["format"]),
-        "moi": str(stamp["moi"]),
-        "id": str(stamp["id"]),
-        "response_modality": main,
-        **{key: str(stamp[key]) for key in OPTIONAL_METADATA if key in stamp},
-    }
-    return mdata
+def check_screen(mdata) -> None:
+    """What software must refuse before using a data file it has read with
+    `mudata.read_h5mu`: a major format version it does not know (S10.3), and a
+    gRNA table whose vectors break S8.7 or S8.8 (S8.9). Cheap: it looks at the
+    metadata and the gRNA table only."""
+    version = dict(mdata.uns.get("sceptre", {})).get("format")
+    check_format(None if version is None else str(np.asarray(version).reshape(-1)[0]), "The data file")
+    _check_vectors(mdata[GRNA].var, "The data file")
 
 
 def screen_link(mdata, file=None, directory=None) -> dict:

@@ -15,11 +15,14 @@ import shutil
 import sys
 from pathlib import Path
 
+import anndata as ad
 import h5py
+import mudata as md
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+from scipy import sparse
 
 sys.path.insert(0, "format")
 import sceptre_format as sf
@@ -51,8 +54,8 @@ high_py = VALID / "highmoi_written_by_python.h5mu"
 VALID.mkdir(parents=True)
 shutil.copy("example/types/screen.h5mu", types_r)
 shutil.copy("example/highmoi/screen.h5mu", high_r)
-sf.write_screen(sf.read_screen(types_r), types_py)
-sf.write_screen(sf.read_screen(high_r), high_py)
+sf.write_screen(md.read_h5mu(types_r), types_py)
+sf.write_screen(md.read_h5mu(high_r), high_py)
 case("screen", types_r, [], "Every allowed kind of column, written by R")
 case("screen", types_py, [], "The same data, written by Python")
 case("screen", high_r, [], "The high-MOI example, written by R")
@@ -69,11 +72,7 @@ with h5py.File(gzip, "r+") as f:
 case("screen", gzip, [], "Counts compressed with gzip, which S11 allows")
 
 extra = VALID / "types_extra_modality_and_columns.h5mu"
-import anndata as ad
-import mudata as md
-from scipy import sparse
-
-base = sf.read_screen(types_py)
+base = md.read_h5mu(types_py)
 hashing = ad.AnnData(
     X=sparse.csc_matrix(np.array([[5, 0], [0, 7], [3, 0], [0, 2], [4, 0], [0, 6]])),
     obs=pd.DataFrame(index=base["grna"].obs_names), var=pd.DataFrame(index=["hto_1", "hto_2"]),

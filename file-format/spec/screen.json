@@ -1,6 +1,17 @@
 {
   "$comment": "The structure of a sceptre data file, format 0, as data. Both validators read this file. SPEC.md section 2 states the rules; rules that need computing (order of cells within a feature, uniqueness, the same cells in every modality) are code in each language.",
   "format": "0.1",
+  "descriptions": {
+    "file": "one dataset, written once and never modified",
+    "modality": "one kind of measurement on the cells",
+    "grna_modality": "the gRNAs",
+    "counts": "raw counts, cells × features, stored by feature",
+    "cell_table": "one row per cell: measurements of this modality",
+    "feature_table": "one row per feature",
+    "grna_table": "one row per gRNA: what it targets",
+    "shared_cell_table": "one row per cell: facts about the cell, whatever was measured",
+    "metadata": "the format version, and what dataset this is"
+  },
   "root": {
     "encoding-type": "MuData"
   },
@@ -48,6 +59,7 @@
     "every_modality": [
       {
         "name": "n_umis",
+        "description": "the cell's total count",
         "kinds": [
           "double",
           "int32"
@@ -56,6 +68,7 @@
       },
       {
         "name": "n_nonzero",
+        "description": "the cell's number of features with a nonzero count",
         "kinds": [
           "double",
           "int32"
@@ -64,6 +77,7 @@
       },
       {
         "name": "p_mito",
+        "description": "the cell's fraction of mitochondrial counts",
         "kinds": [
           "double",
           "int32"
@@ -83,6 +97,7 @@
   "grna_table": [
     {
       "name": "grna_target",
+      "description": "what the gRNA is aimed at; `non-targeting` for a negative control",
       "kinds": [
         "string",
         "categorical"
@@ -92,6 +107,7 @@
     },
     {
       "name": "target_chr",
+      "description": "chromosome of the target",
       "kinds": [
         "string",
         "categorical"
@@ -101,6 +117,7 @@
     },
     {
       "name": "target_start",
+      "description": "first base of the target, 1-based",
       "kinds": [
         "double",
         "int32"
@@ -110,6 +127,7 @@
     },
     {
       "name": "target_end",
+      "description": "last base of the target, included",
       "kinds": [
         "double",
         "int32"
@@ -119,6 +137,7 @@
     },
     {
       "name": "vector_id",
+      "description": "the vector that delivers the gRNA",
       "kinds": [
         "string",
         "categorical"
@@ -132,11 +151,13 @@
     "path": "uns/sceptre",
     "entries": {
       "format": {
+        "description": "the format version of this file",
         "kind": "string",
         "pattern": "^[0-9]+\\.[0-9]+$",
         "required": true
       },
       "moi": {
+        "description": "multiplicity of infection: `high` or `low`",
         "kind": "string",
         "values": [
           "high",
@@ -145,18 +166,22 @@
         "required": true
       },
       "id": {
+        "description": "identifies the dataset; random, assigned at import",
         "kind": "string",
         "required": true
       },
       "name": {
+        "description": "a label for people",
         "kind": "string",
         "required": false
       },
       "source": {
+        "description": "where the data came from: a URL, DOI or accession",
         "kind": "string",
         "required": false
       },
       "perturbation_type": {
+        "description": "the kind of perturbation",
         "kind": "string",
         "required": false,
         "values": [
@@ -168,10 +193,12 @@
         ]
       },
       "organism": {
+        "description": "the organism, as a scientific name",
         "kind": "string",
         "required": false
       },
       "genome_build": {
+        "description": "the genome build of the positions",
         "kind": "string",
         "required": false
       }

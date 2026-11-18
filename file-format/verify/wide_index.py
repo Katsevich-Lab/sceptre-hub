@@ -13,6 +13,7 @@ from pathlib import Path
 
 import anndata as ad
 import h5py
+import mudata as md
 import numpy as np
 import scanpy as sc
 
@@ -27,7 +28,7 @@ out = Path("verify/out/wide")
 out.mkdir(parents=True, exist_ok=True)
 wide = out / "screen-wide.h5mu"
 wide.unlink(missing_ok=True)
-sf.write_screen(sf.read_screen(source), wide, index_limit=1)
+sf.write_screen(md.read_h5mu(source), wide, index_limit=1)
 with h5py.File(wide) as f, h5py.File(source) as g:
     for modality in ("rna", "grna"):
         types = {a: str(f[f"mod/{modality}/X/{a}"].dtype) for a in ("data", "indices", "indptr")}
@@ -42,6 +43,6 @@ with h5py.File(wide) as f, h5py.File(source) as g:
 results.add("the validator passes it under the lowered limit", len(sf.validate_screen(wide, index_limit=1)) == 0)
 found = sf.validate_screen(wide)
 results.add("under the real limit it does not conform, breaking S4.2 and S4.3 only", sorted(set(found["rule"])) == ["S4.2", "S4.3"])
-back = sf.read_screen(wide)
-results.add("the prototype's reader returns the same counts", all((back[m].X != sf.read_screen(source)[m].X).nnz == 0 for m in ("rna", "grna")))
+back = md.read_h5mu(wide)
+results.add("mudata returns the same counts", all((back[m].X != md.read_h5mu(source)[m].X).nnz == 0 for m in ("rna", "grna")))
 results.save()

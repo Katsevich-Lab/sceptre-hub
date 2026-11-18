@@ -1,11 +1,13 @@
-# The sceptre file format (draft, format 0.1): R reader and writer.
+# The sceptre file format (draft, format 0.1): R writer and validators.
 #
 # SPEC.md states the rules and RATIONALE.md the reasons. Section numbers below
 # (S4, T3, ...) refer to both.
 #
 # Two layers:
 #   1. Files <-> standard R containers, with no use of the sceptre package:
-#        fmt_write_screen(), fmt_read_screen()   data file <-> SingleCellExperiment
+#        fmt_write_screen()   SingleCellExperiment -> data file; MuData::readH5MU
+#                             reads it back, and check_screen() says whether it
+#                             must be refused
 #        fmt_init_analysis(), fmt_write_stage(), fmt_read_analysis(), fmt_clear_stage()
 #   2. Checking files against SPEC.md, without building any object:
 #        validate_screen(), validate_analysis()
@@ -152,15 +154,6 @@ as_file_frame <- function(frame, covariates) {
     }
     frame
 }
-from_file_frame <- function(frame, covariates) {
-    frame <- as.data.frame(frame, optional = TRUE, stringsAsFactors = FALSE)
-    for (name in names(frame)) {
-        column <- frame[[name]]
-        if (is.factor(column) && !covariates) frame[[name]] <- as.character(column)
-        if (is.double(column)) frame[[name]] <- replace(column, is.nan(column), NA)
-    }
-    frame
-}
 
 # The model's covariate table is split in the file (S5): facts about the cell
 # are in the shared cell table, measurements of a modality in that modality's,
@@ -175,16 +168,6 @@ split_covariates <- function(covariates, modalities) {
     })
     out$shared <- covariates[!Reduce(`|`, lapply(modalities, of))]
     out
-}
-join_covariates <- function(parts, modalities) {
-    prefixed <- lapply(modalities, function(modality) {
-        part <- parts[[modality]]
-        if (ncol(part) > 0L) names(part) <- paste0(modality, "_", names(part))
-        part
-    })
-    frames <- c(prefixed, list(parts$shared))
-    frames <- frames[vapply(frames, ncol, integer(1)) > 0L]
-    if (length(frames) == 0L) parts$shared else do.call(cbind, frames)
 }
 
 scalar <- function(x) {
@@ -347,71 +330,21 @@ fmt_write_screen <- function(sce, file, index_limit = NULL) {
 check_format <- function(format, what) {
     if (is.null(format_parts(format))) fmt_stop(what, " has no sceptre format version.")
     if (!known_major(format)) {
-        fmt_stop(what, " is in format ", format, "; this reader knows format ", FORMAT_VERSION, " and its minor versions.")
+        fmt_stop(what, " is in format ", format, "; this software knows format ", FORMAT_VERSION, " and its minor versions.")
     }
 }
 
-# Read a data file as a SingleCellExperiment (the layout fmt_write_screen takes).
-# `response_modality` picks the modality that becomes the main experiment; it
-# may be left out when the file has one modality besides `grna`. Modalities the
-# reader is not asked for are ignored.
-fmt_read_screen <- function(file, response_modality = NULL) {
-    mae <- withCallingHandlers(
-        MuData::readH5MU(file),
-        warning = function(w) {
-            if (grepl("sampleMap", conditionMessage(w), fixed = TRUE)) invokeRestart("muffleWarning")
-        }
-    )
-    stamp <- lapply(S4Vectors::metadata(mae)$sceptre, function(x) as.vector(x)[1])
-    check_format(stamp$format, file)
-    main <- response_modality_of(names(mae), response_modality, file)
-    cells <- colnames(mae[[main]])
-    if (!identical(cells, colnames(mae[[GRNA]]))) fmt_stop("The modalities must hold the same cells in the same order.")
-    cell_table <- function(frame) {
-        frame <- from_file_frame(frame, TRUE)
-        frame <- frame[match(cells, rownames(frame)), , drop = FALSE]
-        rownames(frame) <- cells
-        frame
-    }
-    covariates <- join_covariates(c(
-        stats::setNames(list(
-            cell_table(SummarizedExperiment::colData(mae[[main]])),
-            cell_table(SummarizedExperiment::colData(mae[[GRNA]]))
-        ), c(main, GRNA)),
-        list(shared = cell_table(SummarizedExperiment::colData(mae)))
-    ), c(main, GRNA))
-    experiment <- function(name) {
-        e <- mae[[name]]
-        SingleCellExperiment::SingleCellExperiment(
-            assays = list(counts = methods::as(SummarizedExperiment::assay(e, 1L), "CsparseMatrix")),
-            rowData = S4Vectors::DataFrame(
-                from_file_frame(SummarizedExperiment::rowData(e), FALSE), check.names = FALSE, row.names = rownames(e)
-            )
-        )
-    }
-    sce <- experiment(main)
-    SummarizedExperiment::colData(sce) <- S4Vectors::DataFrame(covariates, check.names = FALSE, row.names = cells)
-    grna <- experiment(GRNA)
-    # a reader refuses a file whose vectors break S8.7 or S8.8 (S8.9)
-    grna_table <- SummarizedExperiment::rowData(grna)
+# What software must refuse before using a data file it has read with
+# MuData::readH5MU: a major format version it does not know (S10.3), and a gRNA
+# table whose vectors break S8.7 or S8.8 (S8.9). Cheap: it looks at the metadata
+# and the gRNA table only.
+check_screen <- function(mae) {
+    check_format(as.vector(S4Vectors::metadata(mae)$sceptre$format)[1], "The data file")
+    grna_table <- SummarizedExperiment::rowData(mae[[GRNA]])
     if (!is.null(grna_table$vector_id)) {
-        for (fault in vector_faults(rownames(grna), as.character(grna_table$vector_id), as.character(grna_table$grna_target))) fmt_stop(file, ": ", fault$message)
+        faults <- vector_faults(rownames(grna_table), as.character(grna_table$vector_id), as.character(grna_table$grna_target))
+        for (fault in faults) fmt_stop("The data file: ", fault$message)
     }
-    SingleCellExperiment::altExp(sce, "gRNA") <- grna
-    # modalities no analysis here uses are carried along, so that writing the
-    # object back keeps them (S2.6)
-    for (name in setdiff(names(mae), c(main, GRNA))) {
-        other <- experiment(name)
-        SummarizedExperiment::colData(other) <- S4Vectors::DataFrame(
-            cell_table(SummarizedExperiment::colData(mae[[name]])), check.names = FALSE, row.names = cells
-        )
-        SingleCellExperiment::altExp(sce, name) <- other
-    }
-    S4Vectors::metadata(sce) <- list(sceptre = c(
-        list(format = as.character(stamp$format), moi = stamp$moi, id = stamp$id, response_modality = main),
-        stamp[intersect(OPTIONAL_METADATA, names(stamp))]
-    ))
-    sce
 }
 
 # What an analysis records about its data file (A1).

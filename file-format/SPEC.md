@@ -67,7 +67,7 @@ its table says which:
 | Kind | What it is | How it is tested |
 |---|---|---|
 | **file** | True of every conforming file | By the validators, `validate_screen()` and `validate_analysis()`, in R and in Python |
-| **behaviour** | What a reader or a writer does | By the conformance run, the checks in `verify/`, and the notebook (`notebook.qmd`), whose render stops if a comparison fails |
+| **behaviour** | What a reader or a writer does | By the conformance run and the checks in `verify/` |
 | **guidance** | Advice or a definition. Not binding, and not tested | — |
 
 **Key words.** In file and behaviour rules, **MUST**, **MUST NOT**, **SHOULD**
@@ -79,7 +79,7 @@ final; the sorting into kinds is.
 
 - **V**: the validators check it, and a file in `conformance/` exercises it;
 - **v**: the validators check it, with no conformance file;
-- **tests**: a check in `verify/`, the conformance run or the notebook exercises it, named in brackets;
+- **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
 Of the 122 statements, 82 are file rules, 29 behaviour rules and 11
@@ -123,7 +123,7 @@ that do not conform, where a behaviour rule says so (S4.4, S12.1).
 | **Pair** | A target (or, under some strategies, a gRNA) and a response, tested for association |
 | **Stage** | One of the six steps of an analysis: `parameters`, `assignment`, `qc`, `calibration`, `power`, `discovery` |
 | **Writer** | Software that produces a data file or the files of a stage |
-| **Reader** | Software that takes a data file, or a data file and an analysis folder, and uses their contents |
+| **Reader** | Any software that uses the contents of a data file or an analysis folder: a package, a script, a person's own code. A data file is a standard `.h5mu` and is opened with the standard libraries; the rules for readers bind whatever software then uses it |
 | **Conforming** | Of a file: breaking no file rule. Of a reader or writer: following every behaviour rule |
 
 ## References
@@ -235,7 +235,7 @@ from each other, does not conform; a reader still reads it (S4.4).
 | S4.1 | file | `X/data` MUST be stored as 32-bit signed integers. | V |
 | S4.2 | file | `X/indices` MUST be stored in the index type. | V |
 | S4.3 | file | `X/indptr` MUST be stored in the index type. | V |
-| S4.4 | behaviour | A reader MUST accept any integer or floating-point type for `X/data`, `X/indices` and `X/indptr`, provided the values are whole numbers, and read the same counts as from a conforming file. Such a file still does not conform. | tests (conformance files with other number types and mixed index widths, read by both readers) |
+| S4.4 | behaviour | A reader MUST accept any integer or floating-point type for `X/data`, `X/indices` and `X/indptr`, provided the values are whole numbers, and read the same counts as from a conforming file. Such a file still does not conform. | tests (conformance files with other number types and mixed index widths, read with `mudata` and `MuData`) |
 
 ### S5. Cell covariates
 
@@ -243,7 +243,7 @@ from each other, does not conform; a reader still reads it (S4.4).
 |---|---|---|---|
 | S5.1 | file | A column of the shared cell table MUST NOT be named with a modality's name followed by an underscore. | V |
 | S5.2 | guidance | Facts about the cell (batch, donor, anything the user supplies) MUST be in the shared cell table. Measurements of one modality MUST be in that modality's cell table, without a prefix. | — |
-| S5.3 | behaviour | The covariate table of a model is the shared columns together with the columns of `grna` and of the response modality, each modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. | tests (the notebook, sections 2 and 5) |
+| S5.3 | behaviour | The covariate table of a model is the shared columns together with the columns of `grna` and of the response modality, each modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. | tests in R (the R writer splits the table and the checks join it again: every R copy in `verify/`). In Python: none (testing it needs a package) |
 | S5.4 | file | The name of a column of a cell table MUST start with a letter and contain only letters, digits, underscores and dots. | V |
 
 ### S6. Computed columns
@@ -285,7 +285,7 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S8.6 | file | The gRNA table MAY have a text column `vector_id`, naming the vector that delivers each gRNA. If present it has no missing values: every gRNA is on exactly one vector, and a vector with one gRNA is one row. | V |
 | S8.7 | file | All gRNAs with the same `vector_id` MUST have the same `grna_target`: a vector has one target. | V |
 | S8.8 | file | A `vector_id` MUST NOT equal the identifier of a gRNA on another vector. A vector with one gRNA may be named after it. | V |
-| S8.9 | behaviour | A reader MUST refuse a file that breaks S8.7 or S8.8. A writer MUST NOT sum counts over the gRNAs of a vector: counts are stored per gRNA, and combining them is a step of an analysis. | V (both readers refuse the conformance files) |
+| S8.9 | behaviour | A reader MUST refuse a file that breaks S8.7 or S8.8. A writer MUST NOT sum counts over the gRNAs of a vector: counts are stored per gRNA, and combining them is a step of an analysis. | tests (`check_screen()` refuses the conformance files, in both languages) |
 | S8.10 | file | Positions are **1-based with both ends included**: `target_start` is the first base of the target and `target_end` the last. Both are whole numbers, `target_start` is at least 1, and `target_end` is not before `target_start`. A single position has the two equal. | V |
 | S8.11 | file | A gRNA has all three of `target_chr`, `target_start` and `target_end`, or none of them. A non-targeting gRNA has none. | V |
 | S8.12 | guidance | This is the convention of GTF and GFF files, Ensembl, and Bioconductor's `GRanges`. An interval from a BED file (0-based, end excluded) is converted at import by adding 1 to its start. The format has one convention and no entry that says which is in use. Any position column added later follows it. | — |
@@ -307,7 +307,7 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S10.1 | file | `uns/sceptre` MUST be an AnnData dictionary with the scalar text entries `format` (a version, `MAJOR.MINOR`), `moi` and `id` (not empty). | V |
 | S10.2 | file | `moi` MUST be `high` or `low`. | V |
 | S10.3 | file | `format` is the data file's own format version, `0.1` for this document. A reader MUST refuse a major version other than the one it knows. | V |
-| S10.4 | behaviour | `id` identifies the dataset. A writer assigns a new random `id` when it imports data, and keeps the `id` when it copies a data file. | tests (the notebook: a copied data file keeps its `id`). A new `id` on import: none (testing it needs a package) |
+| S10.4 | behaviour | `id` identifies the dataset. A writer assigns a new random `id` when it imports data, and keeps the `id` when it copies a data file. | tests (the conformance run: a copied data file keeps its `id`). A new `id` on import: none (testing it needs a package) |
 | S10.5 | file | `uns/sceptre` MAY have these scalar text entries. None identifies the dataset (`id` does), and no reader's behaviour depends on them: `name`, a label for people; `source`, a URL, DOI or accession saying where the data came from; `perturbation_type`; `organism`, as a scientific name such as `Homo sapiens`; `genome_build`, such as `GRCh38`, the build of every coordinate in the file. | V |
 | S10.6 | file | `perturbation_type`, if present, MUST be one of `CRISPRko` (knockout), `CRISPRi` (interference), `CRISPRa` (activation), `CRISPRbe` (base editing), `CRISPRkd` (knockdown of RNA). | V |
 | S10.7 | guidance | A writer SHOULD record `perturbation_type`, `organism` and `genome_build` when it knows them. They are known at import, cannot be worked out from the file, and are lost for good if not written down. | — |
@@ -368,7 +368,7 @@ and `discovery`. The last three do not depend on one another.
 | Rule | Kind | | Check |
 |---|---|---|---|
 | A4.1 | file | A stage's folder MUST NOT hold one of that stage's tables that its record does not list. A folder holding tables and no record is a stage that did not finish. | V |
-| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the writer SHOULD delete the fit cache too (T6.6). | tests (the conformance run: a retried stage; the notebook, section 8) |
+| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the writer SHOULD delete the fit cache too (T6.6). | tests (the conformance run: a retried stage) |
 | A4.3 | behaviour | A reader MUST ignore files it does not know. | V (a valid conformance case) |
 
 ### A5. Files of a stage
@@ -377,7 +377,7 @@ and `discovery`. The last three do not depend on one another.
 |---|---|---|---|
 | A5.1 | file | Every file a record lists in `files` MUST exist in the record's folder and be readable. | V |
 | A5.2 | file | The `rows` a record gives for a file MUST equal the file's number of rows (summed over the parts of a folder). | V |
-| A5.3 | file | A `files` path names a table in the record's own folder: a file name ending in `.parquet`, with no folder part. A stage cannot list a file outside its folder, and a reader MUST refuse a record that tries to, or whose `stage` is not its folder's name. | V (through A2.1; both readers refuse the conformance files) |
+| A5.3 | file | A `files` path names a table in the record's own folder: a file name ending in `.parquet`, with no folder part. A stage cannot list a file outside its folder, and a reader MUST refuse a record that tries to, or whose `stage` is not its folder's name. | V (through A2.1; `read_analysis()` refuses the conformance files, in both languages) |
 | A5.4 | file | A record MUST list every table that `spec/tables.json` marks as required for its stage, even when the table has no rows. | V |
 | A5.5 | guidance | A `files` entry MAY carry a `sha256` of the file. | — |
 
@@ -511,6 +511,10 @@ and QC stages have run.
   validator must report for each, and, for the files of S4.4, the conforming
   file a reader must get the same counts from.
   `verify/make_conformance.py` builds them from `example/`.
+- **Reading.** A data file is read with the standard libraries:
+  `mudata.read_h5mu` in Python, `MuData::readH5MU` in R. The format has no
+  reader of its own. `check_screen()` in `format/` is the small check for the
+  refusals of S8.9 and S10.3.
 - **Validators.** `validate_screen(file)` and `validate_analysis(directory,
   screen_file)` exist with the same names in `format/sceptre_format.R` and
   `format/sceptre_format.py`. They read files directly, build no package
@@ -523,8 +527,8 @@ and QC stages have run.
   It needs neither sceptre nor pysceptre.
 - **Agreement.** `verify/check_conformance.R` and `verify/check_conformance.py` run the two
   validators over every case. Both MUST report exactly the expected rules,
-  and each reader MUST read every file of S4.4 to the same counts as the
-  conforming file it was made from.
+  and the standard reader of each language MUST read every file of S4.4 to
+  the same counts as the conforming file it was made from.
 - **What the validators do not check.** They do not rebuild the design matrix
   (T7.4), recompute anything from the counts, or check the meaning of a value,
   only its form.

@@ -27,8 +27,8 @@ what has to be written.
 **A reader.** `conformance/cases.json` lists every conformance file with what
 must be concluded about it: the rules broken, whether it conforms, whether a
 reader must still read it (S4.4), and whether a reader must refuse it.
-`verify/check_conformance.py` and `verify/check_conformance.R` are the two libraries'
-runs over that list; another reader is tested by running it over the same
+`verify/check_conformance.py` and `verify/check_conformance.R` run the validators
+and the standard readers over that list; another reader is tested by running it over the same
 list and comparing with the same expectations. `example/*/expected/` holds
 values a reader should be able to derive from the example analyses.
 
