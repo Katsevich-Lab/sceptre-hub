@@ -16,6 +16,7 @@ from pathlib import Path
 
 import h5py
 import numpy as np
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -68,17 +69,23 @@ with h5py.File(gzip, "r+") as f:
 case("screen", gzip, [], "Counts compressed with gzip, which S11 allows")
 
 extra = VALID / "types_extra_modality_and_columns.h5mu"
-shutil.copy(types_py, extra)
-with h5py.File(extra, "r+") as f:
-    f.copy("mod/rna", "mod/hashing")
-    index = f["mod/hashing/var/_index"]
-    renamed = np.array([f"hto_{i + 1}" for i in range(index.shape[0])], dtype=object)
-    del f["mod/hashing/var/_index"]
-    f["mod/hashing/var"].create_dataset("_index", data=renamed, dtype=h5py.string_dtype())
-    f["mod/hashing/var/_index"].attrs.update({"encoding-type": "string-array", "encoding-version": "0.2.0"})
-    column = f["mod/grna/var"].create_dataset("spacer", data=np.array(["ACGT", "TTGA"], dtype=object), dtype=h5py.string_dtype())
-    column.attrs.update({"encoding-type": "string-array", "encoding-version": "0.2.0"})
+import anndata as ad
+import mudata as md
+from scipy import sparse
+
+base = sf.read_screen(types_py)
+hashing = ad.AnnData(
+    X=sparse.csc_matrix(np.array([[5, 0], [0, 7], [3, 0], [0, 2], [4, 0], [0, 6]])),
+    obs=pd.DataFrame(index=base["grna"].obs_names), var=pd.DataFrame(index=["hto_1", "hto_2"]),
+)
+grna_var = base["grna"].var.assign(spacer=["ACGT", "TTGA"])
+with_extra = md.MuData({"rna": base["rna"], "grna": ad.AnnData(X=base["grna"].X, obs=base["grna"].obs, var=grna_var), "hashing": hashing})
+for name in base.obs.columns:
+    with_extra.obs[name] = base.obs[name].array
+with_extra.uns["sceptre"] = dict(base.uns["sceptre"])
+sf.write_screen(with_extra, extra)
 case("screen", extra, [], "A modality no analysis uses, and a gRNA column the format does not define")
+cases[-1]["copy_keeps_modalities"] = "rna"   # read with this response modality and written again, every modality is still there
 
 # several gRNAs on one vector: each target's gRNAs share a vector, and each
 # non-targeting gRNA is alone on a vector named after it
@@ -157,6 +164,14 @@ pq.write_table(fits_table.slice(0, 60), two_parts / "fits/response/part-job1.par
 pq.write_table(fits_table.slice(59, 41), two_parts / "fits/response/part-job2.parquet")
 first.unlink()
 case("analysis", two_parts, [], "The fit cache was filled by two jobs, and one response is in both parts", high_r)
+
+# the same formula, spaced differently in the record of how the fits were made
+spaced = VALID / "analyses" / "fits_formula_spaced_differently"
+shutil.copytree("example/highmoi/analyses/left_sided", spaced)
+identity = json.loads((spaced / "fits/response/identity.json").read_text())
+identity["formula"] = identity["formula"].replace(" + ", "+").replace("~", "~ ")
+(spaced / "fits/response/identity.json").write_text(json.dumps(identity, indent=2) + "\n")
+case("analysis", spaced, [], "The fit cache records the analysis's formula with other spacing", high_r)
 
 # a testing stage rerun: its folder is gone, and the fit cache rightly remains
 cleared = VALID / "analyses" / "testing_stage_cleared_fits_kept"
@@ -314,7 +329,7 @@ def vector_named_like_another_grna(ids, targets, vectors):
 broken_screen("vector_with_two_targets", ["S8.7"], "Two gRNAs with different targets share a `vector_id`: a combinatorial screen",
               vectors_changed(two_targets_on_a_vector), source=high_py, reader_refuses=True)
 broken_screen("vector_named_like_another_grna", ["S8.8"], "A vector is named with the identifier of a gRNA on another vector",
-              vectors_changed(vector_named_like_another_grna), source=high_py)
+              vectors_changed(vector_named_like_another_grna), source=high_py, reader_refuses=True)
 broken_screen("vector_id_as_a_number", ["S8.6"], "`vector_id` stored as numbers",
               lambda f: add_column(f, "mod/grna/var", "vector_id", np.arange(f["mod/grna/var/_index"].shape[0], dtype=np.float64)), source=high_py)
 def set_positions(start=None, end=None, chromosome=None):
@@ -389,11 +404,13 @@ broken_screen("format_as_a_number", ["S10.1"], "The data file's format is the in
 # ---------------------------------------------------------------- invalid analyses
 
 
-def broken_analysis(name, expect, what, change, source="example/highmoi/analyses/left_sided"):
+def broken_analysis(name, expect, what, change, source="example/highmoi/analyses/left_sided", reader_refuses=False):
     path = INVALID / "analyses" / name
     shutil.copytree(source, path)
     change(path)
     case("analysis", path, expect, what, high_r)
+    if reader_refuses:
+        cases[-1]["reader_refuses"] = True   # a reader must stop, not only the validator
 
 
 def edit_json(path, change):
@@ -421,7 +438,7 @@ broken_analysis("absolute_path_to_the_data", ["A1.4"], "The hint to the data fil
 broken_analysis("another_dataset", ["A1.2", "T6.3"], "The dataset identifier is that of another data file; the fit cache then belongs to another dataset too",
                 lambda p: edit_json(p / "analysis.json", lambda v: v["screen"].__setitem__("id", "0" * 32)))
 broken_analysis("record_of_another_stage", ["A2.1"], "The record in `discovery/` says it is the record of the power stage",
-                lambda p: edit_json(p / "discovery/record.json", lambda v: v.__setitem__("stage", "power")))
+                lambda p: edit_json(p / "discovery/record.json", lambda v: v.__setitem__("stage", "power")), reader_refuses=True)
 broken_analysis("side_up", ["A2.1"], "The parameters record has `side` set to `up`",
                 lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("side", "up")))
 broken_analysis("no_seed", ["A2.1"], "The parameters record has no `seed`",
@@ -435,7 +452,8 @@ broken_analysis("table_truncated", ["A5.2", "T2.1"], "`cells.parquet` has fewer 
 
 
 broken_analysis("table_listed_outside_the_stage_folder", ["A2.1"], "A record lists a table by a path that leaves the stage's folder",
-                lambda p: edit_json(p / "qc/record.json", lambda v: v["files"].append({"path": "../parameters/discovery_pairs.parquet", "rows": 1406})))
+                lambda p: edit_json(p / "qc/record.json", lambda v: v["files"].append({"path": "../parameters/discovery_pairs.parquet", "rows": 1406})),
+                reader_refuses=True)
 broken_analysis("required_table_not_listed", ["A4.1", "A5.4"], "The QC record does not list `cells.parquet`, which is still in the folder",
                 lambda p: edit_json(p / "qc/record.json", lambda v: v.__setitem__("files", [f for f in v["files"] if f["path"] != "cells.parquet"])))
 broken_analysis("stale_results", ["A4.1"], "The discovery record is gone and its results table remains",

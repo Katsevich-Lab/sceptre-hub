@@ -45,7 +45,8 @@
     "path": "conformance/valid/types_extra_modality_and_columns.h5mu",
     "expect": [],
     "level": "conforming",
-    "what": "A modality no analysis uses, and a gRNA column the format does not define"
+    "what": "A modality no analysis uses, and a gRNA column the format does not define",
+    "copy_keeps_modalities": "rna"
   },
   {
     "name": "valid/highmoi_grnas_on_shared_vectors.h5mu",
@@ -143,6 +144,15 @@
     "expect": [],
     "level": "conforming",
     "what": "The fit cache was filled by two jobs, and one response is in both parts",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/fits_formula_spaced_differently",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/fits_formula_spaced_differently",
+    "expect": [],
+    "level": "conforming",
+    "what": "The fit cache records the analysis's formula with other spacing",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
@@ -435,7 +445,8 @@
       "S8.8"
     ],
     "level": "not readable",
-    "what": "A vector is named with the identifier of a gRNA on another vector"
+    "what": "A vector is named with the identifier of a gRNA on another vector",
+    "reader_refuses": true
   },
   {
     "name": "invalid/screens/vector_id_as_a_number.h5mu",
@@ -664,7 +675,8 @@
     ],
     "level": "not readable",
     "what": "The record in `discovery/` says it is the record of the power stage",
-    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu",
+    "reader_refuses": true
   },
   {
     "name": "invalid/analyses/side_up",
@@ -732,7 +744,8 @@
     ],
     "level": "not readable",
     "what": "A record lists a table by a path that leaves the stage's folder",
-    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu",
+    "reader_refuses": true
   },
   {
     "name": "invalid/analyses/required_table_not_listed",

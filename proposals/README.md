@@ -23,3 +23,4 @@ A later proposal can supersede an earlier one; both then say so.
 | --- | --- | --- |
 | [0001](0001-priorities-and-branching.md) | Development priorities and branching during Bioconductor review | Accepted |
 | [0002](0002-r-reference-implementation.md) | The R package as the reference implementation | Accepted |
+| [0003](0003-file-format.md) | A file format for Perturb-seq data and analyses | Draft |

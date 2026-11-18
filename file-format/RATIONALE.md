@@ -803,7 +803,7 @@ remove a workaround in the format or its readers.
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
 | Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json`, `spec/fits.schema.json` | JSON Schemas for `analysis.json`, the six stage records, and the record of how cached fits were made |
 | Data-file rules that need computing | `SPEC.md`, section 2 | The order of cells within a feature, uniqueness, the same cells in every modality: code in each language |
-| Conformance files | `conformance/`, built by `make_conformance.py` | 20 conforming files, written by R and by Python; 4 readable ones; and 66 that each break one rule, with the rules and the level a validator must report |
+| Conformance files | `conformance/`, built by `make_conformance.py` | 21 conforming files, written by R and by Python; 4 readable ones; and 66 that each break one rule, with the rules and the level a validator must report |
 | Validators | `validate_screen()`, `validate_analysis()` in both prototype libraries | Check a data file or an analysis folder without building a package object, and report every problem, not only the first |
 
 **Why define it this way.**
@@ -839,7 +839,7 @@ implementation by someone who has only the specification.
 
 ### What was checked
 
-*(measured)* Both validators accept all 20 conforming files, report the 4
+*(measured)* Both validators accept all 21 conforming files, report the 4
 readable files as readable, and report exactly the expected rules for all 66
 broken ones. The two languages report the same rules and the same level for
 every case. Both readers read each readable file to the same counts as the
@@ -874,6 +874,24 @@ objecting; he can overturn any of them.
 | 10 | The form of `written_at` | UTC, `YYYY-MM-DDTHH:MM:SSZ` | A2.4 |
 | 11 | Exactly what is hashed | Identifiers: UTF-8, joined by line feeds, which identifiers must not contain (*Adopted*). Design matrix: little-endian doubles, column by column | A1.3, S9.4, T7.3 |
 | 12 | Signed or unsigned 32-bit integers | Signed; both validators can tell | S4, S7.1 |
+
+### What a code review found
+
+A review of the specification and the code that checks it (18 November) found
+ten things. None was in the layout. All are fixed, and each fix has a check:
+
+| Found | Fixed by |
+|---|---|
+| Cached fits were matched on the formula as exact text, so two writers that space a formula differently could not share fits | Formulas are compared with white space removed, in both libraries and both validators (T6.5) |
+| A stage written again after a crash could leave a table of the first attempt that its new record did not list | A writer deletes a stage folder that has no record before writing the stage (A2.3) |
+| A file with a modality no analysis uses could not be written again after Python read it, and R dropped that modality on a round trip | Both readers carry every modality, and a copy keeps them (S2.6) |
+| The readers followed a record's `stage` and file paths unchecked | Both readers refuse a record of another stage or a path outside the stage's folder (A5.3) |
+| The readers refused a vector named like another vector's gRNA; the specification asked this only of the other vector rule | The specification now says so (S8.9) |
+| `p_mito` stored as integers was rejected though the specification says a number | Integers are allowed |
+| The Python validator did not decode a table's index attribute | It does |
+| Both validators read every table twice | Once |
+| The conformance file for an extra modality was made by copying raw HDF5 groups, which R could not read | It is written as a proper MuData file; the review's own fix exposed this |
+| The hub had no numbered proposal for this cross-language decision | `proposals/0003-file-format.md`, in status Draft |
 
 ### Taken from Apache Arrow's practice
 
@@ -1048,7 +1066,7 @@ and show their outputs.
 | Clearing a stage [9] | Its record and files and all later ones are removed |
 | Saved fits whose recorded method differs [9] | Not reused, with a message |
 | Every allowed column type, written by each language and read by the other [9] | Same result both ways |
-| The validators on 20 conforming, 4 readable and 66 broken files [10] | Both languages report the same rules and the same level for every file |
+| The validators on 21 conforming, 4 readable and 66 broken files [10] | Both languages report the same rules and the same level for every file |
 | A covariate with a dot in its name [9] | R and Python build the same design matrix (Python through an alias) |
 
 **Limits that remain.** These are limits of the prototype or of what was

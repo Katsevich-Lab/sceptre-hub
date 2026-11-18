@@ -440,12 +440,13 @@ def read_screen(file, response_modality=None):
     main = response_modality_of(mdata.mod, response_modality, file)
     if list(mdata[main].obs_names) != list(mdata[GRNA].obs_names):
         raise ValueError("The modalities must hold the same cells in the same order.")
-    for name in (main, GRNA):
+    # every modality, used by an analysis or not, so that the object can be written again
+    for name in mdata.mod:
         mdata[name].obs = _from_file_frame(mdata[name].obs, True)
         mdata[name].var = _from_file_frame(mdata[name].var, False)
         _same_index_width(mdata[name].X)
     mdata.obs = _from_file_frame(mdata.obs, True)
-    # a reader refuses a vector whose gRNAs have different targets (S8.7)
+    # a reader refuses a file whose vectors break S8.7 or S8.8 (S8.9)
     _check_vectors(mdata[GRNA].var, file)
     mdata.uns["sceptre"] = {
         "format": str(stamp["format"]),
@@ -536,6 +537,8 @@ def write_stage(directory, stage, record: dict, tables=None, provenance=None) ->
         raise ValueError(f"Stage '{stage}' needs the stage(s) {', '.join(missing)} first.")
     if _stage_file(directory, stage).exists():
         raise ValueError(f"Stage '{stage}' is already written; clear it first.")
+    # a folder without a record is a stage that did not finish: nothing of it is kept (A4.1)
+    shutil.rmtree(directory / stage, ignore_errors=True)
     files = []
     for name, table in (tables or {}).items():
         if name not in TABLES or TABLES[name][0] != stage:
@@ -567,6 +570,20 @@ def clear_stage(directory, stage) -> None:
 FITS = TABLE_SPEC["fits"]["folder"]
 
 
+def formula_key(text) -> str:
+    """A formula is the same formula however it is spaced (T6.5)."""
+    return re.sub(r"\s", "", str(text))
+
+
+def _identity_value(identity: dict, name):
+    value = identity.get(name)
+    return formula_key(value) if name == "formula" and value is not None else value
+
+
+def same_identity(a: dict, b: dict) -> bool:
+    return all(_identity_value(a, name) == _identity_value(b, name) for name in set(a) | set(b))
+
+
 def _fits_identity_file(directory) -> Path:
     return Path(directory) / TABLE_SPEC["fits"]["identity"]
 
@@ -578,7 +595,7 @@ def write_fits(directory, table: pd.DataFrame, identity: dict) -> Path:
     path = _fits_identity_file(directory)
     if path.exists():
         # a later writer checks the record; it does not rewrite it
-        if _read_json(path) != identity:
+        if not same_identity(_read_json(path), identity):
             raise ValueError(f"The fits already saved in {FITS} were made differently.")
     else:
         _write_json(identity, path)
@@ -607,9 +624,14 @@ def read_analysis(directory) -> dict:
     check_format(analysis.get("format"), directory)
     stages = {s: _read_json(_stage_file(directory, s)) for s in stages_run(directory)}
     tables = {}
-    for record in stages.values():
+    for stage, record in stages.items():
+        # a record is the record of its folder's stage, and lists files of that folder only (A2.1, A5.3)
+        if record.get("stage") != stage:
+            raise ValueError(f"{stage}/record.json says it is the record of the stage '{record.get('stage')}'.")
         for file in record["files"]:
-            name = f"{record['stage']}/{file['path'].removesuffix('.parquet')}"
+            if not re.fullmatch(r"[A-Za-z0-9_]+\.parquet", file["path"]):
+                raise ValueError(f"{stage}/record.json lists '{file['path']}', which is not a table of its own folder.")
+            name = f"{stage}/{file['path'].removesuffix('.parquet')}"
             path = table_path(directory, name)
             if not path.exists():
                 raise ValueError(f"The stage '{record['stage']}' lists {file['path']}, which is missing.")
@@ -966,8 +988,8 @@ def _fit_mismatch(saved: dict, current: dict):
     """Why cached fits cannot be reused, or None. A method name means the same
     estimator in every language that lists it; a method this language does not
     share is never reused."""
-    for name, value in current.items():
-        if saved.get(name) != value:
+    for name in current:
+        if _identity_value(saved, name) != _identity_value(current, name):
             return f"their `{name}` differs"
     method = current["response_fit_method"]
     if "Python" not in FIT_METHODS.get(method, ()):
@@ -1634,6 +1656,7 @@ def validate_screen(file) -> pd.DataFrame:
             allowed = SCREEN_SPEC["cell_tables" if cell_table else "feature_tables"]["column_kinds"]
             group = f[table]
             index = group.attrs.get("_index")
+            index = index.decode() if isinstance(index, bytes) else index
             kinds = {}
             for name in group:
                 if name == index:
@@ -1909,14 +1932,15 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
         # within one file the key is sorted and unique; across the parts of the fit
         # cache it need not be unique
         across_parts = definition.get("unique_across_parts", True)
-        for part in parts:
-            frame = read_table_from_arrow(part)
+        frames = [read_table_from_arrow(part) for part in parts]
+        for frame in frames:
             key = _table_key(name, frame)
             if len(frame) > 1 and _byte_order(frame, key) != list(range(len(frame))):
                 log.add("T0.2", where, f"The rows are not sorted by {', '.join(key)}.")
             if not across_parts and frame.duplicated(subset=key).any():
                 log.add("T0.4", where, f"Two rows of one file have the same {', '.join(key)}.")
-        whole = read_table(full)
+        # the parts already read, put together: each table is read once
+        whole = frames[0] if len(frames) == 1 else pd.concat(frames, ignore_index=True, join="inner")
         key = _table_key(name, whole)
         if across_parts and whole.duplicated(subset=key).any():
             log.add("T0.4", where, f"Two rows have the same {', '.join(key)}.")
@@ -1938,7 +1962,7 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
                 "screen_id": None if analysis is None else analysis["screen"]["id"],
             }
             for field, value in expected.items():
-                if value is not None and fits_identity.get(field) != value:
+                if value is not None and _identity_value(fits_identity, field) != _identity_value(expected, field):
                     log.add("T6.3", TABLE_SPEC["fits"]["identity"], f"`{field}` is not that of the analysis.")
 
     # against the data file

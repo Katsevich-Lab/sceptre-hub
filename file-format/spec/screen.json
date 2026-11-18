@@ -59,7 +59,8 @@
       {
         "name": "p_mito",
         "kinds": [
-          "double"
+          "double",
+          "int32"
         ],
         "required": false
       }

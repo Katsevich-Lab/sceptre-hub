@@ -308,7 +308,7 @@ fmt_write_screen <- function(sce, file) {
         ), c(main, GRNA)),
         lapply(stats::setNames(others, others), function(name) {
             other <- SingleCellExperiment::altExp(sce, name)
-            modality(other, data.frame(row.names = colnames(other)), SummarizedExperiment::rowData(other))
+            modality(other, as.data.frame(SummarizedExperiment::colData(other), optional = TRUE), SummarizedExperiment::rowData(other))
         })
     )
     MuData::writeH5MU(
@@ -380,12 +380,21 @@ fmt_read_screen <- function(file, response_modality = NULL) {
     sce <- experiment(main)
     SummarizedExperiment::colData(sce) <- S4Vectors::DataFrame(covariates, check.names = FALSE, row.names = cells)
     grna <- experiment(GRNA)
-    # a reader refuses a vector whose gRNAs have different targets (S8.7)
+    # a reader refuses a file whose vectors break S8.7 or S8.8 (S8.9)
     grna_table <- SummarizedExperiment::rowData(grna)
     if (!is.null(grna_table$vector_id)) {
         for (fault in vector_faults(rownames(grna), as.character(grna_table$vector_id), as.character(grna_table$grna_target))) fmt_stop(file, ": ", fault$message)
     }
     SingleCellExperiment::altExp(sce, "gRNA") <- grna
+    # modalities no analysis here uses are carried along, so that writing the
+    # object back keeps them (S2.6)
+    for (name in setdiff(names(mae), c(main, GRNA))) {
+        other <- experiment(name)
+        SummarizedExperiment::colData(other) <- S4Vectors::DataFrame(
+            cell_table(SummarizedExperiment::colData(mae[[name]])), check.names = FALSE, row.names = cells
+        )
+        SingleCellExperiment::altExp(sce, name) <- other
+    }
     S4Vectors::metadata(sce) <- list(sceptre = c(
         list(format = as.character(stamp$format), moi = stamp$moi, id = stamp$id, response_modality = main),
         stamp[intersect(OPTIONAL_METADATA, names(stamp))]
@@ -457,6 +466,8 @@ fmt_write_stage <- function(directory, stage, record, tables = list(), provenanc
     missing <- setdiff(earlier, fmt_stages_run(directory))
     if (length(missing) > 0L) fmt_stop("Stage '", stage, "' needs the stage(s) ", paste(missing, collapse = ", "), " first.")
     if (file.exists(stage_file(directory, stage))) fmt_stop("Stage '", stage, "' is already written; clear it first.")
+    # a folder without a record is a stage that did not finish: nothing of it is kept (A4.1)
+    unlink(file.path(directory, stage), recursive = TRUE)
     files <- lapply(names(tables), function(name) {
         if (is.null(TABLES[[name]]) || !identical(TABLES[[name]]$stage, stage)) fmt_stop("Stage '", stage, "' does not write the table ", name, ".")
         # listed by its name within the stage's folder
@@ -487,8 +498,14 @@ fmt_clear_stage <- function(directory, stage) {
 # a part of its own; what makes the fits valid is recorded once, beside them.
 FITS <- TABLE_SPEC$fits$folder
 fits_identity_file <- function(directory) file.path(directory, TABLE_SPEC$fits$identity)
+# A formula is the same formula however it is spaced (T6.5).
+formula_key <- function(text) gsub("[[:space:]]", "", as.character(text))
+identity_value <- function(identity, name) {
+    value <- as.character(identity[[name]])
+    if (identical(name, "formula")) formula_key(value) else value
+}
 same_identity <- function(a, b) {
-    all(vapply(union(names(a), names(b)), function(name) identical(as.character(a[[name]]), as.character(b[[name]])), logical(1)))
+    all(vapply(union(names(a), names(b)), function(name) identical(identity_value(a, name), identity_value(b, name)), logical(1)))
 }
 fmt_write_fits <- function(directory, table, identity) {
     missing <- setdiff(c("parameters", "qc"), fmt_stages_run(directory))
@@ -521,9 +538,13 @@ fmt_read_analysis <- function(directory) {
     check_format(analysis$format, directory)
     stages <- lapply(stats::setNames(nm = fmt_stages_run(directory)), function(stage) read_json(stage_file(directory, stage)))
     tables <- list()
-    for (record in stages) {
+    for (stage in names(stages)) {
+        record <- stages[[stage]]
+        # a record is the record of its folder's stage, and lists files of that folder only (A2.1, A5.3)
+        if (!identical(record$stage, stage)) fmt_stop(stage, "/record.json says it is the record of the stage '", record$stage, "'.")
         for (file in record$files) {
-            name <- paste0(record$stage, "/", sub("\\.parquet$", "", file$path))
+            if (!grepl("^[A-Za-z0-9_]+\\.parquet$", file$path)) fmt_stop(stage, "/record.json lists '", file$path, "', which is not a table of its own folder.")
+            name <- paste0(stage, "/", sub("\\.parquet$", "", file$path))
             path <- table_path(directory, name)
             if (!file.exists(path)) fmt_stop("The stage '", record$stage, "' lists ", file$path, ", which is missing.")
             if (table_rows(path) != file$rows) {
@@ -1170,7 +1191,7 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
 # share is never reused.
 fit_mismatch <- function(saved, current) {
     for (name in names(current)) {
-        if (!identical(as.character(saved[[name]]), as.character(current[[name]]))) return(paste0("their `", name, "` differs"))
+        if (!identical(identity_value(saved, name), identity_value(current, name))) return(paste0("their `", name, "` differs"))
     }
     method <- current$response_fit_method
     if (!"R" %in% FIT_METHODS[[method]]) return(paste0("the method '", method, "' is not one R shares"))
@@ -1721,7 +1742,15 @@ validate_analysis <- function(directory, screen_file = NULL) {
             if (nrow(part) > 1L && !identical(byte_order(part, key), seq_len(nrow(part)))) log$add("T0.2", where, "The rows are not sorted by ", paste(key, collapse = ", "), ".")
             if (!across_parts && anyDuplicated(part[key]) > 0L) log$add("T0.4", where, "Two rows of one file have the same ", paste(key, collapse = ", "), ".")
         }
-        whole <- read_table(tables[[name]])
+        # the parts already read, put together: each table is read once
+        plain <- lapply(parts, function(part) {
+            factors <- vapply(part, is.factor, logical(1))
+            part[factors] <- lapply(part[factors], as.character)
+            part
+        })
+        shared <- Reduce(intersect, lapply(plain, names))
+        whole <- do.call(rbind, lapply(plain, function(part) part[shared]))
+        rownames(whole) <- NULL
         key <- table_key(name, whole)
         if (across_parts && anyDuplicated(whole[key]) > 0L) log$add("T0.4", where, "Two rows have the same ", paste(key, collapse = ", "), ".")
         contents[[name]] <- whole
@@ -1741,7 +1770,7 @@ validate_analysis <- function(directory, screen_file = NULL) {
                 control_group = parameters$settings$control_group, screen_id = analysis$screen$id
             )
             for (field in names(expected)) {
-                if (!is.null(expected[[field]]) && !identical(as.character(fits_identity[[field]]), as.character(expected[[field]]))) {
+                if (!is.null(expected[[field]]) && !identical(identity_value(fits_identity, field), identity_value(expected, field))) {
                     log$add("T6.3", TABLE_SPEC$fits$identity, "`", field, "` is not that of the analysis.")
                 }
             }

@@ -1,0 +1,21 @@
+{
+  "stage": "assignment",
+  "settings": {
+    "method": "thresholding",
+    "hyperparameters": {
+      "threshold": 5
+    }
+  },
+  "provenance": {
+    "package": "sceptre",
+    "version": "0.99.1",
+    "language": "R",
+    "written_at": "2026-11-18T18:27:11Z"
+  },
+  "files": [
+    {
+      "path": "assignments.parquet",
+      "rows": 4829
+    }
+  ]
+}

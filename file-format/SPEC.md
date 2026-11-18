@@ -84,7 +84,7 @@ final; the sorting into kinds is.
 
 Of the 122 statements, 82 are file rules, 29 behaviour rules and 11
 guidance. The validators check 79 of the file rules, and tests cover 3
-more. Tests cover 18 of the behaviour rules, and the validators 5; 6
+more. Tests cover 16 of the behaviour rules, and the conformance run 7; 6
 have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A6.2.
 
 **The machine-readable parts** are in [`spec/`](spec/), and both validators and
@@ -213,7 +213,7 @@ may refer to one data file, and an analysis may be stored anywhere.
 | S2.3 | file | Every modality, and the shared cell table, MUST hold the same cells in the same order. | V |
 | S2.4 | guidance | A modality other than `grna` SHOULD be named for what was measured. `rna` is the name for RNA. | — |
 | S2.5 | behaviour | A reader MUST find the modality an analysis tests through `analysis.json` (A1), never by a fixed name. A package MAY choose it for the user when the file has exactly one modality besides `grna`. | tests (the `atac` variant) |
-| S2.6 | behaviour | A reader MUST ignore modalities that the analysis does not name. | tests (the `hashing` variant) |
+| S2.6 | behaviour | A reader MUST ignore modalities that the analysis does not name. A tool that reads a data file and writes it again MUST keep them. | V (a conformance file is copied and keeps its modalities) |
 | S2.7 | file | Every modality of a file follows the rules of S3 to S7, whether or not an analysis uses it, so that a file is conforming or not on its own and any modality can be a response later. | V (a valid conformance case) |
 
 ### S3. Counts
@@ -284,7 +284,7 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S8.6 | file | The gRNA table MAY have a text column `vector_id`, naming the vector that delivers each gRNA. If present it has no missing values: every gRNA is on exactly one vector, and a vector with one gRNA is one row. | V |
 | S8.7 | file | All gRNAs with the same `vector_id` MUST have the same `grna_target`: a vector has one target. | V |
 | S8.8 | file | A `vector_id` MUST NOT equal the identifier of a gRNA on another vector. A vector with one gRNA may be named after it. | V |
-| S8.9 | behaviour | A reader MUST refuse a file that breaks S8.7. A writer MUST NOT sum counts over the gRNAs of a vector: counts are stored per gRNA, and combining them is a step of an analysis. | V (both readers refuse the conformance file) |
+| S8.9 | behaviour | A reader MUST refuse a file that breaks S8.7 or S8.8. A writer MUST NOT sum counts over the gRNAs of a vector: counts are stored per gRNA, and combining them is a step of an analysis. | V (both readers refuse the conformance files) |
 | S8.10 | file | Positions are **1-based with both ends included**: `target_start` is the first base of the target and `target_end` the last. Both are whole numbers, `target_start` is at least 1, and `target_end` is not before `target_start`. A single position has the two equal. | V |
 | S8.11 | file | A gRNA has all three of `target_chr`, `target_start` and `target_end`, or none of them. A non-targeting gRNA has none. | V |
 | S8.12 | guidance | This is the convention of GTF and GFF files, Ensembl, and Bioconductor's `GRanges`. An interval from a BED file (0-based, end excluded) is converted at import by adding 1 to its start. The format has one convention and no entry that says which is in use. Any position column added later follows it. | — |
@@ -349,7 +349,7 @@ and `discovery`. The last three do not depend on one another.
 |---|---|---|---|
 | A2.1 | file | A stage's record is the file `record.json` in the folder named for the stage. It MUST conform to `spec/stage.schema.json` and have `stage` equal to the folder's name. | V |
 | A2.2 | file | A stage's record MUST NOT exist unless the records of all earlier stages exist. | V |
-| A2.3 | behaviour | A stage has run if and only if its record exists. A writer MUST write the record after the stage's tables, all in the stage's folder. | tests (a stage is cleared) |
+| A2.3 | behaviour | A stage has run if and only if its record exists. A writer MUST write the record after the stage's tables, all in the stage's folder. A writer that finds a stage's folder without a record MUST delete the folder before writing the stage. | V (a stage is written again over an unfinished attempt) |
 | A2.4 | file | A record holds the stage's `settings` (what the user chose, with defaults filled in), `provenance` (`package`, `version`, `language`: the implementation's language, which is `R` or `Python` for the two libraries here and may be any other, and `written_at`: UTC, `YYYY-MM-DDTHH:MM:SSZ`), and `files` (A5). It MAY hold `summaries`, which a reader MUST NOT need. | V (through A2.1) |
 
 ### A3. Settings and JSON
@@ -376,7 +376,7 @@ and `discovery`. The last three do not depend on one another.
 |---|---|---|---|
 | A5.1 | file | Every file a record lists in `files` MUST exist in the record's folder and be readable. | V |
 | A5.2 | file | The `rows` a record gives for a file MUST equal the file's number of rows (summed over the parts of a folder). | V |
-| A5.3 | file | A `files` path names a table in the record's own folder: a file name ending in `.parquet`, with no folder part. A stage cannot list a file outside its folder. | V (through A2.1) |
+| A5.3 | file | A `files` path names a table in the record's own folder: a file name ending in `.parquet`, with no folder part. A stage cannot list a file outside its folder, and a reader MUST refuse a record that tries to, or whose `stage` is not its folder's name. | V (through A2.1; both readers refuse the conformance files) |
 | A5.4 | file | A record MUST list every table that `spec/tables.json` marks as required for its stage, even when the table has no rows. | V |
 | A5.5 | guidance | A `files` entry MAY carry a `sha256` of the file. | — |
 
@@ -470,9 +470,9 @@ and QC stages have run.
 |---|---|---|---|
 | T6.1 | file | If `fits/response/` exists, it MUST hold `identity.json`, conforming to `spec/fits.schema.json`: `screen_id`, `formula`, `cells_in_use_sha256`, `response_fit_method`, `control_group`. | V |
 | T6.2 | file | The fits are the part files of `fits/response/`: one row per response, with `response_id`, `coefficients` (one per term of the design, in the design's order) and `theta`. | V |
-| T6.3 | file | `identity.json` MUST describe this analysis: its data file's `id`, the formula, fitting method and control group of its parameters record, and the hash (A1.3) of the identifiers of the cells in use. A fit cache MUST NOT exist before the parameters and QC stages have run. | V |
+| T6.3 | file | `identity.json` MUST describe this analysis: its data file's `id`, the formula (white space aside), fitting method and control group of its parameters record, and the hash (A1.3) of the identifiers of the cells in use. A fit cache MUST NOT exist before the parameters and QC stages have run. | V |
 | T6.4 | behaviour | Each writer adds a part file of its own and MUST NOT modify another's. Two parts MAY hold the same response; a reader takes either. A writer that finds `identity.json` MUST check that it matches what it would write, and MUST NOT rewrite it. | V (a valid conformance case with two parts); tests |
-| T6.5 | behaviour | The fits are a cache. A reader MAY ignore them, and deleting them changes no result beyond numerical tolerance. A reader MUST NOT reuse them unless every part of `identity.json` matches what it would use itself and the fitting method is one its language shares. | tests (a changed identity record) |
+| T6.5 | behaviour | The fits are a cache. A reader MAY ignore them, and deleting them changes no result beyond numerical tolerance. A reader MUST NOT reuse them unless every part of `identity.json` matches what it would use itself and the fitting method is one its language shares. Two formulas match when they are the same once white space is removed. | tests (a changed identity record); V (a formula spaced differently) |
 | T6.6 | behaviour | The cache is deleted when the `qc` stage or an earlier stage is rerun. It is kept when a testing stage is rerun. | V (a valid conformance case); tests |
 | T6.7 | guidance | `fits/grna/` is reserved for fitted models of the gRNAs, which this version does not define. A table of another kind of fit is a folder of its own, never a column in this one. | — |
 
