@@ -94,12 +94,17 @@ def _read_json(path):
 
 
 def _byte_order(table: pd.DataFrame, key) -> list[int]:
-    """Row order by the key columns, each compared as UTF-8 bytes, missing last."""
-
-    def sort_key(i):
-        return tuple((1, b"") if pd.isna(v) else (0, str(v).encode()) for v in (table[k].iat[i] for k in key))
-
-    return sorted(range(len(table)), key=sort_key)
+    """Row order by the key columns, each compared as UTF-8 bytes, missing last.
+    The sort is stable, and done by numpy on byte strings, not row by row."""
+    columns = []
+    for name in reversed(list(key)):   # lexsort takes the most significant key last
+        values = table[name]
+        missing = values.isna().to_numpy()
+        encoded = np.array([b"" if m else str(v).encode() for v, m in zip(values, missing)], dtype="S")
+        columns += [encoded, missing]
+    if not columns or len(table) == 0:
+        return list(range(len(table)))
+    return np.lexsort(columns).tolist()
 
 
 # ---------------------------------------------------------------- tables (T0)
@@ -281,24 +286,6 @@ def split_covariates(covariates: pd.DataFrame, modalities) -> dict:
     return out
 
 
-def _write_count_types(file) -> None:
-    """Counts and cell positions as 32-bit integers, column pointers as 64-bit
-    integers, uncompressed (S4, S11)."""
-    import h5py
-
-    with h5py.File(file, "r+") as f:
-        for modality in f["mod"]:
-            group = f[f"mod/{modality}/X"]
-            for name, dtype in (("data", np.int32), ("indices", np.int32), ("indptr", np.int64)):
-                values = group[name][:]
-                if name == "data" and not np.array_equal(values, np.round(values)):
-                    raise ValueError("Counts must be integers.")
-                attributes = dict(group[name].attrs)
-                del group[name]
-                group.create_dataset(name, data=values.astype(dtype))
-                group[name].attrs.update(attributes)
-
-
 def write_screen(mdata, file) -> None:
     """Write a MuData (as `read_screen` returns it) as a data file. `uns["sceptre"]`
     holds `moi`, and `id` if the dataset already has one. Every modality is written
@@ -337,13 +324,21 @@ def write_screen(mdata, file) -> None:
         counts.sum_duplicates()
         counts.eliminate_zeros()
         counts.sort_indices()
+        if not np.array_equal(counts.data, np.round(counts.data)):
+            raise ValueError("Counts must be integers.")
         # every modality's cell table has its total count and its number of features
         # with a nonzero count; a writer computes them if they are absent (S6)
         obs = source.obs.loc[cells].copy()
         if "n_umis" not in obs:
             obs["n_umis"] = np.asarray(counts.sum(axis=1)).reshape(-1).astype(np.float64)
         if "n_nonzero" not in obs:
-            obs["n_nonzero"] = np.diff(counts.tocsr().indptr).astype(np.int32)
+            obs["n_nonzero"] = np.bincount(counts.indices, minlength=len(cells)).astype(np.int32)
+        # counts and cell positions as 32-bit integers, column pointers as 64-bit
+        # integers (S4), set before writing: an array rewritten afterwards would
+        # leave its first copy as dead space in the file
+        counts.data = counts.data.astype(np.int32)
+        counts.indices = counts.indices.astype(np.int32)
+        counts.indptr = counts.indptr.astype(np.int64)
         modalities[name] = ad.AnnData(X=counts, obs=_as_file_frame(obs, True), var=_as_file_frame(source.var, False))
     out = md.MuData(modalities)
     shared = _as_file_frame(mdata.obs.loc[cells, [c for c in mdata.obs.columns if ":" not in str(c)]], True)
@@ -363,7 +358,6 @@ def write_screen(mdata, file) -> None:
     # plain HDF5 strings: R cannot open a file with anndata's nullable string arrays (S7)
     with ad.settings.override(allow_write_nullable_strings=False):
         out.write(file)
-    _write_count_types(file)
 
 
 def format_parts(version):

@@ -26,6 +26,7 @@ R and Python, with one data file and any number of analyses of it.
 | `make_example.R` | Runs the analyses in R and writes `example/` |
 | `make_conformance.py` | Builds `conformance/` from `example/` |
 | `check_conformance.R`, `check_conformance.py` | Run each language's validators over every conformance case |
+| `scale-test/` | The scripts and recorded results of one run on a real screen of 207,324 cells |
 | `render.sh` | Rebuilds the examples and conformance files, checks both validators, and renders both notebooks |
 
 Start with `REVIEW.md`. Then `SPEC.md` for what the format is, or sections 1 and 2 of

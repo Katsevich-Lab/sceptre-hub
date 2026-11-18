@@ -192,20 +192,23 @@ scalar <- function(x) {
 }
 
 # Counts as 32-bit integers, cell positions as 32-bit integers, column pointers
-# as 64-bit integers, uncompressed (S4, S11). MuData writes doubles and 32-bit
-# pointers; this rewrites the three arrays of one modality.
-write_count_types <- function(file, modality) {
+# as 64-bit integers, uncompressed (S4, S11). MuData would write doubles and
+# 32-bit pointers, so fmt_write_screen() has it write an empty matrix and puts
+# the three arrays in afterwards. Rewriting full-size arrays in place would
+# leave their first copy as dead space in the file: HDF5 does not give it back.
+# `counts` is row-compressed features x cells, which is column-compressed
+# cells x features in the file.
+write_counts <- function(file, modality, counts) {
+    if (any(counts@x != round(counts@x))) fmt_stop("Counts must be integers.")
     group <- paste0("mod/", modality, "/X/")
-    replace <- function(name, h5type) {
-        values <- as.vector(rhdf5::h5read(file, paste0(group, name), bit64conversion = "double"))
-        if (name == "data" && any(values != round(values))) fmt_stop("Counts must be integers.")
+    put <- function(name, values, h5type) {
         rhdf5::h5delete(file, paste0(group, name))
         rhdf5::h5createDataset(file, paste0(group, name), dims = length(values), H5type = h5type, chunk = NULL, level = 0)
-        rhdf5::h5write(if (h5type == "H5T_STD_I64LE") as.numeric(values) else as.integer(values), file, paste0(group, name))
+        rhdf5::h5write(values, file, paste0(group, name))
     }
-    replace("data", "H5T_STD_I32LE")
-    replace("indices", "H5T_STD_I32LE")
-    replace("indptr", "H5T_STD_I64LE")
+    put("data", as.integer(counts@x), "H5T_STD_I32LE")
+    put("indices", counts@j, "H5T_STD_I32LE")
+    put("indptr", as.numeric(counts@p), "H5T_STD_I64LE")
 }
 
 # The modality an analysis tests, among those of a data file: the one asked for,
@@ -260,14 +263,18 @@ fmt_write_screen <- function(sce, file) {
         obs <- as.data.frame(obs, optional = TRUE, stringsAsFactors = FALSE)
         if (is.null(obs$n_umis)) obs$n_umis <- as.double(Matrix::colSums(counts))
         if (is.null(obs$n_nonzero)) obs$n_nonzero <- as.integer(Matrix::colSums(counts != 0))
-        SingleCellExperiment::SingleCellExperiment(
-            # row-compressed (features x cells) in R is column-compressed
-            # (cells x features) in the file: one feature is one contiguous read (S3)
-            assays = list(counts = methods::as(
-                methods::as(SummarizedExperiment::assay(experiment, "counts"), "generalMatrix"), "RsparseMatrix"
-            )),
-            colData = S4Vectors::DataFrame(as_file_frame(obs, TRUE), check.names = FALSE, row.names = cells),
-            rowData = S4Vectors::DataFrame(as_file_frame(var, FALSE), check.names = FALSE, row.names = rownames(experiment))
+        # row-compressed (features x cells) in R is column-compressed
+        # (cells x features) in the file: one feature is one contiguous read (S3)
+        stored <- methods::as(Matrix::drop0(methods::as(counts, "generalMatrix")), "RsparseMatrix")
+        empty <- methods::as(Matrix::sparseMatrix(i = integer(), j = integer(), x = numeric(), dims = dim(counts)), "RsparseMatrix")
+        list(
+            counts = stored,
+            # MuData writes the layout with an empty matrix; write_counts() adds the arrays
+            experiment = SingleCellExperiment::SingleCellExperiment(
+                assays = list(counts = empty),
+                colData = S4Vectors::DataFrame(as_file_frame(obs, TRUE), check.names = FALSE, row.names = cells),
+                rowData = S4Vectors::DataFrame(as_file_frame(var, FALSE), check.names = FALSE, row.names = rownames(experiment))
+            )
         )
     }
     written <- FALSE
@@ -284,7 +291,7 @@ fmt_write_screen <- function(sce, file) {
     )
     MuData::writeH5MU(
         MultiAssayExperiment::MultiAssayExperiment(
-            experiments,
+            lapply(experiments, function(e) e$experiment),
             colData = S4Vectors::DataFrame(as_file_frame(covariates$shared, TRUE), check.names = FALSE, row.names = cells),
             # a native record with scalar entries (S10)
             metadata = list(sceptre = c(
@@ -298,7 +305,7 @@ fmt_write_screen <- function(sce, file) {
         ),
         file
     )
-    for (name in names(experiments)) write_count_types(file, name)
+    for (name in names(experiments)) write_counts(file, name, experiments[[name]]$counts)
     written <- TRUE
     invisible(file)
 }

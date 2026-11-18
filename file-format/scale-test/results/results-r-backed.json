@@ -1,0 +1,25 @@
+{
+  "open with MuData's backed reader": {
+    "seconds": 5,
+    "peak_gb": 0.8
+  },
+  "matrix": {
+    "class": "DelayedMatrix",
+    "seed": "CSR_H5ADMatrixSeed",
+    "dim": [13135, 207324]
+  },
+  "read 200 responses, one at a time": {
+    "seconds": 11.2,
+    "peak_gb": 0.7
+  },
+  "sums equal direct HDF5 reads": true,
+  "first five, backed": [5821911, 290894, 54901, 202932, 15691],
+  "first five, direct": [5821911, 290894, 54901, 202932, 15691],
+  "read the first 500 responses as one in-memory block": {
+    "seconds": 5.4,
+    "peak_gb": 1.3
+  },
+  "block nonzeros equal the pointers": true,
+  "outcome": "ok",
+  "warnings": ["omp_pause_resource() failed to relinquish resources on device 0", "sampleMap[['assay']] coerced with as.factor()"]
+}

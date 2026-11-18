@@ -685,7 +685,7 @@ table of planned additions below says which additions are not safe to ignore.
 
 - **The coordinate convention** for `target_chr`, `target_start`, `target_end`: 0-based or 1-based, and tied to which genome build.
 - **Review** ([`REVIEW.md`](REVIEW.md) says where to look).
-- **One real dataset at scale**, including a disk-backed read in both languages. No real dataset larger than 1,000 cells has been written or read in this format.
+- **An analysis at scale.** The data file has been through one real large dataset, in both languages and disk-backed (Appendix A). No analysis larger than the 1,000-cell examples has been written or read in this format.
 
 ### Planned additions to the format
 
@@ -904,8 +904,66 @@ mudata 0.4.1, anndata 0.13.4, pandas 3.1.0, pyarrow 26.0.0, h5py 3.16.0.
 | The same recomputed with `log2(x)` | a different last bit on about 30% of rows |
 | `fold_change` recomputed from the log2 value | a different last bit on a few rows per table |
 
-Not measured: anything on real large data; Zarr; other HDF5 filters; a second
-platform.
+Not measured: Zarr; other HDF5 filters; a second platform.
+
+### Scale test on real data
+
+One run, 18 November 2026, on the Gasperini et al. (2019) at-scale screen:
+207,324 cells, 13,135 genes, 13,077 gRNAs, 699 million nonzero RNA counts. One
+cluster node, 16 cores, 90 GB of memory. R 4.5.2 with MuData 1.14.0,
+rhdf5 2.54.1 and HDF5Array 1.38.0; Python with the versions above. The scripts
+and their recorded results are in `scale-test/`.
+
+**What was checked, and held:**
+
+| Check | Result |
+|---|---|
+| The file R wrote against the file Python wrote | Every count array identical; every cell and feature table identical; same number types |
+| Both validators on both files | Conforming |
+| Read back in memory, R and Python | Same shape, nonzeros and count sums as the source |
+| 200 random genes read from disk one at a time, R (rhdf5) and Python (h5py) | Equal to the in-memory values |
+| The reader the `sceptre3` branch uses: MuData's backed reader, one response at a time | Sums identical to direct HDF5 reads; the 64-bit column pointers are read correctly |
+| An assignment table of 6.6 million rows, written by Python and rewritten by R | Equal |
+
+**Sizes and times.** The file is 5.7 GB from either language, against 8.6 GB
+for the same data with counts as doubles. Times are from a cold start;
+memory is the peak of the whole process, which for later steps includes data
+already held.
+
+| Step | Python | R |
+|---|---|---|
+| Write the data file | 12 s, 15 GB | 35 s, 25 GB |
+| Validate the data file | 116 s, 29 GB | 79 s, 21 GB |
+| Read the data file in memory | 37 s, 15 GB | 106 s, 25 GB |
+| Read 200 genes from disk, one at a time | 3 s | 21 s with rhdf5; 3 s with HDF5Array |
+| Open disk-backed with MuData and read 200 responses | — | 5 s to open, 11 s to read, under 1 GB |
+| Read the assignment table | 5 s | 1 s |
+| Write the assignment table | 111 s (before the fix below) | 1 s |
+
+**What the run found.**
+
+- *Dead space.* In the first run the Python-written file was 14.3 GB. Both
+  prototype writers wrote the counts as doubles and then rewrote the arrays in
+  their final types, and HDF5 does not give the first copy's space back. The
+  500-cell examples hid this. Both writers now write each array once, in its
+  final type: the file fell to 5.7 GB, Python's write from 106 s to 12 s and
+  R's from 399 s to 35 s. This is a lesson about writers, not a change to the
+  format.
+- *A slow sort.* The prototype's Python table writer sorted rows one at a time
+  in Python: 111 s for 6.6 million rows, against 1 s in R. It now sorts with
+  numpy (2 s for 2 million rows on a laptop); this was not rerun at scale.
+- *A mistake in the test itself.* The first run reported that R's disk-backed
+  sums disagreed with the in-memory ones. HDF5Array presents the stored
+  cells × features matrix as features × cells, and the test took columns. With
+  the orientation handled, the sums agree.
+- *The validators are not built for size.* They read whole arrays into memory:
+  about 29 GB in Python and 21 GB in R for this file. That is acceptable for a
+  check run once per dataset and would need chunking for larger ones.
+
+**What this does not cover.** An analysis at this scale: only the data file and
+one table were tested, not the stage records, results or fits. A second
+dataset. Datasets large enough to pass 2³¹ nonzeros, where the 64-bit pointers
+are needed and R's in-memory matrix no longer fits.
 
 ## Appendix B. What the prototype implements
 
@@ -960,8 +1018,9 @@ tested, not open choices:
   table's class.
 - Refused with a message: a gRNA under two targets; a formula outside the
   additive subset.
-- Not tested: real data at scale, disk-backed reads, a second platform, Zarr,
-  methods other than those in the examples, and a file whose second modality
+- Tested once at scale, for the data file only (Appendix A): 207,324 cells.
+  Not tested: an analysis at scale, a second platform, Zarr, methods other than
+  those in the examples, and a file whose second modality
   is real data (the `atac` and `hashing` test reuses the RNA counts and a
   synthetic matrix).
 

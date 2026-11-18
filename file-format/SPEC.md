@@ -4,8 +4,9 @@
 
 **Status.** This is a first draft. It was written in about a week, by one
 author, and implemented twice by that same author, in R and in Python. It has
-been tested on datasets of 500 and 1,000 cells. Nobody else has reviewed it,
-and it has not been run on a large dataset. It looks more finished than it is.
+been tested on datasets of 500 and 1,000 cells, and the data file alone on one
+real screen of 207,324 cells. No analysis has been run through it at scale, and
+nobody else has reviewed it. It looks more finished than it is.
 
 **Scope.** This document fixes how a Perturb-seq dataset and sceptre's
 analyses of it are stored: which files exist, what they are called, what they
@@ -467,11 +468,12 @@ analysis's strategy and the table's stage; `spec/tables.json` records it as
 ## 7. What the two libraries support
 
 "Tested" means a check in the notebooks or the conformance set passes in that
-language, on the small examples. Nothing here has been run on a large dataset.
+language, on the small examples. "At scale" means the one run on 207,324 cells
+reported in `RATIONALE.md`, Appendix A.
 
 | Feature | R | Python |
 |---|---|---|
-| Write and read a data file | tested | tested |
+| Write and read a data file | tested, and at scale | tested, and at scale |
 | A file written by the other language | tested | tested |
 | High MOI; low MOI with the "maximum" assignment method and flagged cells | tested | tested |
 | The `union`, `singleton` and `bonferroni` strategies | tested | tested |
@@ -484,5 +486,6 @@ language, on the small examples. Nothing here has been run on a large dataset.
 | Read counts stored in another number type (readable files) | tested | tested |
 | A covariate name with a dot in a formula | tested | tested through an alias: pysceptre's own formula parser does not take dots |
 | gzip-compressed counts | validated, and read in an earlier measurement | validated; read not tested |
-| Disk-backed reads | not tested | not tested |
+| Reading counts from disk, one feature at a time | at scale, through MuData's backed reader (as the `sceptre3` branch does) and through rhdf5 | at scale, through h5py; pysceptre's own reader not tested |
+| An analysis folder at scale | not tested (one table of 6.6 million rows only) | not tested (one table of 6.6 million rows only) |
 | Writing a stage while it runs (the libraries write a finished analysis) | not implemented | not implemented |

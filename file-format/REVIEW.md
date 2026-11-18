@@ -61,5 +61,6 @@ need review now:
 ## What has and has not been tested
 
 - **Tested:** R and Python write the same files and read each other's; an analysis stopped in one language is continued in the other with matching results; two validators agree on a set of valid and deliberately broken files. The two notebooks show all of it.
-- **Not tested:** any dataset larger than 1,000 cells; disk-backed reads; a second operating system; real data in a second measured modality.
+- **Tested once at scale:** the data file, on a real screen of 207,324 cells, written by both languages to identical files and read back in memory and from disk (`RATIONALE.md`, Appendix A).
+- **Not tested:** an analysis larger than 1,000 cells; a second operating system; real data in a second measured modality.
 - **Known limit:** everything was written and implemented by one author. An independent implementation from the specification alone has not been attempted.

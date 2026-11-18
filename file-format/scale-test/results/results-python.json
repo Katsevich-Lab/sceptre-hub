@@ -1,0 +1,90 @@
+{
+  "read the October-layout file (in memory)": {
+    "seconds": 31.4,
+    "peak_gb": 8.9
+  },
+  "dataset": {
+    "cells": 207324,
+    "responses": 13135,
+    "grnas": 13077,
+    "rna_nonzeros": 698998312,
+    "grna_nonzeros": 12119578,
+    "rna_count_sum": 3767321066.0,
+    "grna_count_sum": 143788851.0,
+    "october_file_gb": 8.6,
+    "format_file_gb": 5.73
+  },
+  "write the data file": {
+    "seconds": 12.3,
+    "peak_gb": 15.0
+  },
+  "write an assignment table": {
+    "seconds": 110.7,
+    "peak_gb": 16.4
+  },
+  "assignments": {
+    "rows": 6559612,
+    "file_mb": 39.0
+  },
+  "validate the data file": {
+    "seconds": 115.7,
+    "peak_gb": 29.3
+  },
+  "validation": {
+    "level": "conforming",
+    "problems": []
+  },
+  "read the data file (in memory)": {
+    "seconds": 36.9,
+    "peak_gb": 14.6
+  },
+  "read back": {
+    "same shape and nonzeros": true,
+    "same count sums": true
+  },
+  "read 200 features from disk, one at a time": {
+    "seconds": 2.7,
+    "peak_gb": 14.6
+  },
+  "by feature": {
+    "200 features read from disk equal the in-memory ones": true
+  },
+  "read the assignment table": {
+    "seconds": 4.6,
+    "peak_gb": 15.9
+  },
+  "validate the R-written data file": {
+    "seconds": 43.1,
+    "peak_gb": 20.0
+  },
+  "compare the count arrays of the two files": {
+    "seconds": 21.7,
+    "peak_gb": 0.6
+  },
+  "read both files and compare their tables": {
+    "seconds": 36.7,
+    "peak_gb": 11.7
+  },
+  "compare": {
+    "R-written file": {
+      "level": "conforming",
+      "problems": [],
+      "gb": 5.71
+    },
+    "same number types": true,
+    "count arrays identical": {
+      "rna data": true,
+      "rna indices": true,
+      "rna indptr": true,
+      "grna data": true,
+      "grna indices": true,
+      "grna indptr": true
+    },
+    "tables identical": {
+      "cell tables": true,
+      "feature tables": true,
+      "identifiers": true
+    },
+    "assignment table written by R equals Python's": true
+  }
+}

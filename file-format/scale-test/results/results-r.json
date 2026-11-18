@@ -1,0 +1,55 @@
+{
+  "validate the data file": {
+    "seconds": 79.3,
+    "peak_gb": 21.4
+  },
+  "validation": {
+    "level": "conforming",
+    "problems": []
+  },
+  "read 200 features from disk, one at a time (rhdf5)": {
+    "seconds": 21.1,
+    "peak_gb": 14.4
+  },
+  "open disk-backed (HDF5Array) and read 200 features": {
+    "seconds": 2.6,
+    "peak_gb": 1.2
+  },
+  "disk-backed": {
+    "dim": [13135, 207324],
+    "class": "H5SparseMatrix",
+    "error": {},
+    "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+  },
+  "read the data file (in memory)": {
+    "seconds": 106.4,
+    "peak_gb": 24.5
+  },
+  "read back": {
+    "same shape and nonzeros": true,
+    "same count sums": true,
+    "200 features from disk equal the in-memory ones": true,
+    "disk-backed sums equal the in-memory ones": true,
+    "disk-backed sums, first five": [5821911, 290894, 54901, 202932, 15691],
+    "in-memory sums, first five": [5821911, 290894, 54901, 202932, 15691],
+    "covariates": "rna_n_nonzero, rna_n_umis, rna_p_mito, grna_n_nonzero, grna_n_umis"
+  },
+  "write the data file": {
+    "seconds": 34.8,
+    "peak_gb": 24.7
+  },
+  "R-written file": {
+    "gb": 5.71
+  },
+  "read the assignment table": {
+    "seconds": 0.8,
+    "peak_gb": 1.2
+  },
+  "assignments": {
+    "rows": 6559612
+  },
+  "write the assignment table": {
+    "seconds": 1.1,
+    "peak_gb": 1.2
+  }
+}
