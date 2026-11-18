@@ -247,6 +247,17 @@ one rule, and no rounding between what a package computed and what it reads back
 - **Why `target_chr` and not `chr`.** sceptre's gRNA table calls these columns `chr`, `start` and `end` and uses them as the target's position when it builds cis pairs. The bare names do not say whether they locate the gRNA or its target, and IGVF's files carry both. The file names say which; the packages keep their own names and the prototype translates.
 - **Not stored.** `grna_group`. It depends on the analysis's integration strategy *(verified, `R/preprocessing_functions.R`)*, so it is derived (principle 2).
 - **A gRNA under two targets is refused.** It cannot be one row, and a writer stops with a message. R accepts such tables today, with a warning on the development branch *(verified, `R/accessors.R`)*, and public pysceptre counts them and keeps the full table separately *(verified, `scripts/sceptre_io.py`)*. What pooling means for such a gRNA is a scientific question first; a separate gRNA-to-target table can be added later without changing anything else (question 3).
+- **Several gRNAs on one vector: `vector_id`** *(Decided by Eugene, 18 November)*.
+  - *The ruling.* A vector has one target. Several gRNAs delivered together against the same element are in scope. A vector whose gRNAs have different targets is a combinatorial screen and is out of scope: sceptre is not equipped to analyse those, and the format should be future-proof without accommodating every possibility. This is the rule sceptre already enforces, that `vector_id` is nested within `grna_target`.
+  - *The column.* An optional text column `vector_id` in the gRNA table, beside `grna_target`. Which gRNA sits on which vector is fixed at cloning and known at import, so it belongs in the data file by the format's dividing rule. sceptre keeps it today as an optional column of its gRNA table under the same name, so this continues a convention.
+  - *Counts stay per gRNA.* A writer never sums over a vector's gRNAs. sceptre sums them at import today, which destroys the one piece of information needed to tell a cell carrying two gRNAs of one vector, as intended, from a cell carrying gRNAs of two vectors, a recombination product. Dual-guide libraries report such recombinants at roughly a quarter of reads *(as reported by the side session from Replogle et al. 2022; not re-read by me)*. Summing within a vector also raises sensitivity when per-gRNA counts are low, and a file without `vector_id` cannot reproduce it.
+  - *Why a reader must refuse two targets on a vector (S8.7).* It keeps the door open cheaply. A reader must either read a file correctly or detect that it cannot (S10). With the refusal stated now, allowing combinatorial screens later is a minor version change, because today's readers reject those files cleanly. Without it, the same change would be major.
+  - *Why a vector may not be named like another vector's gRNA (S8.8).* sceptre's collapse renames `vector_id` to `grna_id`, so a stray match would silently merge two different things. A vector with one gRNA may still be named after it.
+  - *What this covers without anything more.* Under one target per vector, barcode-based designs need no new structure: a barcode standing for several gRNAs with one target is a feature with counts and a target, already a row of the gRNA table. *(As reported by the side session from the papers, not re-read by me:)* Adamson et al. 2016 and Norman et al. 2019 identify a multi-guide vector by one barcode; Replogle et al. 2022 count each guide separately by direct capture; CaRPool-seq, CROPseq-multi, Cas12a arrays and VIPerturb-seq each use a barcode per array or per guide. Both schemes fit.
+  - *Not added, on purpose:* a vector-to-gRNA table (needed only when a vector carries several targets), targets as lists, a position within the vector, a field for the detection scheme, and a field for the target molecule.
+  - *Deferred: the analysis side.* Because the data file holds per-gRNA counts and is written once, sceptre's sum-within-vector has to become a step of an analysis. That implies a setting in the assignment stage's record, and an assignment table that names the unit it assigned, gRNA or vector, as results tables already switch their key by strategy. Nothing in the data file depends on the answer. It is listed in section 10. The prototype's readers do not use `vector_id` when they build a package object.
+- **DNA-targeting is assumed, not encoded** *(Decided by Eugene, 18 November)*. There is no field for the target molecule. Target coordinates are genomic positions; an RNA-targeting screen stores its transcript in `grna_target` and leaves coordinates out. Nothing in an analysis depends on the molecule: counts, assignments, targets and tests are the same, and the coordinates are used only when the user builds cis pairs. An older reader that ignored a future field would therefore produce no wrong numbers, so adding one later is a minor change.
+- **The name `grna` is a slight wart.** The modality holds whatever identifies the perturbation, which for some designs is a barcode and could in principle be something other than a gRNA. It is kept because sceptre's vocabulary uses it throughout and another name buys nothing within this scope.
 - **Open before the freeze.** The coordinate convention (0-based or 1-based, and which genome build) is not stated, here or in sceptre. It should be fixed together with a genome-build entry ([section 10](#10-fixed-now-free-to-grow)).
 - **IGVF.** Much richer, and better than this format today. Each gRNA has a `targeting` flag, a `type` (targeting, non-targeting, safe-targeting, negative control), its `spacer` sequence, its own position (`guide_chr`, `guide_start`, `guide_end`, `strand`, `pam`), its target's name and position (`intended_target_name`, `intended_target_chr`, `intended_target_start`, `intended_target_end`) and a collision-safe target key; source columns are passed through. This format takes the distinction between gRNA position and target position now, through the column names. The rest are optional columns that can be added without a format change and are listed in [section 10](#10-fixed-now-free-to-grow). A file may already carry them.
 
@@ -573,6 +584,8 @@ would cost.
 | 20 | When tables have `grna_id` (T3, T5) | Fixed by strategy and stage | Follows sceptre's output |
 | 21 | Counts in another number type (S4) | Not conforming; readable | Nothing |
 | 22 | The hint to the data file (A1) | A relative path or a URL, never absolute; recorded only when the file is near; an optional dataset name and source; no dataset version (Eugene, 18 November) | Loosening the form is safe for old files |
+| 23 | Several gRNAs on one vector (S8) | An optional `vector_id`; one target per vector, and readers refuse otherwise; counts per gRNA (Eugene, 18 November) | Allowing several targets later is a minor change |
+| 24 | The target molecule (S8) | Not encoded; DNA assumed and documented (Eugene, 18 November) | A minor addition |
 
 ### Outside the format
 
@@ -709,6 +722,8 @@ reader can safely ignore it, **major** if it could misread the file.
 | `log_p_value`, for p-values below a double's range | Results tables | No method needs it today | minor |
 | Per-pair counts: cells carrying the perturbation, and cells with a nonzero count in each group | Results or pair-QC tables | The development builds do not put them in the result tables | minor |
 | A SHA-256 per file, and one of the data file | Stage records, `analysis.json` | For those who want IGVF's stronger integrity check | minor |
+| A screen that combines targets on one vector (combinatorial perturbations) | Data file, S8.7 | Out of scope: sceptre cannot analyse them | minor, because today's readers refuse such files |
+| The target molecule (DNA or RNA) | File metadata | Nothing in an analysis depends on it | minor |
 | Which package and version wrote the data file | File metadata | Stage records already say this for each stage; the data file does not. The format and the packages are versioned separately, so this is information, not a rule | minor |
 | True booleans and nullable integers in the data file | S7 | Needs the R MuData and pandas fixes upstream | major: an old R reader misreads them |
 | A Zarr variant | S1 | Not tested | a second container, not a version of this one |
@@ -737,6 +752,7 @@ remove a workaround in the format or its readers.
 | Resolve a dataset's `id` to a location from the user's configuration (a search path or a small registry) | Passing the data file's path by hand every time (A1) | Not built |
 | Let pysceptre's formula parser take covariate names with dots | The alias in the prototype's Python reader; a pysceptre analysis with such a covariate fails today (S5) | *(measured)* `model_matrix` raises on `S.Score` |
 | Decide what a gRNA under two targets means | The refusal (S8) | R warns, pysceptre counts |
+| Combine a vector's gRNAs in the assignment stage, not at import: a setting in the assignment record, and an assignment table that names the unit assigned | Summing at import, which a written-once data file of per-gRNA counts cannot hold (S8) | sceptre sums within a vector in `import_data()` |
 | Report the R MuData and pandas problems upstream | The restrictions of S7 | Appendix A |
 
 ---
@@ -754,7 +770,7 @@ remove a workaround in the format or its readers.
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
 | Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json` | JSON Schemas for `analysis.json` and the six stage records |
 | Data-file rules that need computing | `SPEC.md`, section 2 | The order of cells within a feature, uniqueness, the same cells in every modality: code in each language |
-| Conformance files | `conformance/`, built by `make_conformance.py` | 17 conforming files, written by R and by Python; 4 readable ones; and 57 that each break one rule, with the rules and the level a validator must report |
+| Conformance files | `conformance/`, built by `make_conformance.py` | 18 conforming files, written by R and by Python; 4 readable ones; and 60 that each break one rule, with the rules and the level a validator must report |
 | Validators | `validate_screen()`, `validate_analysis()` in both prototype libraries | Check a data file or an analysis folder without building a package object, and report every problem, not only the first |
 
 **Why define it this way.**
@@ -790,11 +806,11 @@ implementation by someone who has only the specification.
 
 ### What was checked
 
-*(measured)* Both validators accept all 17 conforming files, report the 4
-readable files as readable, and report exactly the expected rules for all 57
+*(measured)* Both validators accept all 18 conforming files, report the 4
+readable files as readable, and report exactly the expected rules for all 60
 broken ones. The two languages report the same rules and the same level for
 every case. Both readers read each readable file to the same counts as the
-conforming file it was made from. 51 rules are exercised by at least one broken
+conforming file it was made from. 54 rules are exercised by at least one broken
 file. The validators check two more rules that have no conformance file: S11.1
 (no filter other than gzip), because R cannot read a file compressed otherwise
 at all, and T0.3 (row groups of at most a million rows), because the file would
@@ -996,7 +1012,7 @@ and show their outputs.
 | Clearing a stage [9] | Its record and files and all later ones are removed |
 | Saved fits whose recorded method differs [9] | Not reused, with a message |
 | Every allowed column type, written by each language and read by the other [9] | Same result both ways |
-| The validators on 17 conforming, 4 readable and 57 broken files [10] | Both languages report the same rules and the same level for every file |
+| The validators on 18 conforming, 4 readable and 60 broken files [10] | Both languages report the same rules and the same level for every file |
 | A covariate with a dot in its name [9] | R and Python build the same design matrix (Python through an alias) |
 
 **Limits that remain.** These are limits of the prototype or of what was

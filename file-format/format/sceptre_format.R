@@ -211,6 +211,21 @@ write_counts <- function(file, modality, counts) {
     put("indptr", as.numeric(counts@p), "H5T_STD_I64LE")
 }
 
+# Several gRNAs may be delivered on one vector, named by the optional column
+# `vector_id` of the gRNA table (S8.6). A vector has one target, and a vector is
+# not named like a gRNA on another vector. Returns the rules broken.
+vector_faults <- function(grna_ids, vectors, targets) {
+    faults <- list()
+    if (any(tapply(targets, vectors, function(t) length(unique(t))) > 1L)) {
+        faults <- c(faults, list(list(rule = "S8.7", message = "gRNAs on one vector have different targets; screens that combine targets on a vector are not supported.")))
+    }
+    own <- vectors[match(vectors, grna_ids)]   # the vector of the gRNA each vector is named like, if any
+    if (any(!is.na(own) & own != vectors)) {
+        faults <- c(faults, list(list(rule = "S8.8", message = "A vector is named like a gRNA on another vector.")))
+    }
+    faults
+}
+
 # The modality an analysis tests, among those of a data file: the one asked for,
 # or the only one besides `grna` (S2).
 response_modality_of <- function(modalities, requested = NULL, what = "The data file") {
@@ -255,6 +270,10 @@ fmt_write_screen <- function(sce, file) {
     if (anyDuplicated(features) > 0L) fmt_stop("Feature identifiers must be unique across the modalities of a file.")
     grna_table <- SummarizedExperiment::rowData(grna)
     if (is.null(grna_table$grna_target) || anyNA(grna_table$grna_target)) fmt_stop("Every gRNA needs a `grna_target`.")
+    if (!is.null(grna_table$vector_id)) {
+        if (anyNA(grna_table$vector_id)) fmt_stop("Every gRNA needs a `vector_id` when the column is present.")
+        for (fault in vector_faults(rownames(grna), as.character(grna_table$vector_id), as.character(grna_table$grna_target))) fmt_stop(fault$message)
+    }
     covariates <- split_covariates(SummarizedExperiment::colData(sce), c(main, GRNA))
     modality <- function(experiment, obs, var) {
         # every modality's cell table has its total count and its number of
@@ -357,7 +376,13 @@ fmt_read_screen <- function(file, response_modality = NULL) {
     }
     sce <- experiment(main)
     SummarizedExperiment::colData(sce) <- S4Vectors::DataFrame(covariates, check.names = FALSE, row.names = cells)
-    SingleCellExperiment::altExp(sce, "gRNA") <- experiment(GRNA)
+    grna <- experiment(GRNA)
+    # a reader refuses a vector whose gRNAs have different targets (S8.7)
+    grna_table <- SummarizedExperiment::rowData(grna)
+    if (!is.null(grna_table$vector_id)) {
+        for (fault in vector_faults(rownames(grna), as.character(grna_table$vector_id), as.character(grna_table$grna_target))) fmt_stop(file, ": ", fault$message)
+    }
+    SingleCellExperiment::altExp(sce, "gRNA") <- grna
     S4Vectors::metadata(sce) <- list(sceptre = c(
         list(format = as.character(stamp$format), moi = stamp$moi, id = stamp$id, response_modality = main),
         stamp[intersect(c("name", "source"), names(stamp))]
@@ -1435,9 +1460,17 @@ validate_screen <- function(file) {
             kind <- storage_kind(as.vector(attribute(path, "encoding-type")), row$dtype)
             if (!kind %in% unlist(column$kinds)) {
                 log$add(column$rule, path, "must be ", if ("string" %in% unlist(column$kinds)) "text" else "a number", if (isTRUE(column$required)) " with no missing values." else ".")
-            } else if (isTRUE(column$required)) {
+            } else if (isTRUE(column$required) || isTRUE(column$no_missing)) {
                 values <- text(column$name)
                 if (anyNA(values) || any(!nzchar(values))) log$add(column$rule, path, "must be text with no missing values.")
+            }
+        }
+        # gRNAs delivered on one vector (S8.6 to S8.8)
+        if ("vector_id" %in% columns$name && "grna_target" %in% columns$name) {
+            vectors <- tryCatch(text("vector_id"), error = function(e) NULL)
+            targets <- tryCatch(text("grna_target"), error = function(e) NULL)
+            if (!is.null(vectors) && !is.null(targets) && !anyNA(vectors) && !anyNA(targets)) {
+                for (fault in vector_faults(features[[GRNA]], vectors, targets)) log$add(fault$rule, paste0(table, "/vector_id"), fault$message)
             }
         }
     }

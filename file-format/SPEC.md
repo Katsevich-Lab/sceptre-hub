@@ -17,6 +17,16 @@ assignment method does are defined by sceptre's method documentation. That is
 a choice, and reviewers may want it otherwise. It also does not cover raw
 sequencing output, alignment, or how data gets into this format.
 
+Two limits of this version:
+
+- **One target per vector.** Several gRNAs delivered together against the same
+  element are covered (S8.6). A vector whose gRNAs have different targets, a
+  combinatorial screen, is not, and a reader refuses such a file (S8.7).
+- **DNA-targeting screens.** Target coordinates are genomic positions. An
+  RNA-targeting screen can be stored, with its transcript named in
+  `grna_target` and the coordinates left out; naming the target molecule
+  explicitly is a later addition.
+
 This document states the rules. It gives no reasons: for each rule, the
 section of [`RATIONALE.md`](RATIONALE.md) with the same letter and number
 (S3, A1, T5, ...) explains the choice, its alternatives and the evidence.
@@ -72,9 +82,9 @@ final; the sorting into kinds is.
 - **tests**: a check in the notebooks exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 108 statements, 75 are file rules, 26 behaviour rules and 7
-guidance. The validators check 72 of the file rules, and tests cover 3
-more. Tests cover 18 of the behaviour rules, and the validators 2; 6
+Of the 112 statements, 78 are file rules, 27 behaviour rules and 7
+guidance. The validators check 75 of the file rules, and tests cover 3
+more. Tests cover 18 of the behaviour rules, and the validators 3; 6
 have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A6.2.
 
 **The machine-readable parts** are in [`spec/`](spec/), and both validators and
@@ -248,6 +258,10 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S8.3 | behaviour | A non-targeting gRNA has `grna_target` equal to `non-targeting`. | tests (control groups) |
 | S8.4 | behaviour | A gRNA has one target. A writer MUST refuse a gRNA listed under two targets. | none |
 | S8.5 | file | `grna_group` MUST NOT be stored. It follows from `grna_target` and the analysis's integration strategy. | V |
+| S8.6 | file | The gRNA table MAY have a text column `vector_id`, naming the vector that delivers each gRNA. If present it has no missing values: every gRNA is on exactly one vector, and a vector with one gRNA is one row. | V |
+| S8.7 | file | All gRNAs with the same `vector_id` MUST have the same `grna_target`: a vector has one target. | V |
+| S8.8 | file | A `vector_id` MUST NOT equal the identifier of a gRNA on another vector. A vector with one gRNA may be named after it. | V |
+| S8.9 | behaviour | A reader MUST refuse a file that breaks S8.7. A writer MUST NOT sum counts over the gRNAs of a vector: counts are stored per gRNA, and combining them is a step of an analysis. | V (both readers refuse the conformance file) |
 
 ### S9. Identifiers
 

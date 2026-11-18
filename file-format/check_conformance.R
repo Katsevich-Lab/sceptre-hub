@@ -17,9 +17,10 @@ for (case in cases) {
     found <- if (case$kind == "screen") validate_screen(case$path) else validate_analysis(case$path, case$screen)
     result <- list(rules = I(sort(unique(found$rule), method = "radix")), level = conformance_level(found))
     if (!is.null(case$reads_as)) result$reads_correctly <- same_counts(case$path, case$reads_as)
+    if (isTRUE(case$reader_refuses)) result$reader_refused <- tryCatch({ fmt_read_screen(case$path); FALSE }, error = function(e) TRUE)
     results[[case$name]] <- result
     expected <- sort(as.character(unlist(case$expect)), method = "radix")
-    if (!identical(as.character(result$rules), expected) || result$level != case$level || isFALSE(result$reads_correctly)) {
+    if (!identical(as.character(result$rules), expected) || result$level != case$level || isFALSE(result$reads_correctly) || isFALSE(result$reader_refused)) {
         wrong <- wrong + 1L
         cat("MISMATCH ", case$name, ": expected ", paste(expected, collapse = ", "), " (", case$level, "); reported ",
             paste(result$rules, collapse = ", "), " (", result$level, ")\n", sep = "")

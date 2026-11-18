@@ -240,6 +240,20 @@ def _from_file_frame(frame: pd.DataFrame, covariates: bool) -> pd.DataFrame:
     return frame
 
 
+def vector_faults(grna_ids, vectors, targets) -> list[tuple[str, str]]:
+    """Several gRNAs may be delivered on one vector, named by the optional column
+    `vector_id` of the gRNA table (S8.6). A vector has one target, and a vector is
+    not named like a gRNA on another vector. Returns the rules broken."""
+    faults = []
+    seen = {}
+    if any(seen.setdefault(v, t) != t for v, t in zip(vectors, targets, strict=True)):
+        faults.append(("S8.7", "gRNAs on one vector have different targets; screens that combine targets on a vector are not supported."))
+    vector_of = dict(zip(grna_ids, vectors, strict=True))
+    if any(v in vector_of and vector_of[v] != v for v in vectors):
+        faults.append(("S8.8", "A vector is named like a gRNA on another vector."))
+    return faults
+
+
 def response_modality_of(modalities, requested=None, what="The data file") -> str:
     """The modality an analysis tests, among those of a data file: the one asked
     for, or the only one besides ``grna`` (S2)."""
@@ -314,6 +328,7 @@ def write_screen(mdata, file) -> None:
     targets = mdata[GRNA].var.get("grna_target")
     if targets is None or targets.isna().any():
         raise ValueError("Every gRNA needs a `grna_target`.")
+    _check_vectors(mdata[GRNA].var, None)
     modalities = {}
     for name in names:
         source = mdata[name]
@@ -375,6 +390,15 @@ def known_major(version) -> bool:
     return parts is not None and parts[0] == format_parts(FORMAT_VERSION)[0]
 
 
+def _check_vectors(grna_table: pd.DataFrame, file) -> None:
+    if "vector_id" not in grna_table:
+        return
+    if grna_table["vector_id"].isna().any():
+        raise ValueError("Every gRNA needs a `vector_id` when the column is present.")
+    for _, message in vector_faults(list(grna_table.index), list(map(str, grna_table["vector_id"])), list(map(str, grna_table["grna_target"]))):
+        raise ValueError(f"{file}: {message}" if file is not None else message)
+
+
 def check_format(version, what) -> None:
     if format_parts(version) is None:
         raise ValueError(f"{what} has no sceptre format version.")
@@ -418,6 +442,8 @@ def read_screen(file, response_modality=None):
         mdata[name].var = _from_file_frame(mdata[name].var, False)
         _same_index_width(mdata[name].X)
     mdata.obs = _from_file_frame(mdata.obs, True)
+    # a reader refuses a vector whose gRNAs have different targets (S8.7)
+    _check_vectors(mdata[GRNA].var, file)
     mdata.uns["sceptre"] = {
         "format": str(stamp["format"]),
         "moi": str(stamp["moi"]),
@@ -1630,9 +1656,17 @@ def validate_screen(file) -> pd.DataFrame:
                 if _storage_kind(group[column["name"]]) not in column["kinds"]:
                     what = "text" if "string" in column["kinds"] else "a number"
                     log.add(column["rule"], path, f"must be {what}" + (" with no missing values." if column["required"] else "."))
-                elif column["required"]:
+                elif column["required"] or column.get("no_missing"):
                     if any(t is None or t == "" for t in text(column["name"])):
                         log.add(column["rule"], path, "must be text with no missing values.")
+            # gRNAs delivered on one vector (S8.6 to S8.8)
+            if "vector_id" in group and "grna_target" in group:
+                kinds = {"string", "categorical"}
+                if _storage_kind(group["vector_id"]) in kinds and _storage_kind(group["grna_target"]) in kinds:
+                    vectors, targets = text("vector_id"), text("grna_target")
+                    if None not in vectors and None not in targets:
+                        for rule, message in vector_faults(features[GRNA], vectors, targets):
+                            log.add(rule, f"{table}/vector_id", message)
     return log.all()
 
 

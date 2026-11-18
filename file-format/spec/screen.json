@@ -109,6 +109,16 @@
       ],
       "required": false,
       "rule": "S8.2"
+    },
+    {
+      "name": "vector_id",
+      "kinds": [
+        "string",
+        "categorical"
+      ],
+      "required": false,
+      "no_missing": true,
+      "rule": "S8.6"
     }
   ],
   "metadata": {

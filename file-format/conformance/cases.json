@@ -48,6 +48,14 @@
     "what": "A modality no analysis uses, and a gRNA column the format does not define"
   },
   {
+    "name": "valid/highmoi_grnas_on_shared_vectors.h5mu",
+    "kind": "screen",
+    "path": "conformance/valid/highmoi_grnas_on_shared_vectors.h5mu",
+    "expect": [],
+    "level": "conforming",
+    "what": "Each target's two gRNAs are on one vector (`vector_id`); a non-targeting gRNA's vector is named after it"
+  },
+  {
     "name": "valid/analyses/left_sided_written_by_r",
     "kind": "analysis",
     "path": "conformance/valid/analyses/left_sided_written_by_r",
@@ -389,6 +397,37 @@
     ],
     "level": "not readable",
     "what": "The gRNA table stores `grna_group`, which depends on the analysis"
+  },
+  {
+    "name": "invalid/screens/vector_with_two_targets.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/vector_with_two_targets.h5mu",
+    "expect": [
+      "S8.7"
+    ],
+    "level": "not readable",
+    "what": "Two gRNAs with different targets share a `vector_id`: a combinatorial screen",
+    "reader_refuses": true
+  },
+  {
+    "name": "invalid/screens/vector_named_like_another_grna.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/vector_named_like_another_grna.h5mu",
+    "expect": [
+      "S8.8"
+    ],
+    "level": "not readable",
+    "what": "A vector is named with the identifier of a gRNA on another vector"
+  },
+  {
+    "name": "invalid/screens/vector_id_as_a_number.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/vector_id_as_a_number.h5mu",
+    "expect": [
+      "S8.6"
+    ],
+    "level": "not readable",
+    "what": "`vector_id` stored as numbers"
   },
   {
     "name": "invalid/screens/target_start_as_text.h5mu",

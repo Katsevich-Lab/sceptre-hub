@@ -29,8 +29,14 @@ for case in cases:
     result = {"rules": sorted(set(found["rule"])), "level": sf.conformance_level(found)}
     if "reads_as" in case:
         result["reads_correctly"] = same_counts(case["path"], case["reads_as"])
+    if case.get("reader_refuses"):
+        try:
+            sf.read_screen(case["path"])
+            result["reader_refused"] = False
+        except ValueError:
+            result["reader_refused"] = True
     results[case["name"]] = result
-    if result["rules"] != case["expect"] or result["level"] != case["level"] or result.get("reads_correctly") is False:
+    if result["rules"] != case["expect"] or result["level"] != case["level"] or result.get("reads_correctly") is False or result.get("reader_refused") is False:
         wrong += 1
         print(f"MISMATCH {case['name']}: expected {case['expect']} ({case['level']}), reported {result}")
         print(found.to_string(index=False))

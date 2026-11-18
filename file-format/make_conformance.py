@@ -80,6 +80,34 @@ with h5py.File(extra, "r+") as f:
     column.attrs.update({"encoding-type": "string-array", "encoding-version": "0.2.0"})
 case("screen", extra, [], "A modality no analysis uses, and a gRNA column the format does not define")
 
+# several gRNAs on one vector: each target's gRNAs share a vector, and each
+# non-targeting gRNA is alone on a vector named after it
+def vectors_of(f):
+    ids = [v.decode() for v in f["mod/grna/var/_index"][()]]
+    node = f["mod/grna/var/grna_target"]   # plain text, or a categorical
+    if isinstance(node, h5py.Group):
+        categories = [v.decode() for v in node["categories"][()]]
+        targets = [categories[c] for c in node["codes"][()]]
+    else:
+        targets = [v.decode() for v in node[()]]
+    return ids, targets, [i if t == "non-targeting" else f"{t}_vector" for i, t in zip(ids, targets)]
+
+
+def add_vectors(f, vectors):
+    table = f["mod/grna/var"]
+    column = table.create_dataset("vector_id", data=np.array(vectors, dtype=object), dtype=h5py.string_dtype())
+    column.attrs.update({"encoding-type": "string-array", "encoding-version": "0.2.0"})
+    # readers take a table's columns from this attribute
+    order = [c.decode() if isinstance(c, bytes) else c for c in table.attrs["column-order"]]
+    table.attrs["column-order"] = np.array(order + ["vector_id"], dtype=h5py.string_dtype())
+
+
+with_vectors = VALID / "highmoi_grnas_on_shared_vectors.h5mu"
+shutil.copy(high_py, with_vectors)
+with h5py.File(with_vectors, "r+") as f:
+    add_vectors(f, vectors_of(f)[2])
+case("screen", with_vectors, [], "Each target's two gRNAs are on one vector (`vector_id`); a non-targeting gRNA's vector is named after it")
+
 for name in ("left_sided", "bonferroni", "singleton", "stopped_after_qc", "with_resamples"):
     shutil.copytree(f"example/highmoi/analyses/{name}", VALID / "analyses" / f"{name}_written_by_r")
     case("analysis", VALID / "analyses" / f"{name}_written_by_r", [], f"The `{name}` example analysis, written by R", high_r)
@@ -131,13 +159,15 @@ case("analysis", parts, [], "A table as a folder of parts, with dictionary-encod
 # ---------------------------------------------------------------- invalid data files
 
 
-def broken_screen(name, expect, what, change, source=types_py, readable=False):
+def broken_screen(name, expect, what, change, source=types_py, readable=False, reader_refuses=False):
     path = INVALID / "screens" / f"{name}.h5mu"
     path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(source, path)
     with h5py.File(path, "r+") as f:
         change(f)
     case("screen", path, expect, what, reads_as=source if readable else None)
+    if reader_refuses:
+        cases[-1]["reader_refuses"] = True   # a reader must stop, not only the validator
 
 
 def replace(f, path, values, dtype=None):
@@ -245,6 +275,32 @@ broken_screen("integer_column_with_missing_value", ["S7.4"], "An integer cell co
 broken_screen("no_grna_target", ["S8.1"], "The gRNA table has no `grna_target`", lambda f: f["mod/grna/var"].__delitem__("grna_target"))
 broken_screen("grna_group_stored", ["S8.5"], "The gRNA table stores `grna_group`, which depends on the analysis",
               lambda f: add_column(f, "mod/grna/var", "grna_group", np.array(["site_1", "non-targeting"], dtype=object), "string-array", text))
+def vectors_changed(change):
+    def apply(f):
+        ids, targets, vectors = vectors_of(f)
+        change(ids, targets, vectors)
+        add_vectors(f, vectors)
+    return apply
+
+
+def two_targets_on_a_vector(ids, targets, vectors):
+    other = next(i for i, t in enumerate(targets) if t not in (targets[0], "non-targeting"))
+    vectors[other] = vectors[0]
+
+
+def vector_named_like_another_grna(ids, targets, vectors):
+    other = next(i for i, t in enumerate(targets) if t not in (targets[0], "non-targeting"))
+    for i, t in enumerate(targets):
+        if t == targets[0]:
+            vectors[i] = ids[other]
+
+
+broken_screen("vector_with_two_targets", ["S8.7"], "Two gRNAs with different targets share a `vector_id`: a combinatorial screen",
+              vectors_changed(two_targets_on_a_vector), source=high_py, reader_refuses=True)
+broken_screen("vector_named_like_another_grna", ["S8.8"], "A vector is named with the identifier of a gRNA on another vector",
+              vectors_changed(vector_named_like_another_grna), source=high_py)
+broken_screen("vector_id_as_a_number", ["S8.6"], "`vector_id` stored as numbers",
+              lambda f: add_column(f, "mod/grna/var", "vector_id", np.arange(f["mod/grna/var/_index"].shape[0], dtype=np.float64)), source=high_py)
 broken_screen("target_start_as_text", ["S8.2"], "`target_start` stored as text",
               lambda f: (f["mod/grna/var"].__delitem__("target_start"),
                          add_column(f, "mod/grna/var", "target_start", np.array(["100", "200"], dtype=object), "string-array", text)))
