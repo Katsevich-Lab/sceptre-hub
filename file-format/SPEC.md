@@ -67,7 +67,7 @@ its table says which:
 | Kind | What it is | How it is tested |
 |---|---|---|
 | **file** | True of every conforming file | By the validators, `validate_screen()` and `validate_analysis()`, in R and in Python |
-| **behaviour** | What a reader or a writer does | By the conformance run and the package-free checks in `verify/` |
+| **behaviour** | What a reader or a writer does | By the conformance run, the package-free checks in `verify/`, and the notebook (`notebook.qmd`), whose render stops if a comparison fails |
 | **guidance** | Advice or a definition. Not binding, and not tested | — |
 
 **Key words.** In file and behaviour rules, **MUST**, **MUST NOT**, **SHOULD**
@@ -79,13 +79,15 @@ final; the sorting into kinds is.
 
 - **V**: the validators check it, and a file in `conformance/` exercises it;
 - **v**: the validators check it, with no conformance file;
-- **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
+- **tests**: a check in `verify/`, the conformance run or the notebook exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
 Of the 122 statements, 82 are file rules, 29 behaviour rules and 11
-guidance. The validators check 79 of the file rules, and tests cover 3
-more. Tests cover 16 of the behaviour rules, and the conformance run 7; 6
-have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A6.2.
+guidance. The validators check 79 of the file rules, a test covers 1 more
+(T4.3), and 2 have no test (A3.2, T7.3). Tests or the conformance run
+cover 19 of the behaviour rules; 10 have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A1.5, A3.5, A6.2, T1.3, T7.4.
+Six of these untested rules (A1.5, A3.2, A3.5, T1.3, T7.3, T7.4) were tested by the
+package suite until commit `7e10af4`, when it was removed (see `README.md`).
 
 **The machine-readable parts** are in [`spec/`](spec/), and both validators and
 both prototype libraries read them:
@@ -203,7 +205,7 @@ may refer to one data file, and an analysis may be stored anywhere.
 | S2.2 | file | A modality name MUST start with a letter and contain only letters, digits and underscores. | V |
 | S2.3 | file | Every modality, and the shared cell table, MUST hold the same cells in the same order. | V |
 | S2.4 | guidance | A modality other than `grna` SHOULD be named for what was measured. `rna` is the name for RNA. | — |
-| S2.5 | behaviour | A reader MUST find the modality an analysis tests through `analysis.json` (A1), never by a fixed name. A package MAY choose it for the user when the file has exactly one modality besides `grna`. | tests (the `atac` variant) |
+| S2.5 | behaviour | A reader MUST find the modality an analysis tests through `analysis.json` (A1), never by a fixed name. A package MAY choose it for the user when the file has exactly one modality besides `grna`. | tests (the conformance file with an extra modality, copied by both libraries) |
 | S2.6 | behaviour | A reader MUST ignore modalities that the analysis does not name. A tool that reads a data file and writes it again MUST keep them. | V (a conformance file is copied and keeps its modalities) |
 | S2.7 | file | Every modality of a file follows the rules of S3 to S7, whether or not an analysis uses it, so that a file is conforming or not on its own and any modality can be a response later. | V (a valid conformance case) |
 
@@ -241,7 +243,7 @@ from each other, does not conform; a reader still reads it (S4.4).
 |---|---|---|---|
 | S5.1 | file | A column of the shared cell table MUST NOT be named with a modality's name followed by an underscore. | V |
 | S5.2 | guidance | Facts about the cell (batch, donor, anything the user supplies) MUST be in the shared cell table. Measurements of one modality MUST be in that modality's cell table, without a prefix. | — |
-| S5.3 | behaviour | The covariate table of a model is the shared columns together with the columns of `grna` and of the response modality, each modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. | tests (round trip) |
+| S5.3 | behaviour | The covariate table of a model is the shared columns together with the columns of `grna` and of the response modality, each modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. | tests (the notebook, sections 2 and 5) |
 | S5.4 | file | The name of a column of a cell table MUST start with a letter and contain only letters, digits, underscores and dots. | V |
 
 ### S6. Computed columns
@@ -264,8 +266,8 @@ tables" are each modality's `var`.
 | S7.2 | file | Every column of a feature table MUST be one of those three, or text in the `string-array` encoding. | V |
 | S7.3 | file | A categorical MUST have unique text categories and codes from −1 (missing) to the number of categories minus one. | V |
 | S7.4 | file | An integer column MUST NOT hold a missing value. A writer stores an integer column that has missing values as 64-bit floats. | V |
-| S7.5 | behaviour | A writer MUST store a text or true/false covariate as a categorical; true/false has the categories `FALSE`, `TRUE`, in that order. | tests (the types file) |
-| S7.6 | behaviour | A categorical's stored category order is its level order, and the first category is the baseline of a model. | tests (the types file: levels not alphabetical) |
+| S7.5 | behaviour | A writer MUST store a text or true/false covariate as a categorical; true/false has the categories `FALSE`, `TRUE`, in that order. | tests (the encoding matrix; the types files) |
+| S7.6 | behaviour | A categorical's stored category order is its level order, and the first category is the baseline of a model. | tests (the encoding matrix; the types files: levels not alphabetical) |
 | S7.7 | file | Missing values are NaN in a float column and code −1 in a categorical. A text column of a feature table that has missing values is stored as a categorical. | V (through S7.3, S7.4) |
 | S7.8 | file | Identifiers and text use `string-array`, never `nullable-string-array`. | V (through S7.1, S7.2) |
 
@@ -305,7 +307,7 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S10.1 | file | `uns/sceptre` MUST be an AnnData dictionary with the scalar text entries `format` (a version, `MAJOR.MINOR`), `moi` and `id` (not empty). | V |
 | S10.2 | file | `moi` MUST be `high` or `low`. | V |
 | S10.3 | file | `format` is the data file's own format version, `0.1` for this document. A reader MUST refuse a major version other than the one it knows. | V |
-| S10.4 | behaviour | `id` identifies the dataset. A writer assigns a new random `id` when it imports data, and keeps the `id` when it copies a data file. | tests (subset and re-imported files) |
+| S10.4 | behaviour | `id` identifies the dataset. A writer assigns a new random `id` when it imports data, and keeps the `id` when it copies a data file. | tests (the notebook: a copied data file keeps its `id`). A new `id` on import: none (the package suite tested it until `7e10af4`) |
 | S10.5 | file | `uns/sceptre` MAY have these scalar text entries. None identifies the dataset (`id` does), and no reader's behaviour depends on them: `name`, a label for people; `source`, a URL, DOI or accession saying where the data came from; `perturbation_type`; `organism`, as a scientific name such as `Homo sapiens`; `genome_build`, such as `GRCh38`, the build of every coordinate in the file. | V |
 | S10.6 | file | `perturbation_type`, if present, MUST be one of `CRISPRko` (knockout), `CRISPRi` (interference), `CRISPRa` (activation), `CRISPRbe` (base editing), `CRISPRkd` (knockdown of RNA). | V |
 | S10.7 | guidance | A writer SHOULD record `perturbation_type`, `organism` and `genome_build` when it knows them. They are known at import, cannot be worked out from the file, and are lost for good if not written down. | — |
@@ -335,7 +337,7 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | A1.2 | file | `screen` describes the data file: its `id` (S10.4); `n_cells`, `n_responses`, `n_grnas`; and `cell_ids_sha256`, `response_ids_sha256`, `grna_ids_sha256`. "Responses" are the features of the response modality. A reader MUST refuse a data file for which any of these differs, or which has no modality of that name. | V |
 | A1.3 | file | The SHA-256 of a list of identifiers is that of their UTF-8 bytes, in file order, joined by a line feed, with no line feed at the end. (S9.4 keeps this unambiguous.) | V (through A1.2) |
 | A1.4 | file | `screen.path` is optional. If present it MUST be a relative POSIX path or an `http` or `https` URL. It MUST NOT be an absolute local path. | V |
-| A1.5 | behaviour | `screen.path` is a hint. A reader takes the data file's location from its caller and MUST NOT depend on the hint. A writer records a relative path only when the data file is in the analysis folder's parent or grandparent folder or below one of them, and otherwise records nothing. | tests (round trip; a subset and a re-imported file) |
+| A1.5 | behaviour | `screen.path` is a hint. A reader takes the data file's location from its caller and MUST NOT depend on the hint. A writer records a relative path only when the data file is in the analysis folder's parent or grandparent folder or below one of them, and otherwise records nothing. | none (the package suite tested it until `7e10af4`) |
 | A1.6 | file | `screen.name` is optional: the data file's `name` (S10.5), copied so that a person can tell which dataset an analysis belongs to. It is not part of the identity a reader checks. | V (through A1.1) |
 | A1.7 | guidance | Where a dataset lives is for each package and each user's own configuration to resolve, for instance by a search path or a table from dataset `id` to location. Nothing specific to one machine belongs in `analysis.json`. A package that follows the hint by itself SHOULD do so only for locations the user has configured, since a folder from elsewhere could point a reader at any file or URL. | — |
 
@@ -356,17 +358,17 @@ and `discovery`. The last three do not depend on one another.
 | Rule | Kind | | Check |
 |---|---|---|---|
 | A3.1 | file | The settings of each stage, their names and their allowed values are those of `spec/stage.schema.json`. | V (through A2.1) |
-| A3.2 | file | A formula names covariates as S5.3 does (`rna_n_umis`). Setting names keep role words (`response_n_umis_range`, `response_fit_method`). | tests (both readers rebuild the design from the formula) |
+| A3.2 | file | A formula names covariates as S5.3 does (`rna_n_umis`). Setting names keep role words (`response_n_umis_range`, `response_fit_method`). | none (the package suite tested it until `7e10af4`) |
 | A3.3 | file | JSON files are UTF-8. A missing value is `null`. NaN and infinity MUST NOT appear. | V (a record that is not valid JSON fails A1.1 or A2.1) |
 | A3.4 | behaviour | A writer MUST write a real number with 17 significant digits, so that the number read is the number written. | tests (the threshold reproduces every call) |
-| A3.5 | behaviour | The resampling budget `B3` in force is that of the latest stage record that carries one. | tests (round trip) |
+| A3.5 | behaviour | The resampling budget `B3` in force is that of the latest stage record that carries one. | none (the package suite tested it until `7e10af4`) |
 
 ### A4. Rerunning
 
 | Rule | Kind | | Check |
 |---|---|---|---|
 | A4.1 | file | A stage's folder MUST NOT hold one of that stage's tables that its record does not list. A folder holding tables and no record is a stage that did not finish. | V |
-| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the writer SHOULD delete the fit cache too (T6.6). | tests (a stage is cleared) |
+| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the writer SHOULD delete the fit cache too (T6.6). | tests (the conformance run: a retried stage; the notebook, section 8) |
 | A4.3 | behaviour | A reader MUST ignore files it does not know. | V (a valid conformance case) |
 
 ### A5. Files of a stage
@@ -420,7 +422,7 @@ analysis's strategy and the table's stage; `spec/tables.json` records it as
 |---|---|---|---|
 | T1.1 | file | `assignment/assignments.parquet` has one row per assigned (gRNA, cell): `grna_id`, `cell_id`. | V (through T0) |
 | T1.2 | file | `assignment/flagged_cells.parquet` is optional. It lists, by `cell_id`, the cells that the assignment method judges not to carry exactly one gRNA beyond what the assignment table shows. | V (through T0) |
-| T1.3 | behaviour | The cells without exactly one gRNA are those with zero or several assignment rows, together with the flagged cells. | tests (low MOI) |
+| T1.3 | behaviour | The cells without exactly one gRNA are those with zero or several assignment rows, together with the flagged cells. | none (the package suite tested it until `7e10af4`) |
 
 ### T2. `qc/cells.parquet`
 
@@ -442,7 +444,7 @@ analysis's strategy and the table's stage; `spec/tables.json` records it as
 |---|---|---|---|
 | T4.1 | file | One row per member of a negative-control group: `grna_group` (the group's name) and `grna_id`. | V (through T0) |
 | T4.2 | behaviour | A reader MUST take a group's members from this table, never from the group's name. | tests (control groups) |
-| T4.3 | file | A group's name appears in the calibration results in the column that names the tested unit: `grna_target` under the `union` strategy, `grna_id` otherwise. | tests (round trip under each strategy) |
+| T4.3 | file | A group's name appears in the calibration results in the column that names the tested unit: `grna_target` under the `union` strategy, `grna_id` otherwise. | tests (derived values, under each strategy) |
 
 ### T5. Results: `<stage>/results.parquet`
 
@@ -482,8 +484,8 @@ and QC stages have run.
 |---|---|---|---|
 | T7.1 | file | The formula in the parameters record MUST be additive, each term one of: a covariate name (S5.4), `log(x)`, `log(x + 1)`, or `0` or `1` for the intercept. | V |
 | T7.2 | file | The design matrix is not stored. The parameters record has `design.terms` (the names of the matrix's columns, with covariates named as in S5.3) and `design.sha256`. | V (through A2.1) |
-| T7.3 | file | `design.sha256` is the SHA-256 of the matrix's values as little-endian 64-bit floats, column by column. | tests (both readers recompute the hash) |
-| T7.4 | behaviour | A reader that fits models MUST rebuild the matrix from the formula and the covariates and refuse the analysis if the term names or the hash differ. | tests (both readers) |
+| T7.3 | file | `design.sha256` is the SHA-256 of the matrix's values as little-endian 64-bit floats, column by column. | none (the package suite tested it until `7e10af4`) |
+| T7.4 | behaviour | A reader that fits models MUST rebuild the matrix from the formula and the covariates and refuse the analysis if the term names or the hash differ. | none (the package suite tested it until `7e10af4`) |
 
 ---
 

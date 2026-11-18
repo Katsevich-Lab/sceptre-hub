@@ -981,9 +981,24 @@ returns inside the packages when they adopt the format. The costs are real:
   kept. That is also a direct test that old files can be carried forward.
 - **Frozen expectations.** `example/*/expected/` was produced by sceptre once,
   by the removed code, and stays.
+- **Six rules lost their only test**: A1.5, A3.2, A3.5, T1.3, T7.3 and T7.4
+  (the path hint, formula names, the resampling budget in force, low-MOI cell
+  counts, and the design matrix's hash and rebuild). `SPEC.md` marks them.
 - **No parity checks here.** The continuation across languages and the
   agreement of the design matrices went with it. They compare the packages,
   which point 3 above already puts outside the format.
+
+**One notebook, in tabs** *(Decided by Eugene, 18 November)*. `notebook.qmd`
+replaces the two package notebooks. It uses standard libraries only and shows
+each step in R and in Python in a tab set: what is on disk, reading the data
+file as a SingleCellExperiment and as a MuData object, reading an analysis,
+what the files imply, each language reading what the other wrote, what a
+reader tolerates and refuses, the validators, and the fit cache. Its render
+stops if a comparison fails. R and Python run in one process, each with its
+own HDF5 library. *(measured, macOS only, by a side session and again here)*
+Each read and wrote the other's files with no failure. It is not known to work
+on Linux. On any platform a language cannot write a file the other still holds
+open, so each side closes its handles first.
 
 **What the package-free suite found.** Writing it changed one thing and raised
 two questions, both since settled:

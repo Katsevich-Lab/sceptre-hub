@@ -24,11 +24,12 @@ conformance files, the validators and a harness for testing any implementation
 | `example/` | Files in the format: a high-MOI dataset with seven analyses, a low-MOI dataset with one, and a small synthetic data file with every kind of column. `example/*/expected/` holds what sceptre itself held for each analysis, captured once. The example files are frozen: the code that made them needed sceptre and was removed after commit `7e10af4` |
 | `conformance/` | Files that conform and files that each break a rule, with what a validator must report (`cases.json`). Five of the broken ones store counts or index arrays in another number type, which a reader must still read |
 | `verify/` | **The package-free suite**: every check of the format that needs neither sceptre nor pysceptre |
+| `notebook.qmd`, `render.sh` | **The notebook**: one document that walks through the format in R and in Python, in tabs, with standard libraries only. Its render stops if a comparison fails. R and Python run in one process; tested on macOS only, and not known to work on Linux |
 | `scale-test/` | The scripts and recorded results of one run on a real screen of 207,324 cells |
 | `make_conformance.py`, `check_conformance.R`, `check_conformance.py` | Build `conformance/` from `example/`, and run each language's validators and readers over every case |
 
 Start with `REVIEW.md`. Then `SPEC.md` for what the format is, or sections 1 and 2 of
-`RATIONALE.md` for the idea in two pages. In
+`RATIONALE.md` for the idea in two pages, then the notebook. In
 `RATIONALE.md`:
 
 - section 9 compares the format with IGVF's and with pertpy's conventions;
@@ -87,8 +88,8 @@ the format. What that costs:
   pysceptre, and the agreement of the two design matrices. Those compare the
   packages, which is not the format's job.
 
-Generated and not committed: `rlib/`, `verify/out/` and
-`conformance/results-*.json`.
+Generated and not committed: `rlib/`, `verify/out/`, `conformance/results-*.json`
+and the rendered `notebook.html`.
 
 ## Scope
 

@@ -63,6 +63,7 @@ need review now:
 ## What has and has not been tested
 
 - **Tested without either package** (`verify/run.sh`): R and Python write identical files from the same content; each reads the other's and gets the source back; tools outside this code (anndata, polars, duckdb, HDF5Array, arrow) read them; two validators agree on a set of valid and deliberately broken files.
+- **A notebook** (`notebook.qmd`, rendered with `./render.sh`) walks through the format in R and Python with standard libraries only. It was rendered on macOS only.
 - **Tested with the packages, up to commit `7e10af4` only:** every example analysis was rebuilt as a sceptre and a pysceptre object and matched the original, which showed the files held everything an analysis needs. That suite was then removed, because it needed unreviewed builds of both packages on one machine. Changes to the format after that commit have no such check until the packages adopt the format.
 - **No open finding** from the independent readers. Two were settled on 18 November: one scanpy function failed on the counts as read, fixed by storing both index arrays in one width (S4); and a dataset reader pointed at the fit cache's folder tripped on a JSON record inside it, fixed by putting the identity of the fits inside each part file (T6).
 - **Tested once at scale:** the data file, on a real screen of 207,324 cells, written by both languages to identical files and read back in memory and from disk (`RATIONALE.md`, Appendix A).
