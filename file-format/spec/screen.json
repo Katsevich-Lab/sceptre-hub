@@ -1,0 +1,147 @@
+{
+  "$comment": "The structure of a sceptre data file, format 0, as data. Both validators read this file. SPEC.md section 2 states the rules; rules that need computing (order of cells within a feature, uniqueness, the same cells in every modality) are code in each language.",
+  "format": "0.1",
+  "root": {
+    "encoding-type": "MuData"
+  },
+  "modalities": {
+    "grna": "grna",
+    "minimum": 2,
+    "name_pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+  },
+  "counts": {
+    "encoding-type": "csc_matrix",
+    "arrays": {
+      "data": "int32",
+      "indices": "int32",
+      "indptr": "int64"
+    },
+    "rules": {
+      "data": "S4.1",
+      "indices": "S4.2",
+      "indptr": "S4.3"
+    },
+    "filters": [
+      "deflate",
+      "shuffle"
+    ]
+  },
+  "storage_kinds": {
+    "double": "an `array` of 64-bit floats",
+    "int32": "an `array` of 32-bit signed integers, with no missing value",
+    "categorical": "an AnnData `categorical` with text categories",
+    "string": "an AnnData `string-array`"
+  },
+  "cell_tables": {
+    "column_kinds": [
+      "double",
+      "int32",
+      "categorical"
+    ],
+    "column_name_pattern": "^[A-Za-z][A-Za-z0-9_.]*$",
+    "every_modality": [
+      {
+        "name": "n_umis",
+        "kinds": [
+          "double",
+          "int32"
+        ],
+        "required": true
+      },
+      {
+        "name": "n_nonzero",
+        "kinds": [
+          "double",
+          "int32"
+        ],
+        "required": true
+      },
+      {
+        "name": "p_mito",
+        "kinds": [
+          "double"
+        ],
+        "required": false
+      }
+    ]
+  },
+  "feature_tables": {
+    "column_kinds": [
+      "double",
+      "int32",
+      "categorical",
+      "string"
+    ]
+  },
+  "grna_table": [
+    {
+      "name": "grna_target",
+      "kinds": [
+        "string",
+        "categorical"
+      ],
+      "required": true,
+      "rule": "S8.1"
+    },
+    {
+      "name": "target_chr",
+      "kinds": [
+        "string",
+        "categorical"
+      ],
+      "required": false,
+      "rule": "S8.2"
+    },
+    {
+      "name": "target_start",
+      "kinds": [
+        "double",
+        "int32"
+      ],
+      "required": false,
+      "rule": "S8.2"
+    },
+    {
+      "name": "target_end",
+      "kinds": [
+        "double",
+        "int32"
+      ],
+      "required": false,
+      "rule": "S8.2"
+    }
+  ],
+  "metadata": {
+    "path": "uns/sceptre",
+    "entries": {
+      "format": {
+        "kind": "string",
+        "pattern": "^[0-9]+\\.[0-9]+$"
+      },
+      "moi": {
+        "kind": "string",
+        "values": [
+          "high",
+          "low"
+        ]
+      },
+      "id": {
+        "kind": "string"
+      }
+    }
+  },
+  "readable_but_not_conforming": {
+    "$comment": "Rules whose breach a reader must still accept, when the array is of another integer or floating-point type and holds whole numbers.",
+    "rules": [
+      "S4.1",
+      "S4.2",
+      "S4.3"
+    ]
+  },
+  "grna_table_forbidden": [
+    {
+      "name": "grna_group",
+      "rule": "S8.5"
+    }
+  ]
+}

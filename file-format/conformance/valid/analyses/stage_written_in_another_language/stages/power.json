@@ -1,0 +1,17 @@
+{
+  "stage": "power",
+  "settings": {},
+  "fits": null,
+  "provenance": {
+    "package": "Sceptre.jl",
+    "version": "0.99.1",
+    "language": "Julia",
+    "written_at": "2026-11-18T16:38:54Z"
+  },
+  "files": [
+    {
+      "path": "results/power.parquet",
+      "rows": 5
+    }
+  ]
+}

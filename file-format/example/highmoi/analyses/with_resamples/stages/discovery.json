@@ -1,0 +1,35 @@
+{
+  "stage": "discovery",
+  "settings": {},
+  "significance_threshold": null,
+  "fits": {
+    "file": "fits/discovery.parquet",
+    "identity": {
+      "screen_id": "5fd9c0af62acd409883e8016afc576d7",
+      "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch",
+      "cells_in_use_sha256": "d6040e7cdff5a1918e3869873f780155e192eab3e824d3e6662defe383852231",
+      "response_fit_method": "batched",
+      "control_group": "complement"
+    }
+  },
+  "provenance": {
+    "package": "sceptre",
+    "version": "0.99.1",
+    "language": "R",
+    "written_at": "2026-11-18T16:38:55Z"
+  },
+  "files": [
+    {
+      "path": "results/discovery.parquet",
+      "rows": 40
+    },
+    {
+      "path": "results/discovery_resamples.parquet",
+      "rows": 40
+    },
+    {
+      "path": "fits/discovery.parquet",
+      "rows": 40
+    }
+  ]
+}

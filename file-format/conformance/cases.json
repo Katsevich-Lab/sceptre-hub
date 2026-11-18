@@ -1,0 +1,756 @@
+[
+  {
+    "name": "valid/types_written_by_r.h5mu",
+    "kind": "screen",
+    "path": "conformance/valid/types_written_by_r.h5mu",
+    "expect": [],
+    "level": "conforming",
+    "what": "Every allowed kind of column, written by R"
+  },
+  {
+    "name": "valid/types_written_by_python.h5mu",
+    "kind": "screen",
+    "path": "conformance/valid/types_written_by_python.h5mu",
+    "expect": [],
+    "level": "conforming",
+    "what": "The same data, written by Python"
+  },
+  {
+    "name": "valid/highmoi_written_by_r.h5mu",
+    "kind": "screen",
+    "path": "conformance/valid/highmoi_written_by_r.h5mu",
+    "expect": [],
+    "level": "conforming",
+    "what": "The high-MOI example, written by R"
+  },
+  {
+    "name": "valid/highmoi_written_by_python.h5mu",
+    "kind": "screen",
+    "path": "conformance/valid/highmoi_written_by_python.h5mu",
+    "expect": [],
+    "level": "conforming",
+    "what": "The high-MOI example, written by Python"
+  },
+  {
+    "name": "valid/types_gzip_counts.h5mu",
+    "kind": "screen",
+    "path": "conformance/valid/types_gzip_counts.h5mu",
+    "expect": [],
+    "level": "conforming",
+    "what": "Counts compressed with gzip, which S11 allows"
+  },
+  {
+    "name": "valid/types_extra_modality_and_columns.h5mu",
+    "kind": "screen",
+    "path": "conformance/valid/types_extra_modality_and_columns.h5mu",
+    "expect": [],
+    "level": "conforming",
+    "what": "A modality no analysis uses, and a gRNA column the format does not define"
+  },
+  {
+    "name": "valid/analyses/left_sided_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/left_sided_written_by_r",
+    "expect": [],
+    "level": "conforming",
+    "what": "The `left_sided` example analysis, written by R",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/bonferroni_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/bonferroni_written_by_r",
+    "expect": [],
+    "level": "conforming",
+    "what": "The `bonferroni` example analysis, written by R",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/singleton_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/singleton_written_by_r",
+    "expect": [],
+    "level": "conforming",
+    "what": "The `singleton` example analysis, written by R",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/stopped_after_qc_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/stopped_after_qc_written_by_r",
+    "expect": [],
+    "level": "conforming",
+    "what": "The `stopped_after_qc` example analysis, written by R",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/with_resamples_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/with_resamples_written_by_r",
+    "expect": [],
+    "level": "conforming",
+    "what": "The `with_resamples` example analysis, written by R",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/left_sided_written_by_python",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/left_sided_written_by_python",
+    "expect": [],
+    "level": "conforming",
+    "what": "The `left_sided` analysis, written by Python",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/left_sided_written_by_python (Python data file)",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/left_sided_written_by_python",
+    "expect": [],
+    "level": "conforming",
+    "what": "The same, checked against the Python-written data file",
+    "screen": "conformance/valid/highmoi_written_by_python.h5mu"
+  },
+  {
+    "name": "valid/analyses/stage_written_in_another_language",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/stage_written_in_another_language",
+    "expect": [],
+    "level": "conforming",
+    "what": "A stage written by an implementation in a third language",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/tables_in_parts",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/tables_in_parts",
+    "expect": [],
+    "level": "conforming",
+    "what": "A table as a folder of parts, with dictionary-encoded identifiers, an unknown column, and an unknown file beside it",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/screens/not_hdf5.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/not_hdf5.h5mu",
+    "expect": [
+      "S1.1"
+    ],
+    "level": "not readable",
+    "what": "A text file with the right extension"
+  },
+  {
+    "name": "invalid/screens/no_grna_modality.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/no_grna_modality.h5mu",
+    "expect": [
+      "S2.1"
+    ],
+    "level": "not readable",
+    "what": "The gRNA modality is named `guide`"
+  },
+  {
+    "name": "invalid/screens/bad_modality_name.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/bad_modality_name.h5mu",
+    "expect": [
+      "S2.2"
+    ],
+    "level": "not readable",
+    "what": "A modality named `1rna`"
+  },
+  {
+    "name": "invalid/screens/cells_in_another_order.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/cells_in_another_order.h5mu",
+    "expect": [
+      "S2.3"
+    ],
+    "level": "not readable",
+    "what": "The gRNA modality lists two cells in the other order"
+  },
+  {
+    "name": "invalid/screens/compressed_by_cell.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/compressed_by_cell.h5mu",
+    "expect": [
+      "S3.1"
+    ],
+    "level": "not readable",
+    "what": "The RNA counts are marked as compressed by cell (`csr_matrix`), as in an IGVF file"
+  },
+  {
+    "name": "invalid/screens/pointers_past_the_end.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/pointers_past_the_end.h5mu",
+    "expect": [
+      "S3.2"
+    ],
+    "level": "not readable",
+    "what": "The last column pointer is larger than the number of stored values"
+  },
+  {
+    "name": "invalid/screens/cells_unsorted_within_a_feature.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/cells_unsorted_within_a_feature.h5mu",
+    "expect": [
+      "S3.3"
+    ],
+    "level": "not readable",
+    "what": "Two cell positions of the first gene are swapped"
+  },
+  {
+    "name": "invalid/screens/stored_zero.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/stored_zero.h5mu",
+    "expect": [
+      "S3.4"
+    ],
+    "level": "not readable",
+    "what": "A zero is stored as if it were a count"
+  },
+  {
+    "name": "invalid/screens/counts_as_doubles.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/counts_as_doubles.h5mu",
+    "expect": [
+      "S4.1"
+    ],
+    "level": "readable",
+    "what": "Counts stored as doubles, as R's MuData writes them by default",
+    "reads_as": "conformance/valid/types_written_by_python.h5mu"
+  },
+  {
+    "name": "invalid/screens/counts_as_uint16.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/counts_as_uint16.h5mu",
+    "expect": [
+      "S4.1"
+    ],
+    "level": "readable",
+    "what": "Counts stored as 16-bit unsigned integers, as an IGVF file has them",
+    "reads_as": "conformance/valid/types_written_by_python.h5mu"
+  },
+  {
+    "name": "invalid/screens/cell_positions_64_bit.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/cell_positions_64_bit.h5mu",
+    "expect": [
+      "S4.2"
+    ],
+    "level": "readable",
+    "what": "Cell positions stored as 64-bit integers",
+    "reads_as": "conformance/valid/types_written_by_python.h5mu"
+  },
+  {
+    "name": "invalid/screens/pointers_32_bit.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/pointers_32_bit.h5mu",
+    "expect": [
+      "S4.3"
+    ],
+    "level": "readable",
+    "what": "Column pointers stored as 32-bit integers, as the libraries write them by default",
+    "reads_as": "conformance/valid/types_written_by_python.h5mu"
+  },
+  {
+    "name": "invalid/screens/shared_column_named_like_a_modality.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/shared_column_named_like_a_modality.h5mu",
+    "expect": [
+      "S5.1"
+    ],
+    "level": "not readable",
+    "what": "A shared cell column named `rna_quality`"
+  },
+  {
+    "name": "invalid/screens/covariate_name_with_a_dash.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/covariate_name_with_a_dash.h5mu",
+    "expect": [
+      "S5.4"
+    ],
+    "level": "not readable",
+    "what": "A cell column named `donor-age`, which no formula can use"
+  },
+  {
+    "name": "invalid/screens/no_n_nonzero.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/no_n_nonzero.h5mu",
+    "expect": [
+      "S6.1"
+    ],
+    "level": "not readable",
+    "what": "The gRNA modality's cell table has no `n_nonzero`"
+  },
+  {
+    "name": "invalid/screens/n_umis_as_labels.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/n_umis_as_labels.h5mu",
+    "expect": [
+      "S6.2"
+    ],
+    "level": "not readable",
+    "what": "`n_umis` stored as a categorical instead of a number"
+  },
+  {
+    "name": "invalid/screens/boolean_column.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/boolean_column.h5mu",
+    "expect": [
+      "S7.1"
+    ],
+    "level": "not readable",
+    "what": "A true/false cell column stored as booleans, as Python writes it by default"
+  },
+  {
+    "name": "invalid/screens/integer_column_64_bit.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/integer_column_64_bit.h5mu",
+    "expect": [
+      "S7.1"
+    ],
+    "level": "not readable",
+    "what": "A 64-bit integer cell column, as pandas writes integers by default"
+  },
+  {
+    "name": "invalid/screens/text_covariate.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/text_covariate.h5mu",
+    "expect": [
+      "S7.1"
+    ],
+    "level": "not readable",
+    "what": "A cell covariate stored as plain text instead of a categorical"
+  },
+  {
+    "name": "invalid/screens/nullable_string_column.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/nullable_string_column.h5mu",
+    "expect": [
+      "S7.2"
+    ],
+    "level": "not readable",
+    "what": "A gRNA column in anndata's nullable string encoding, which R cannot open"
+  },
+  {
+    "name": "invalid/screens/categorical_code_out_of_range.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/categorical_code_out_of_range.h5mu",
+    "expect": [
+      "S7.3"
+    ],
+    "level": "not readable",
+    "what": "A categorical with a code beyond its categories"
+  },
+  {
+    "name": "invalid/screens/integer_column_with_missing_value.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/integer_column_with_missing_value.h5mu",
+    "expect": [
+      "S7.4"
+    ],
+    "level": "not readable",
+    "what": "An integer cell column holding R's missing-integer value"
+  },
+  {
+    "name": "invalid/screens/no_grna_target.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/no_grna_target.h5mu",
+    "expect": [
+      "S8.1"
+    ],
+    "level": "not readable",
+    "what": "The gRNA table has no `grna_target`"
+  },
+  {
+    "name": "invalid/screens/grna_group_stored.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/grna_group_stored.h5mu",
+    "expect": [
+      "S8.5"
+    ],
+    "level": "not readable",
+    "what": "The gRNA table stores `grna_group`, which depends on the analysis"
+  },
+  {
+    "name": "invalid/screens/target_start_as_text.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/target_start_as_text.h5mu",
+    "expect": [
+      "S8.2"
+    ],
+    "level": "not readable",
+    "what": "`target_start` stored as text"
+  },
+  {
+    "name": "invalid/screens/duplicate_cell_identifiers.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/duplicate_cell_identifiers.h5mu",
+    "expect": [
+      "S9.1"
+    ],
+    "level": "not readable",
+    "what": "Two cells have the same identifier"
+  },
+  {
+    "name": "invalid/screens/gene_named_like_a_grna.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/gene_named_like_a_grna.h5mu",
+    "expect": [
+      "S9.2"
+    ],
+    "level": "not readable",
+    "what": "A gene and a gRNA have the same identifier"
+  },
+  {
+    "name": "invalid/screens/identifier_with_a_line_feed.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/identifier_with_a_line_feed.h5mu",
+    "expect": [
+      "S9.4"
+    ],
+    "level": "not readable",
+    "what": "A cell identifier contains a line feed"
+  },
+  {
+    "name": "invalid/screens/no_sceptre_metadata.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/no_sceptre_metadata.h5mu",
+    "expect": [
+      "S10.1"
+    ],
+    "level": "not readable",
+    "what": "The file has no `uns/sceptre`"
+  },
+  {
+    "name": "invalid/screens/moi_medium.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/moi_medium.h5mu",
+    "expect": [
+      "S10.2"
+    ],
+    "level": "not readable",
+    "what": "`moi` is `medium`"
+  },
+  {
+    "name": "invalid/screens/format_from_the_future.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/format_from_the_future.h5mu",
+    "expect": [
+      "S10.3"
+    ],
+    "level": "not readable",
+    "what": "The data file's format version is 9.0"
+  },
+  {
+    "name": "invalid/screens/format_as_a_number.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/format_as_a_number.h5mu",
+    "expect": [
+      "S10.1"
+    ],
+    "level": "not readable",
+    "what": "The data file's format is the integer 0, not a version"
+  },
+  {
+    "name": "invalid/analyses/no_analysis_json",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/no_analysis_json",
+    "expect": [
+      "A1.1"
+    ],
+    "level": "not readable",
+    "what": "`analysis.json` is missing",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/no_response_modality",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/no_response_modality",
+    "expect": [
+      "A1.1"
+    ],
+    "level": "not readable",
+    "what": "`analysis.json` does not name a response modality",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/response_modality_grna",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/response_modality_grna",
+    "expect": [
+      "A1.1"
+    ],
+    "level": "not readable",
+    "what": "`analysis.json` names `grna` as the response modality",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/response_modality_not_in_file",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/response_modality_not_in_file",
+    "expect": [
+      "A1.2"
+    ],
+    "level": "not readable",
+    "what": "The response modality is `protein`, which the data file does not have",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/analysis_format_from_the_future",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/analysis_format_from_the_future",
+    "expect": [
+      "A1.1"
+    ],
+    "level": "not readable",
+    "what": "The analysis's format version is 9.0",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/another_dataset",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/another_dataset",
+    "expect": [
+      "A1.2"
+    ],
+    "level": "not readable",
+    "what": "The dataset identifier is that of another data file",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/record_not_named_for_a_stage",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/record_not_named_for_a_stage",
+    "expect": [
+      "A2.1"
+    ],
+    "level": "not readable",
+    "what": "A record named `stages/extra.json`",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/side_up",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/side_up",
+    "expect": [
+      "A2.1"
+    ],
+    "level": "not readable",
+    "what": "The parameters record has `side` set to `up`",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/no_seed",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/no_seed",
+    "expect": [
+      "A2.1"
+    ],
+    "level": "not readable",
+    "what": "The parameters record has no `seed`",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/stage_without_its_predecessor",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/stage_without_its_predecessor",
+    "expect": [
+      "A2.2",
+      "A4.1"
+    ],
+    "level": "not readable",
+    "what": "The assignment record is missing while later stages remain",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/listed_file_missing",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/listed_file_missing",
+    "expect": [
+      "A5.1"
+    ],
+    "level": "not readable",
+    "what": "A table that a record lists is not in the folder",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/table_truncated",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/table_truncated",
+    "expect": [
+      "A5.2",
+      "T2.1"
+    ],
+    "level": "not readable",
+    "what": "`cells.parquet` has fewer rows than its stage wrote",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/table_listed_by_the_wrong_stage",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/table_listed_by_the_wrong_stage",
+    "expect": [
+      "A5.3",
+      "A5.4"
+    ],
+    "level": "not readable",
+    "what": "The QC record lists the discovery pairs, which the parameters stage writes",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/required_table_not_listed",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/required_table_not_listed",
+    "expect": [
+      "A4.1",
+      "A5.4"
+    ],
+    "level": "not readable",
+    "what": "The QC record does not list `cells.parquet`, which is still in the folder",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/stale_results",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/stale_results",
+    "expect": [
+      "A4.1"
+    ],
+    "level": "not readable",
+    "what": "The discovery record is gone and its results table remains",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/column_missing",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/column_missing",
+    "expect": [
+      "T0.1"
+    ],
+    "level": "not readable",
+    "what": "`cells.parquet` has no `in_use` column",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/column_of_the_wrong_type",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/column_of_the_wrong_type",
+    "expect": [
+      "T0.1"
+    ],
+    "level": "not readable",
+    "what": "`pass_qc` is stored as integers",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/rows_not_sorted",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/rows_not_sorted",
+    "expect": [
+      "T0.2"
+    ],
+    "level": "not readable",
+    "what": "The assignment table is in reverse order",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/duplicate_row",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/duplicate_row",
+    "expect": [
+      "T0.4"
+    ],
+    "level": "not readable",
+    "what": "The assignment table has the same (gRNA, cell) twice",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/cell_not_in_the_data_file",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/cell_not_in_the_data_file",
+    "expect": [
+      "T0.5"
+    ],
+    "level": "not readable",
+    "what": "The assignment table names a cell the data file does not have",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/grna_column_under_the_union_strategy",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/grna_column_under_the_union_strategy",
+    "expect": [
+      "T3.3"
+    ],
+    "level": "not readable",
+    "what": "A pair-QC table has a `grna_id` column in an analysis that pools gRNAs by target",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/grna_column_in_bonferroni_discovery",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/grna_column_in_bonferroni_discovery",
+    "expect": [
+      "T5.6"
+    ],
+    "level": "not readable",
+    "what": "The discovery results of a bonferroni analysis have a `grna_id` column",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/significant_stored",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/significant_stored",
+    "expect": [
+      "T5.3"
+    ],
+    "level": "not readable",
+    "what": "The discovery results store a `significant` column",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/no_effect_size",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/no_effect_size",
+    "expect": [
+      "T5.1"
+    ],
+    "level": "not readable",
+    "what": "The discovery results have neither `fold_change` nor `log_2_fold_change`",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/fits_without_their_record",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/fits_without_their_record",
+    "expect": [
+      "T6.1"
+    ],
+    "level": "not readable",
+    "what": "Saved fits are listed and the record does not say how they were made",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/fit_with_too_few_coefficients",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/fit_with_too_few_coefficients",
+    "expect": [
+      "T6.2"
+    ],
+    "level": "not readable",
+    "what": "A saved fit has fewer coefficients than the design has terms",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/formula_with_an_interaction",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/formula_with_an_interaction",
+    "expect": [
+      "T7.1"
+    ],
+    "level": "not readable",
+    "what": "The formula has an interaction, outside the additive subset",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  }
+]

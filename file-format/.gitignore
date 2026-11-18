@@ -1,0 +1,11 @@
+# generated or local: rebuilt by ./render.sh
+rlib/
+roundtrip/
+reference-october-layout/
+example-objects.rds
+conformance/results-*.json
+*.html
+*_files/
+.quarto/
+__pycache__/
+*.tmp

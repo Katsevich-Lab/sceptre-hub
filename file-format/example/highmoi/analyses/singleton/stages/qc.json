@@ -1,0 +1,40 @@
+{
+  "stage": "qc",
+  "settings": {
+    "response_n_umis_range": [0.01, 0.98999999999999999],
+    "response_n_nonzero_range": [0.01, 0.98999999999999999],
+    "p_mito_threshold": 0.20000000000000001,
+    "pairwise_qc": true,
+    "B3": 0
+  },
+  "summaries": {
+    "cells_removed": {
+      "n_umis": 10,
+      "n_responses": 7,
+      "p_mito": 0,
+      "zero_twoplus_grnas": 0,
+      "user_specified": 0,
+      "total": 17
+    }
+  },
+  "provenance": {
+    "package": "sceptre",
+    "version": "0.99.1",
+    "language": "R",
+    "written_at": "2026-11-18T16:38:55Z"
+  },
+  "files": [
+    {
+      "path": "cells.parquet",
+      "rows": 500
+    },
+    {
+      "path": "pair_qc/discovery.parquet",
+      "rows": 2812
+    },
+    {
+      "path": "pair_qc/positive_control.parquet",
+      "rows": 10
+    }
+  ]
+}

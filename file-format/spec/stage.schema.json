@@ -1,0 +1,576 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "A stage record, stages/<stage>.json, of a sceptre analysis folder (SPEC.md, A2 and A3)",
+  "type": "object",
+  "required": [
+    "stage",
+    "settings",
+    "provenance",
+    "files"
+  ],
+  "properties": {
+    "stage": {
+      "enum": [
+        "parameters",
+        "assignment",
+        "qc",
+        "calibration",
+        "power",
+        "discovery"
+      ]
+    },
+    "settings": {
+      "type": "object"
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "package",
+        "version",
+        "language",
+        "written_at"
+      ],
+      "properties": {
+        "package": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1
+        },
+        "written_at": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "rows"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_/]+\\.parquet$"
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "parameters"
+          }
+        },
+        "required": [
+          "stage"
+        ]
+      },
+      "then": {
+        "$ref": "#/definitions/parameters"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "assignment"
+          }
+        },
+        "required": [
+          "stage"
+        ]
+      },
+      "then": {
+        "$ref": "#/definitions/assignment"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "qc"
+          }
+        },
+        "required": [
+          "stage"
+        ]
+      },
+      "then": {
+        "$ref": "#/definitions/qc"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "calibration"
+          }
+        },
+        "required": [
+          "stage"
+        ]
+      },
+      "then": {
+        "$ref": "#/definitions/calibration"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "power"
+          }
+        },
+        "required": [
+          "stage"
+        ]
+      },
+      "then": {
+        "$ref": "#/definitions/power"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "discovery"
+          }
+        },
+        "required": [
+          "stage"
+        ]
+      },
+      "then": {
+        "$ref": "#/definitions/discovery"
+      }
+    }
+  ],
+  "definitions": {
+    "parameters": {
+      "required": [
+        "settings",
+        "design"
+      ],
+      "properties": {
+        "settings": {
+          "type": "object",
+          "required": [
+            "formula",
+            "side",
+            "resampling_mechanism",
+            "resampling_approximation",
+            "control_group",
+            "grna_integration_strategy",
+            "B1",
+            "B2",
+            "B3",
+            "multiple_testing_method",
+            "multiple_testing_alpha",
+            "seed",
+            "response_fit_method",
+            "grna_fit_method"
+          ],
+          "properties": {
+            "formula": {
+              "type": "string",
+              "pattern": "^~"
+            },
+            "side": {
+              "enum": [
+                "left",
+                "both",
+                "right"
+              ]
+            },
+            "resampling_mechanism": {
+              "enum": [
+                "crt",
+                "permutations"
+              ]
+            },
+            "resampling_approximation": {
+              "type": "string"
+            },
+            "control_group": {
+              "enum": [
+                "complement",
+                "nt_cells"
+              ]
+            },
+            "grna_integration_strategy": {
+              "enum": [
+                "union",
+                "singleton",
+                "bonferroni"
+              ]
+            },
+            "B1": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "B2": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "B3": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "multiple_testing_method": {
+              "type": "string"
+            },
+            "multiple_testing_alpha": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "seed": {
+              "type": "integer"
+            },
+            "response_fit_method": {
+              "type": "string"
+            },
+            "grna_fit_method": {
+              "type": "string"
+            }
+          }
+        },
+        "design": {
+          "type": "object",
+          "required": [
+            "terms",
+            "sha256"
+          ],
+          "properties": {
+            "terms": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "assignment": {
+      "required": [
+        "settings"
+      ],
+      "properties": {
+        "settings": {
+          "type": "object",
+          "required": [
+            "method",
+            "hyperparameters"
+          ],
+          "properties": {
+            "method": {
+              "type": "string"
+            },
+            "hyperparameters": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "qc": {
+      "required": [
+        "settings"
+      ],
+      "properties": {
+        "settings": {
+          "type": "object",
+          "required": [
+            "response_n_umis_range",
+            "response_n_nonzero_range",
+            "p_mito_threshold",
+            "pairwise_qc",
+            "B3"
+          ],
+          "properties": {
+            "response_n_umis_range": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "response_n_nonzero_range": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "p_mito_threshold": {
+              "type": "number"
+            },
+            "pairwise_qc": {
+              "type": "boolean"
+            },
+            "B3": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "summaries": {
+          "type": "object"
+        }
+      }
+    },
+    "calibration": {
+      "required": [
+        "settings",
+        "significance_threshold"
+      ],
+      "properties": {
+        "settings": {
+          "type": "object",
+          "required": [
+            "calibration_group_size",
+            "n_calibration_pairs",
+            "B3"
+          ],
+          "properties": {
+            "calibration_group_size": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "n_calibration_pairs": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "B3": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "significance_threshold": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fits": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "file",
+                "identity"
+              ],
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "pattern": "^fits/(calibration|power|discovery)\\.parquet$"
+                },
+                "identity": {
+                  "type": "object",
+                  "required": [
+                    "screen_id",
+                    "formula",
+                    "cells_in_use_sha256",
+                    "response_fit_method",
+                    "control_group"
+                  ],
+                  "properties": {
+                    "screen_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "formula": {
+                      "type": "string",
+                      "pattern": "^~"
+                    },
+                    "cells_in_use_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "response_fit_method": {
+                      "type": "string"
+                    },
+                    "control_group": {
+                      "enum": [
+                        "complement",
+                        "nt_cells"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "power": {
+      "required": [
+        "settings"
+      ],
+      "properties": {
+        "settings": {
+          "type": "object"
+        },
+        "fits": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "file",
+                "identity"
+              ],
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "pattern": "^fits/(calibration|power|discovery)\\.parquet$"
+                },
+                "identity": {
+                  "type": "object",
+                  "required": [
+                    "screen_id",
+                    "formula",
+                    "cells_in_use_sha256",
+                    "response_fit_method",
+                    "control_group"
+                  ],
+                  "properties": {
+                    "screen_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "formula": {
+                      "type": "string",
+                      "pattern": "^~"
+                    },
+                    "cells_in_use_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "response_fit_method": {
+                      "type": "string"
+                    },
+                    "control_group": {
+                      "enum": [
+                        "complement",
+                        "nt_cells"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "discovery": {
+      "required": [
+        "settings",
+        "significance_threshold"
+      ],
+      "properties": {
+        "settings": {
+          "type": "object"
+        },
+        "significance_threshold": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fits": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "file",
+                "identity"
+              ],
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "pattern": "^fits/(calibration|power|discovery)\\.parquet$"
+                },
+                "identity": {
+                  "type": "object",
+                  "required": [
+                    "screen_id",
+                    "formula",
+                    "cells_in_use_sha256",
+                    "response_fit_method",
+                    "control_group"
+                  ],
+                  "properties": {
+                    "screen_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "formula": {
+                      "type": "string",
+                      "pattern": "^~"
+                    },
+                    "cells_in_use_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "response_fit_method": {
+                      "type": "string"
+                    },
+                    "control_group": {
+                      "enum": [
+                        "complement",
+                        "nt_cells"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

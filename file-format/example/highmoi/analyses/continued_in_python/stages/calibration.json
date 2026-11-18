@@ -1,0 +1,39 @@
+{
+  "stage": "calibration",
+  "settings": {
+    "calibration_group_size": 2,
+    "n_calibration_pairs": 1406,
+    "B3": 0
+  },
+  "significance_threshold": null,
+  "fits": {
+    "file": "fits/calibration.parquet",
+    "identity": {
+      "screen_id": "5fd9c0af62acd409883e8016afc576d7",
+      "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch",
+      "cells_in_use_sha256": "d6040e7cdff5a1918e3869873f780155e192eab3e824d3e6662defe383852231",
+      "response_fit_method": "batched",
+      "control_group": "complement"
+    }
+  },
+  "provenance": {
+    "package": "pysceptre",
+    "version": "0.6.0",
+    "language": "Python",
+    "written_at": "2026-11-18T16:40:57Z"
+  },
+  "files": [
+    {
+      "path": "negative_control_groups.parquet",
+      "rows": 90
+    },
+    {
+      "path": "results/calibration.parquet",
+      "rows": 1406
+    },
+    {
+      "path": "fits/calibration.parquet",
+      "rows": 100
+    }
+  ]
+}
