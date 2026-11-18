@@ -355,6 +355,10 @@ def write_screen(mdata, file) -> None:
         "moi": stamp["moi"],
         "id": stamp.get("id") or uuid.uuid4().hex,
     }
+    # optional: a label for people, and where the data came from (S10.5)
+    for key in ("name", "source"):
+        if stamp.get(key):
+            out.uns["sceptre"][key] = str(stamp[key])
     file.parent.mkdir(parents=True, exist_ok=True)
     # plain HDF5 strings: R cannot open a file with anndata's nullable string arrays (S7)
     with ad.settings.override(allow_write_nullable_strings=False):
@@ -425,6 +429,7 @@ def read_screen(file, response_modality=None):
         "moi": str(stamp["moi"]),
         "id": str(stamp["id"]),
         "response_modality": main,
+        **{key: str(stamp[key]) for key in ("name", "source") if key in stamp},
     }
     return mdata
 
@@ -441,10 +446,22 @@ def screen_link(mdata, file=None, directory=None) -> dict:
         "response_ids_sha256": sha256_ids(response.var_names),
         "grna_ids_sha256": sha256_ids(mdata[GRNA].var_names),
     }
-    if file is not None:
-        # a hint only; the identity above is what a reader checks
-        link["path"] = os.path.relpath(Path(file).resolve(), Path(directory).resolve())
+    # for people: which dataset this is; not part of the identity a reader checks
+    if mdata.uns["sceptre"].get("name"):
+        link["name"] = mdata.uns["sceptre"]["name"]
+    # a hint only, and only when the data file is near the analysis (A1.4)
+    if file is not None and nearby_path(file, directory) is not None:
+        link["path"] = nearby_path(file, directory)
     return link
+
+
+def nearby_path(file, directory):
+    """The data file's path relative to an analysis folder, if the file is in the
+    folder's parent or grandparent (the `analyses/<name>/` convention) or below one
+    of them; otherwise None. A far-away file would give a long chain of `..` that
+    names directories and helps nobody."""
+    path = Path(os.path.relpath(Path(file).resolve(), Path(directory).resolve())).as_posix()
+    return None if path.split("/").count("..") > 2 else path
 
 
 # ---------------------------------------------------------------- the analysis folder
@@ -550,7 +567,8 @@ def check_link(recorded: dict, mdata, what) -> None:
     current = screen_link(mdata)
     for field in ("id", "cell_ids_sha256", "response_ids_sha256", "grna_ids_sha256"):
         if recorded.get(field) != current[field]:
-            raise ValueError(f"The analysis {what} was run on another data file (its `{field}` differs).")
+            named = f", the dataset '{recorded['name']}'" if recorded.get("name") else ""
+            raise ValueError(f"The analysis {what} was run on another data file{named} (its `{field}` differs).")
 
 
 # ---------------------------------------------------------------- derivations
@@ -911,6 +929,8 @@ def read_sceptre_object(screen_file, directory=None, *, response_modality=None, 
     low_moi = mdata.uns["sceptre"]["moi"] == "low"
     analysis = Analysis.from_screen(_pysceptre_screen(mdata))
     analysis.screen_id = mdata.uns["sceptre"]["id"]
+    analysis.screen_name = mdata.uns["sceptre"].get("name")
+    analysis.screen_source = mdata.uns["sceptre"].get("source")
     analysis.format_provenance = {}
     if directory is None:
         return analysis
@@ -1106,6 +1126,8 @@ def analysis_screen(analysis, id=None, response_modality=DEFAULT_RESPONSE_MODALI
         "moi": analysis.moi,
         "id": id or getattr(analysis, "screen_id", None),
         "response_modality": response_modality,
+        "name": getattr(analysis, "screen_name", None),
+        "source": getattr(analysis, "screen_source", None),
     }
     return out
 
@@ -1485,7 +1507,10 @@ def validate_screen(file) -> pd.DataFrame:
             kinds = "iu" if kind == "integer" else "OSU"
             return record is not None and name in record and isinstance(record[name], h5py.Dataset) and record[name].shape == () and record[name].dtype.kind in kinds
 
-        if not all(scalar_of(name, entry["kind"]) for name, entry in entries.items()):
+        for name, entry in entries.items():
+            if not entry["required"] and record is not None and name in record and not scalar_of(name, entry["kind"]):
+                log.add("S10.5", f"{where}/{name}", "must be a scalar text entry.")
+        if not all(scalar_of(name, entry["kind"]) for name, entry in entries.items() if entry["required"]):
             log.add("S10.1", where, "needs the scalar text entries `format`, `moi` and `id`.")
         elif format_parts(_text(record["format"][()])[0]) is None:
             log.add("S10.1", f"{where}/format", "is not a version of the form MAJOR.MINOR.")
@@ -1687,7 +1712,8 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
         return log.all()
     faults = _schema_problems(path, "analysis.schema.json")
     for fault in faults:
-        log.add("A1.1", "analysis.json", fault)
+        # the form of the hint has a rule of its own
+        log.add("A1.4" if fault.startswith("/screen/path ") else "A1.1", "analysis.json", fault)
     analysis = None if faults else _read_json(path)
     if analysis is not None and not known_major(analysis["format"]):
         log.add("A1.1", "analysis.json", "is in a format this validator does not know.")

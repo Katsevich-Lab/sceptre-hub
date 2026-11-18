@@ -116,17 +116,28 @@
     "entries": {
       "format": {
         "kind": "string",
-        "pattern": "^[0-9]+\\.[0-9]+$"
+        "pattern": "^[0-9]+\\.[0-9]+$",
+        "required": true
       },
       "moi": {
         "kind": "string",
         "values": [
           "high",
           "low"
-        ]
+        ],
+        "required": true
       },
       "id": {
-        "kind": "string"
+        "kind": "string",
+        "required": true
+      },
+      "name": {
+        "kind": "string",
+        "required": false
+      },
+      "source": {
+        "kind": "string",
+        "required": false
       }
     }
   },

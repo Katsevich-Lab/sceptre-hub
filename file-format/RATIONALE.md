@@ -328,6 +328,17 @@ merged file.
 - **Not caught.** Counts edited in place with the identifiers and `id` unchanged.
 - **Defaults are for packages.** A package may choose the response modality for the user when the file has one candidate. The file is always explicit.
 - **Convention.** Analyses live in `analyses/<name>/` beside the data file unless there is a reason not to.
+- **Analyses far from their data** *(Decided by Eugene, 18 November; details Adopted)*. A data file may sit read-only on a server while its analyses live on a laptop or elsewhere on the server. The link already allows this: it is the `id` and the hashes, a reader is told where the data file is and never follows `screen.path`, the data file knows nothing about its analyses, and an analysis folder can be read for its results with no data file at all. Four things were tightened:
+  - *The hint is a relative path or a URL, never an absolute local path.* An absolute path names a user and a server's layout, and means nothing on another machine. The schema enforces the form and the validators report it (A1.4).
+  - *A writer records a path only when the data file is near*: in the analysis folder's parent or grandparent, or below one of them. Farther away, the relative path is a chain of `..` that names directories and helps nobody, so the writer records nothing.
+  - *A dataset may have a `name`*, a label for people, stored in the data file and copied into the link. An error can then say which dataset an analysis was run on instead of quoting a random `id`. The name is not part of the identity check.
+  - *A dataset may have a `source`*: a URL, DOI or accession, such as a GEO accession for a published screen.
+- **No dataset version** *(Decided by Eugene, 18 November)*: "too much bookkeeping". The `id` changes when a dataset is imported again, which is the protection an analysis needs.
+- **Finding the data is package behaviour, not format.** A package can resolve a dataset `id` to a location through a search path or a small table in the user's own configuration. Nothing specific to one machine goes in `analysis.json`. If a package ever follows the hint by itself, it should do so only for locations the user has configured: a folder from an untrusted source could otherwise point a reader at any file or URL. None of this is built.
+- **Precedents** *(read by the side session of 18 November; I did not re-read them)*. The common pattern is to identify data by a name or a hash, keep its location as a separate, replaceable mapping, allow only relative paths or URLs, and carry a label for people.
+  - *Frictionless Data Package*: a file reference is a relative POSIX path or an HTTP(S) URL; absolute paths are disallowed, as a security risk and as rarely useful.
+  - *BIDS*: references name a dataset, not a location; a separate table maps each name to a local or remote address; source datasets are recorded by URL, DOI and version.
+  - *DVC*: data is identified by a content hash with a relative path; the physical location is a named remote configured outside the pointer file.
 - **IGVF.** Its checkpoint manifest links a continuation to its parent by a SHA-256 of the whole parent file, plus cell and feature counts, the pipeline commit and a hash of the gene annotation file (`bin/preinference_checkpoint.py`). That catches an in-place edit of the counts, which this format's link does not. It costs a full read of the file and breaks if the file is recompressed. An optional whole-file checksum could be added here for those who want that guarantee ([section 10](#10-fixed-now-free-to-grow)).
 
 ### A2. One record per stage, written last — *Adopted (changed from my earlier advice)*
@@ -561,6 +572,7 @@ would cost.
 | 19 | Covariate names (S5) | Letters, digits, underscores, dots | Widening it is safe for old files |
 | 20 | When tables have `grna_id` (T3, T5) | Fixed by strategy and stage | Follows sceptre's output |
 | 21 | Counts in another number type (S4) | Not conforming; readable | Nothing |
+| 22 | The hint to the data file (A1) | A relative path or a URL, never absolute; recorded only when the file is near; an optional dataset name and source; no dataset version (Eugene, 18 November) | Loosening the form is safe for old files |
 
 ### Outside the format
 
@@ -722,6 +734,7 @@ remove a workaround in the format or its readers.
 | Check at import that counts are integers | Non-integer "counts" reaching a file (S4) | `R/check_functions.R` |
 | Accept modality-name covariates (`rna_n_umis`), keeping `response_n_umis` as an alias; add a response-modality argument and a modality name at import | The translation layer in the readers and writers (S2, S5) | — |
 | Rename `chr`, `start`, `end` in the gRNA table, or accept both | The same (S8) | — |
+| Resolve a dataset's `id` to a location from the user's configuration (a search path or a small registry) | Passing the data file's path by hand every time (A1) | Not built |
 | Let pysceptre's formula parser take covariate names with dots | The alias in the prototype's Python reader; a pysceptre analysis with such a covariate fails today (S5) | *(measured)* `model_matrix` raises on `S.Score` |
 | Decide what a gRNA under two targets means | The refusal (S8) | R warns, pysceptre counts |
 | Report the R MuData and pandas problems upstream | The restrictions of S7 | Appendix A |
@@ -741,7 +754,7 @@ remove a workaround in the format or its readers.
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
 | Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json` | JSON Schemas for `analysis.json` and the six stage records |
 | Data-file rules that need computing | `SPEC.md`, section 2 | The order of cells within a feature, uniqueness, the same cells in every modality: code in each language |
-| Conformance files | `conformance/`, built by `make_conformance.py` | 15 conforming files, written by R and by Python; 4 readable ones; and 55 that each break one rule, with the rules and the level a validator must report |
+| Conformance files | `conformance/`, built by `make_conformance.py` | 17 conforming files, written by R and by Python; 4 readable ones; and 57 that each break one rule, with the rules and the level a validator must report |
 | Validators | `validate_screen()`, `validate_analysis()` in both prototype libraries | Check a data file or an analysis folder without building a package object, and report every problem, not only the first |
 
 **Why define it this way.**
@@ -777,11 +790,11 @@ implementation by someone who has only the specification.
 
 ### What was checked
 
-*(measured)* Both validators accept all 15 conforming files, report the 4
-readable files as readable, and report exactly the expected rules for all 55
+*(measured)* Both validators accept all 17 conforming files, report the 4
+readable files as readable, and report exactly the expected rules for all 57
 broken ones. The two languages report the same rules and the same level for
 every case. Both readers read each readable file to the same counts as the
-conforming file it was made from. 49 rules are exercised by at least one broken
+conforming file it was made from. 51 rules are exercised by at least one broken
 file. The validators check two more rules that have no conformance file: S11.1
 (no filter other than gzip), because R cannot read a file compressed otherwise
 at all, and T0.3 (row groups of at most a million rows), because the file would
@@ -925,7 +938,7 @@ and show their outputs.
 | Clearing a stage [9] | Its record and files and all later ones are removed |
 | Saved fits whose recorded method differs [9] | Not reused, with a message |
 | Every allowed column type, written by each language and read by the other [9] | Same result both ways |
-| The validators on 15 conforming, 4 readable and 55 broken files [10] | Both languages report the same rules and the same level for every file |
+| The validators on 17 conforming, 4 readable and 57 broken files [10] | Both languages report the same rules and the same level for every file |
 | A covariate with a dot in its name [9] | R and Python build the same design matrix (Python through an alias) |
 
 **Limits that remain.** These are limits of the prototype or of what was

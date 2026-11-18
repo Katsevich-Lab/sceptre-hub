@@ -111,6 +111,24 @@
     "screen": "conformance/valid/highmoi_written_by_python.h5mu"
   },
   {
+    "name": "valid/analyses/data_file_at_a_url",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/data_file_at_a_url",
+    "expect": [],
+    "level": "conforming",
+    "what": "The hint to the data file is a URL",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/no_hint_to_the_data_file",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/no_hint_to_the_data_file",
+    "expect": [],
+    "level": "conforming",
+    "what": "The analysis gives no hint of where its data file is",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
     "name": "valid/analyses/stage_written_in_another_language",
     "kind": "analysis",
     "path": "conformance/valid/analyses/stage_written_in_another_language",
@@ -423,6 +441,16 @@
     "what": "The file has no `uns/sceptre`"
   },
   {
+    "name": "invalid/screens/dataset_name_as_a_number.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/dataset_name_as_a_number.h5mu",
+    "expect": [
+      "S10.5"
+    ],
+    "level": "not readable",
+    "what": "The optional dataset name is a number"
+  },
+  {
     "name": "invalid/screens/moi_medium.h5mu",
     "kind": "screen",
     "path": "conformance/invalid/screens/moi_medium.h5mu",
@@ -505,6 +533,17 @@
     ],
     "level": "not readable",
     "what": "The analysis's format version is 9.0",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/absolute_path_to_the_data",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/absolute_path_to_the_data",
+    "expect": [
+      "A1.4"
+    ],
+    "level": "not readable",
+    "what": "The hint to the data file is an absolute local path",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {

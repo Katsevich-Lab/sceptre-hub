@@ -109,6 +109,17 @@ for i in range(3):
     pq.write_table(part, parts / "assignments.parquet" / f"part-{i:05d}.parquet")
 (parts / "notes.txt").write_text("A file the format does not define.\n")
 
+for name, change, what in (
+    ("data_file_at_a_url", lambda v: v["screen"].__setitem__("path", "https://example.org/data/screen.h5mu"), "The hint to the data file is a URL"),
+    ("no_hint_to_the_data_file", lambda v: v["screen"].pop("path"), "The analysis gives no hint of where its data file is"),
+):
+    folder = VALID / "analyses" / name
+    shutil.copytree("example/highmoi/analyses/left_sided", folder)
+    value = json.loads((folder / "analysis.json").read_text())
+    change(value)
+    (folder / "analysis.json").write_text(json.dumps(value, indent=2) + "\n")
+    case("analysis", folder, [], what, high_r)
+
 other_language = VALID / "analyses" / "stage_written_in_another_language"
 shutil.copytree("example/highmoi/analyses/left_sided", other_language)
 record = json.loads((other_language / "stages/power.json").read_text())
@@ -276,6 +287,8 @@ def set_scalar(f, name, value):
     f[f"uns/sceptre/{name}"].attrs.update({"encoding-type": encoding, "encoding-version": "0.2.0"})
 
 
+broken_screen("dataset_name_as_a_number", ["S10.5"], "The optional dataset name is a number",
+              lambda f: f["uns/sceptre"].create_dataset("name", data=np.int32(7)) if "name" not in f["uns/sceptre"] else set_scalar(f, "name", np.int32(7)))
 broken_screen("moi_medium", ["S10.2"], "`moi` is `medium`", lambda f: set_scalar(f, "moi", "medium"))
 broken_screen("format_from_the_future", ["S10.3"], "The data file's format version is 9.0", lambda f: set_scalar(f, "format", "9.0"))
 broken_screen("format_as_a_number", ["S10.1"], "The data file's format is the integer 0, not a version", lambda f: set_scalar(f, "format", np.int32(0)))
@@ -310,6 +323,8 @@ broken_analysis("response_modality_not_in_file", ["A1.2"], "The response modalit
                 lambda p: edit_json(p / "analysis.json", lambda v: v.__setitem__("response_modality", "protein")))
 broken_analysis("analysis_format_from_the_future", ["A1.1"], "The analysis's format version is 9.0",
                 lambda p: edit_json(p / "analysis.json", lambda v: v.__setitem__("format", "9.0")))
+broken_analysis("absolute_path_to_the_data", ["A1.4"], "The hint to the data file is an absolute local path",
+                lambda p: edit_json(p / "analysis.json", lambda v: v["screen"].__setitem__("path", "/home/someone/data/screen.h5mu")))
 broken_analysis("another_dataset", ["A1.2"], "The dataset identifier is that of another data file",
                 lambda p: edit_json(p / "analysis.json", lambda v: v["screen"].__setitem__("id", "0" * 32)))
 broken_analysis("record_not_named_for_a_stage", ["A2.1"], "A record named `stages/extra.json`",

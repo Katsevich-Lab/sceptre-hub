@@ -45,6 +45,9 @@ section of [`RATIONALE.md`](RATIONALE.md) with the same letter and number
 |---|---|
 | 0.1 | Everything in this document |
 
+There is no dataset version. A dataset that is imported again gets a new `id`
+(S10.4), and that is the protection an analysis needs.
+
 ## How to read this
 
 **Three kinds of statement.** Every numbered statement is one of these, and
@@ -68,10 +71,10 @@ final; the sorting into kinds is.
 - **tests**: a check in the notebooks exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 104 statements, 72 are file rules, 26 behaviour rules and 6
-guidance. The validators check 69 of the file rules, and tests cover 3
-more. Tests cover 17 of the behaviour rules, and the validators 2; 7
-have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A1.4, A6.2.
+Of the 108 statements, 75 are file rules, 26 behaviour rules and 7
+guidance. The validators check 72 of the file rules, and tests cover 3
+more. Tests cover 18 of the behaviour rules, and the validators 2; 6
+have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A6.2.
 
 **The machine-readable parts** are in [`spec/`](spec/), and both validators and
 both prototype libraries read them:
@@ -262,6 +265,7 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S10.2 | file | `moi` MUST be `high` or `low`. | V |
 | S10.3 | file | `format` is the data file's own format version, `0.1` for this document. A reader MUST refuse a major version other than the one it knows. | V |
 | S10.4 | behaviour | `id` identifies the dataset. A writer assigns a new random `id` when it imports data, and keeps the `id` when it copies a data file. | tests (subset and re-imported files) |
+| S10.5 | file | `uns/sceptre` MAY have the scalar text entries `name`, a label for people, and `source`, a URL, DOI or accession saying where the data came from. Neither identifies the dataset; `id` does. | V |
 
 ### S11. Compression
 
@@ -287,7 +291,10 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | A1.1 | file | `analysis.json` MUST exist and conform to `spec/analysis.schema.json`. It has `format` (the analysis's own format version, `0.1` for this document; a reader MUST refuse a major version other than the one it knows), `response_modality` (the name of the modality the analysis tests; never `grna`), and `screen`. | V |
 | A1.2 | file | `screen` describes the data file: its `id` (S10.4); `n_cells`, `n_responses`, `n_grnas`; and `cell_ids_sha256`, `response_ids_sha256`, `grna_ids_sha256`. "Responses" are the features of the response modality. A reader MUST refuse a data file for which any of these differs, or which has no modality of that name. | V |
 | A1.3 | file | The SHA-256 of a list of identifiers is that of their UTF-8 bytes, in file order, joined by a line feed, with no line feed at the end. (S9.4 keeps this unambiguous.) | V (through A1.2) |
-| A1.4 | behaviour | `screen.path` MAY give the data file's path relative to the folder. It is a hint; a reader MUST NOT rely on it. | none |
+| A1.4 | file | `screen.path` is optional. If present it MUST be a relative POSIX path or an `http` or `https` URL. It MUST NOT be an absolute local path. | V |
+| A1.5 | behaviour | `screen.path` is a hint. A reader takes the data file's location from its caller and MUST NOT depend on the hint. A writer records a relative path only when the data file is in the analysis folder's parent or grandparent folder or below one of them, and otherwise records nothing. | tests (round trip; a subset and a re-imported file) |
+| A1.6 | file | `screen.name` is optional: the data file's `name` (S10.5), copied so that a person can tell which dataset an analysis belongs to. It is not part of the identity a reader checks. | V (through A1.1) |
+| A1.7 | guidance | Where a dataset lives is for each package and each user's own configuration to resolve, for instance by a search path or a table from dataset `id` to location. Nothing specific to one machine belongs in `analysis.json`. A package that follows the hint by itself SHOULD do so only for locations the user has configured, since a folder from elsewhere could point a reader at any file or URL. | — |
 
 ### A2. Stage records
 

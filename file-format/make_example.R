@@ -92,13 +92,13 @@ altExp(types, "gRNA") <- SingleCellExperiment(assays = list(counts = types_grna)
     target_start = c(100L, NA),                                       # integer with a missing value
     row.names = rownames(types_grna)
 ))
-metadata(types) <- list(sceptre = list(moi = "low"))
+metadata(types) <- list(sceptre = list(moi = "low", name = "Synthetic file with every kind of column", source = "https://example.org/no-such-dataset"))
 
 objects <- list(highmoi = highmoi, lowmoi = lowmoi)
 saveRDS(objects, "example-objects.rds")
 unlink("example", recursive = TRUE)
-write_sceptre_screen(high, "example/highmoi/screen.h5mu", response_names = highmoi_example_data$gene_names)
-write_sceptre_screen(low, "example/lowmoi/screen.h5mu")
+write_sceptre_screen(high, "example/highmoi/screen.h5mu", response_names = highmoi_example_data$gene_names, name = "sceptre high-MOI example data")
+write_sceptre_screen(low, "example/lowmoi/screen.h5mu", name = "sceptre low-MOI example data")
 fmt_write_screen(types, "example/types/screen.h5mu")
 for (dataset in names(objects)) {
     screen <- file.path("example", dataset, "screen.h5mu")

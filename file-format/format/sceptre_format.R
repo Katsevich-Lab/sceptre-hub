@@ -231,7 +231,8 @@ response_modality_of <- function(modalities, requested = NULL, what = "The data 
 #                           their names; analyses that do not name them ignore them
 #   metadata(sce)$sceptre   list(moi = "high" or "low", response_modality = the
 #                           main experiment's modality name, "rna" if absent);
-#                           `id` is kept if present
+#                           `id` is kept if present; `name` (a label for people)
+#                           and `source` (a URL, DOI or accession) are optional
 fmt_write_screen <- function(sce, file) {
     if (file.exists(file)) fmt_stop(file, " exists; a data file is written once.")
     dir.create(dirname(file), recursive = TRUE, showWarnings = FALSE)
@@ -286,9 +287,13 @@ fmt_write_screen <- function(sce, file) {
             experiments,
             colData = S4Vectors::DataFrame(as_file_frame(covariates$shared, TRUE), check.names = FALSE, row.names = cells),
             # a native record with scalar entries (S10)
-            metadata = list(sceptre = list(
-                format = scalar(FORMAT_VERSION), moi = scalar(stamp$moi),
-                id = scalar(if (is.null(stamp$id)) new_id() else stamp$id)
+            metadata = list(sceptre = c(
+                list(
+                    format = scalar(FORMAT_VERSION), moi = scalar(stamp$moi),
+                    id = scalar(if (is.null(stamp$id)) new_id() else stamp$id)
+                ),
+                # optional: a label for people, and where the data came from (S10.5)
+                lapply(stamp[intersect(c("name", "source"), names(stamp)[!vapply(stamp, is.null, logical(1))])], scalar)
             ))
         ),
         file
@@ -346,8 +351,9 @@ fmt_read_screen <- function(file, response_modality = NULL) {
     sce <- experiment(main)
     SummarizedExperiment::colData(sce) <- S4Vectors::DataFrame(covariates, check.names = FALSE, row.names = cells)
     SingleCellExperiment::altExp(sce, "gRNA") <- experiment(GRNA)
-    S4Vectors::metadata(sce) <- list(sceptre = list(
-        format = as.character(stamp$format), moi = stamp$moi, id = stamp$id, response_modality = main
+    S4Vectors::metadata(sce) <- list(sceptre = c(
+        list(format = as.character(stamp$format), moi = stamp$moi, id = stamp$id, response_modality = main),
+        stamp[intersect(c("name", "source"), names(stamp))]
     ))
     sce
 }
@@ -355,15 +361,26 @@ fmt_read_screen <- function(file, response_modality = NULL) {
 # What an analysis records about its data file (A1).
 screen_link <- function(sce, file = NULL, directory = NULL) {
     grna <- SingleCellExperiment::altExp(sce, "gRNA")
-    list(
+    link <- list(
         id = S4Vectors::metadata(sce)$sceptre$id,
         n_cells = ncol(sce), n_responses = nrow(sce), n_grnas = nrow(grna),
         cell_ids_sha256 = sha256_ids(colnames(sce)),
         response_ids_sha256 = sha256_ids(rownames(sce)),
-        grna_ids_sha256 = sha256_ids(rownames(grna)),
-        # a hint only; the identity above is what a reader checks
-        path = if (is.null(file)) NULL else relative_path(file, directory)
+        grna_ids_sha256 = sha256_ids(rownames(grna))
     )
+    # for people: which dataset this is; not part of the identity a reader checks
+    link$name <- S4Vectors::metadata(sce)$sceptre$name
+    # a hint only, and only when the data file is near the analysis (A1.4)
+    if (!is.null(file)) link$path <- nearby_path(file, directory)
+    link
+}
+# The data file's path relative to an analysis folder, if the file is in the
+# folder's parent or grandparent (the `analyses/<name>/` convention) or below
+# one of them; otherwise nothing. A far-away file would give a long chain of
+# `..` that names directories and helps nobody.
+nearby_path <- function(file, directory) {
+    path <- relative_path(file, directory)
+    if (sum(strsplit(path, "/", fixed = TRUE)[[1]] == "..") > 2L) NULL else path
 }
 relative_path <- function(file, directory) {
     file <- strsplit(normalizePath(file, mustWork = FALSE), "/", fixed = TRUE)[[1]]
@@ -455,7 +472,8 @@ check_link <- function(recorded, sce, what) {
     current <- screen_link(sce)
     for (field in c("id", "cell_ids_sha256", "response_ids_sha256", "grna_ids_sha256")) {
         if (!identical(recorded[[field]], current[[field]])) {
-            fmt_stop("The analysis ", what, " was run on another data file (its `", field, "` differs).")
+            named <- if (is.null(recorded$name)) "" else paste0(", the dataset '", recorded$name, "'")
+            fmt_stop("The analysis ", what, " was run on another data file", named, " (its `", field, "` differs).")
         }
     }
 }
@@ -663,7 +681,8 @@ package_provenance <- function() {
 }
 
 # The data of a sceptre_object as the SingleCellExperiment fmt_write_screen takes.
-object_screen <- function(object, response_names = NULL, id = NULL, response_modality = DEFAULT_RESPONSE_MODALITY) {
+object_screen <- function(object, response_names = NULL, id = NULL, response_modality = DEFAULT_RESPONSE_MODALITY,
+                          name = attr(object, "screen_name"), source = attr(object, "screen_source")) {
     ns <- sceptre_ns()
     screen <- ns$file_screen(object)
     meta <- S4Vectors::metadata(screen)
@@ -687,15 +706,17 @@ object_screen <- function(object, response_names = NULL, id = NULL, response_mod
     SingleCellExperiment::altExp(screen, "gRNA") <- grna
     names(SummarizedExperiment::colData(screen)) <- to_file_names(names(SummarizedExperiment::colData(screen)), response_modality)
     S4Vectors::metadata(screen) <- list(sceptre = list(
-        moi = if (isTRUE(meta$low_moi)) "low" else "high", id = id, response_modality = response_modality
+        moi = if (isTRUE(meta$low_moi)) "low" else "high", id = id, response_modality = response_modality,
+        name = name, source = source
     ))
     screen
 }
 
 write_sceptre_screen <- function(object, file, response_names = NULL, id = attr(object, "screen_id"),
-                                 response_modality = DEFAULT_RESPONSE_MODALITY) {
+                                 response_modality = DEFAULT_RESPONSE_MODALITY,
+                                 name = attr(object, "screen_name"), source = attr(object, "screen_source")) {
     dir.create(dirname(file), recursive = TRUE, showWarnings = FALSE)
-    fmt_write_screen(object_screen(object, response_names, id, response_modality), file)
+    fmt_write_screen(object_screen(object, response_names, id, response_modality, name, source), file)
 }
 
 called <- function(object) {
@@ -1077,6 +1098,8 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
     field(object, "last_function_called") <- if (length(done) == 0L) "import_data" else STAGE_FUNCTIONS[[utils::tail(done, 1L)]]
     attr(object, "format_provenance") <- provenance
     attr(object, "screen_id") <- S4Vectors::metadata(sce)$sceptre$id
+    attr(object, "screen_name") <- S4Vectors::metadata(sce)$sceptre$name
+    attr(object, "screen_source") <- S4Vectors::metadata(sce)$sceptre$source
     object
 }
 
@@ -1258,7 +1281,11 @@ validate_screen <- function(file) {
     scalar_of <- function(name, class) nrow(entry(name)) == 1L && entry(name)$dclass == class && identical(trimws(entry(name)$dim), "( 0 )")
     entries <- SCREEN_SPEC$metadata$entries
     classes <- vapply(entries, function(e) if (e$kind == "integer") "INTEGER" else "STRING", character(1))
-    if (!all(mapply(scalar_of, names(entries), classes))) {
+    for (name in names(entries)[!vapply(entries, function(e) isTRUE(e$required), logical(1))]) {
+        if (nrow(entry(name)) == 1L && !scalar_of(name, classes[[name]])) log$add("S10.5", paste0(where, "/", name), "must be a scalar text entry.")
+    }
+    required <- vapply(entries, function(e) isTRUE(e$required), logical(1))
+    if (!all(mapply(scalar_of, names(entries)[required], classes[required]))) {
         log$add("S10.1", where, "needs the scalar text entries `format`, `moi` and `id`.")
     } else if (is.null(format_parts(read(paste0(where, "/format"))))) {
         log$add("S10.1", paste0(where, "/format"), "is not a version of the form MAJOR.MINOR.")
@@ -1467,7 +1494,8 @@ validate_analysis <- function(directory, screen_file = NULL) {
         return(log$all())
     }
     faults <- schema_problems(path, "analysis.schema.json")
-    for (fault in faults) log$add("A1.1", "analysis.json", fault)
+    # the form of the hint has a rule of its own
+    for (fault in faults) log$add(if (startsWith(fault, "/screen/path ")) "A1.4" else "A1.1", "analysis.json", fault)
     analysis <- if (length(faults) == 0L) read_json(path) else NULL
     if (!is.null(analysis) && !known_major(analysis$format)) log$add("A1.1", "analysis.json", "is in a format this validator does not know.")
 
