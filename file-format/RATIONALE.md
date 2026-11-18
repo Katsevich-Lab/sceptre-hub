@@ -878,7 +878,7 @@ objecting; he can overturn any of them.
 ### What a code review found
 
 A review of the specification and the code that checks it (18 November) found
-ten things. None was in the layout. All are fixed, and each fix has a check:
+nine faults. None was in the layout. All are fixed, and each fix has a check:
 
 | Found | Fixed by |
 |---|---|
@@ -891,7 +891,6 @@ ten things. None was in the layout. All are fixed, and each fix has a check:
 | The Python validator did not decode a table's index attribute | It does |
 | Both validators read every table twice | Once |
 | The conformance file for an extra modality was made by copying raw HDF5 groups, which R could not read | It is written as a proper MuData file; the review's own fix exposed this |
-| The hub had no numbered proposal for this cross-language decision | `proposals/0003-file-format.md`, in status Draft |
 
 ### Taken from Apache Arrow's practice
 
