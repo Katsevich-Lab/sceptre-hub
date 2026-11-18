@@ -9,7 +9,7 @@
   "fits": {
     "file": "fits/calibration.parquet",
     "identity": {
-      "screen_id": "f9d23a9d03ee19b579190869f87fff68",
+      "screen_id": "27aaa63ddcce9474b1a368765781ec4f",
       "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + batch",
       "cells_in_use_sha256": "6d2b62380b12d9ca9ee0236ebd3c278ffaa0fd00eeb92a12d9e13b4ffa1909d6",
       "response_fit_method": "batched",
@@ -20,7 +20,7 @@
     "package": "sceptre",
     "version": "0.99.1",
     "language": "R",
-    "written_at": "2026-11-18T17:33:30Z"
+    "written_at": "2026-11-18T17:40:06Z"
   },
   "files": [
     {

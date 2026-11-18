@@ -92,13 +92,18 @@ altExp(types, "gRNA") <- SingleCellExperiment(assays = list(counts = types_grna)
     target_start = c(100L, NA),                                       # integer with a missing value
     row.names = rownames(types_grna)
 ))
-metadata(types) <- list(sceptre = list(moi = "low", name = "Synthetic file with every kind of column", source = "https://example.org/no-such-dataset"))
+metadata(types) <- list(sceptre = list(
+    moi = "low", name = "Synthetic file with every kind of column", source = "https://example.org/no-such-dataset",
+    perturbation_type = "CRISPRi", organism = "Homo sapiens", genome_build = "GRCh38"
+))
 
 objects <- list(highmoi = highmoi, lowmoi = lowmoi)
 saveRDS(objects, "example-objects.rds")
 unlink("example", recursive = TRUE)
-write_sceptre_screen(high, "example/highmoi/screen.h5mu", response_names = highmoi_example_data$gene_names, name = "sceptre high-MOI example data")
-write_sceptre_screen(low, "example/lowmoi/screen.h5mu", name = "sceptre low-MOI example data")
+write_sceptre_screen(high, "example/highmoi/screen.h5mu", response_names = highmoi_example_data$gene_names,
+    metadata = list(name = "sceptre high-MOI example data", perturbation_type = "CRISPRi", organism = "Homo sapiens"))
+write_sceptre_screen(low, "example/lowmoi/screen.h5mu",
+    metadata = list(name = "sceptre low-MOI example data", perturbation_type = "CRISPRko", organism = "Homo sapiens"))
 fmt_write_screen(types, "example/types/screen.h5mu")
 for (dataset in names(objects)) {
     screen <- file.path("example", dataset, "screen.h5mu")

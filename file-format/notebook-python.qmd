@@ -611,7 +611,10 @@ built.obs["lane"] = ["L2", "L1", "L2", "L1", "L2", "L1"]
 built.obs["treated"] = [True, False, True, True, False, False]
 built.obs["score"] = [0.5, np.nan, 1.5, 2.5, np.nan, 3.5]
 built.obs["S.Score"] = [0.5, -1.25, 1.5, 2.5, 0.125, 3.5]
-built.uns["sceptre"] = {"moi": "low", "name": "Synthetic file with every kind of column", "source": "https://example.org/no-such-dataset"}
+built.uns["sceptre"] = {
+    "moi": "low", "name": "Synthetic file with every kind of column", "source": "https://example.org/no-such-dataset",
+    "perturbation_type": "CRISPRi", "organism": "Homo sapiens", "genome_build": "GRCh38",
+}
 sf.write_screen(built, copy / "types" / "screen.h5mu")
 
 from_python = sf.read_screen(copy / "types" / "screen.h5mu")

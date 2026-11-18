@@ -148,6 +148,25 @@
       "source": {
         "kind": "string",
         "required": false
+      },
+      "perturbation_type": {
+        "kind": "string",
+        "required": false,
+        "values": [
+          "CRISPRko",
+          "CRISPRi",
+          "CRISPRa",
+          "CRISPRbe",
+          "CRISPRkd"
+        ]
+      },
+      "organism": {
+        "kind": "string",
+        "required": false
+      },
+      "genome_build": {
+        "kind": "string",
+        "required": false
       }
     }
   },

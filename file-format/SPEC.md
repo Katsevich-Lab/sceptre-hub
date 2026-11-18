@@ -22,10 +22,10 @@ Two limits of this version:
 - **One target per vector.** Several gRNAs delivered together against the same
   element are covered (S8.6). A vector whose gRNAs have different targets, a
   combinatorial screen, is not, and a reader refuses such a file (S8.7).
-- **DNA-targeting screens.** Target coordinates are genomic positions. An
-  RNA-targeting screen can be stored, with its transcript named in
-  `grna_target` and the coordinates left out; naming the target molecule
-  explicitly is a later addition.
+- **Target coordinates are genomic positions.** A screen that knocks down RNA
+  names its transcript in `grna_target` and may leave the coordinates out. The
+  optional `perturbation_type` (S10.5) records which kind of screen it was;
+  there is no separate entry for the target molecule.
 
 This document states the rules. It gives no reasons: for each rule, the
 section of [`RATIONALE.md`](RATIONALE.md) with the same letter and number
@@ -82,8 +82,8 @@ final; the sorting into kinds is.
 - **tests**: a check in the notebooks exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 112 statements, 78 are file rules, 27 behaviour rules and 7
-guidance. The validators check 75 of the file rules, and tests cover 3
+Of the 114 statements, 79 are file rules, 27 behaviour rules and 8
+guidance. The validators check 76 of the file rules, and tests cover 3
 more. Tests cover 18 of the behaviour rules, and the validators 3; 6
 have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A6.2.
 
@@ -280,7 +280,9 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S10.2 | file | `moi` MUST be `high` or `low`. | V |
 | S10.3 | file | `format` is the data file's own format version, `0.1` for this document. A reader MUST refuse a major version other than the one it knows. | V |
 | S10.4 | behaviour | `id` identifies the dataset. A writer assigns a new random `id` when it imports data, and keeps the `id` when it copies a data file. | tests (subset and re-imported files) |
-| S10.5 | file | `uns/sceptre` MAY have the scalar text entries `name`, a label for people, and `source`, a URL, DOI or accession saying where the data came from. Neither identifies the dataset; `id` does. | V |
+| S10.5 | file | `uns/sceptre` MAY have these scalar text entries. None identifies the dataset (`id` does), and no reader's behaviour depends on them: `name`, a label for people; `source`, a URL, DOI or accession saying where the data came from; `perturbation_type`; `organism`, as a scientific name such as `Homo sapiens`; `genome_build`, such as `GRCh38`, the build of every coordinate in the file. | V |
+| S10.6 | file | `perturbation_type`, if present, MUST be one of `CRISPRko` (knockout), `CRISPRi` (interference), `CRISPRa` (activation), `CRISPRbe` (base editing), `CRISPRkd` (knockdown of RNA). | V |
+| S10.7 | guidance | A writer SHOULD record `perturbation_type`, `organism` and `genome_build` when it knows them. They are known at import, cannot be worked out from the file, and are lost for good if not written down. | — |
 
 ### S11. Compression
 

@@ -44,6 +44,9 @@ FORMAT_VERSION = "0.1"
 SPEC_DIR = Path(__file__).resolve().parent.parent / "spec"
 TABLE_SPEC = json.loads((SPEC_DIR / "tables.json").read_text())
 SCREEN_SPEC = json.loads((SPEC_DIR / "screen.json").read_text())
+# The optional entries of a data file's metadata (S10.5): a name for people, and
+# what is known about the screen at import and cannot be worked out later.
+OPTIONAL_METADATA = tuple(k for k, v in SCREEN_SPEC["metadata"]["entries"].items() if not v.get("required"))
 GRNA = "grna"
 DEFAULT_RESPONSE_MODALITY = "rna"
 # the gRNA table's target coordinates: name in the package -> name in the file (S8)
@@ -366,7 +369,7 @@ def write_screen(mdata, file) -> None:
         "id": stamp.get("id") or uuid.uuid4().hex,
     }
     # optional: a label for people, and where the data came from (S10.5)
-    for key in ("name", "source"):
+    for key in OPTIONAL_METADATA:
         if stamp.get(key):
             out.uns["sceptre"][key] = str(stamp[key])
     file.parent.mkdir(parents=True, exist_ok=True)
@@ -449,7 +452,7 @@ def read_screen(file, response_modality=None):
         "moi": str(stamp["moi"]),
         "id": str(stamp["id"]),
         "response_modality": main,
-        **{key: str(stamp[key]) for key in ("name", "source") if key in stamp},
+        **{key: str(stamp[key]) for key in OPTIONAL_METADATA if key in stamp},
     }
     return mdata
 
@@ -949,8 +952,7 @@ def read_sceptre_object(screen_file, directory=None, *, response_modality=None, 
     low_moi = mdata.uns["sceptre"]["moi"] == "low"
     analysis = Analysis.from_screen(_pysceptre_screen(mdata))
     analysis.screen_id = mdata.uns["sceptre"]["id"]
-    analysis.screen_name = mdata.uns["sceptre"].get("name")
-    analysis.screen_source = mdata.uns["sceptre"].get("source")
+    analysis.screen_metadata = {k: mdata.uns["sceptre"][k] for k in OPTIONAL_METADATA if k in mdata.uns["sceptre"]}
     analysis.format_provenance = {}
     if directory is None:
         return analysis
@@ -1146,8 +1148,7 @@ def analysis_screen(analysis, id=None, response_modality=DEFAULT_RESPONSE_MODALI
         "moi": analysis.moi,
         "id": id or getattr(analysis, "screen_id", None),
         "response_modality": response_modality,
-        "name": getattr(analysis, "screen_name", None),
-        "source": getattr(analysis, "screen_source", None),
+        **getattr(analysis, "screen_metadata", {}),
     }
     return out
 
@@ -1541,6 +1542,11 @@ def validate_screen(file) -> pd.DataFrame:
                 log.add("S10.3", f"{where}/format", "is a format this validator does not know.")
             if not _text(record["id"][()])[0]:
                 log.add("S10.1", f"{where}/id", "is empty.")
+        # optional entries with a fixed vocabulary (S10.6)
+        for name in OPTIONAL_METADATA:
+            allowed = entries[name].get("values")
+            if allowed and scalar_of(name, "string") and _text(record[name][()])[0] not in allowed:
+                log.add("S10.6", f"{where}/{name}", f"must be one of {', '.join(allowed)}.")
 
         # cells: the same, in the same order, in every modality and in the shared table
         cells = _index_of(f[f"mod/{GRNA if GRNA in in_file else in_file[0]}/obs"])

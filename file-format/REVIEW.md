@@ -40,8 +40,8 @@ files. Disagreement is cheap now and costly then.
 ## Questions that need your view
 
 1. **Is the scope right?** The specification fixes the form of results and leaves their meaning (what a p-value tests) to sceptre's method documentation.
-2. **Is anything missing that a real screen needs?** In particular for gRNA annotation: the format has a target and its position, and no gRNA type, spacer sequence or genome build yet (`RATIONALE.md`, section 10).
-3. **Coordinates.** `target_start` and `target_end` have no stated convention (0-based or 1-based, which build). What should it be?
+2. **Is anything missing that a real screen needs?** In particular for gRNA annotation: the format has a target, its position and an optional vector, and no gRNA type or spacer sequence yet (`RATIONALE.md`, section 10).
+3. **Coordinates.** `target_start` and `target_end` have no stated convention: 0-based or 1-based. The genome build can be recorded, and the convention cannot yet. This is the one place where columns that already exist are ambiguous, so it must be answered before the freeze. What should it be?
 4. **Scope.** A gRNA has one target, and so does a vector carrying several gRNAs; combinatorial screens are refused. DNA-targeting is assumed. Are those limits acceptable for now?
 5. **The fitting-method default.** Saved fits are shared between R and Python only when the method matches, and the current default differs from the alternatives on a few responses (T6). This is a scientific decision the format does not make.
 6. **Is the restriction to additive formulas acceptable?** An analysis with an interaction or a spline cannot be saved.

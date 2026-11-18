@@ -5,7 +5,7 @@
   "fits": {
     "file": "fits/discovery.parquet",
     "identity": {
-      "screen_id": "551dc5245ae73cfe9c16ee29e9b28711",
+      "screen_id": "8c58354e53144efddd355b35901708de",
       "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch",
       "cells_in_use_sha256": "d6040e7cdff5a1918e3869873f780155e192eab3e824d3e6662defe383852231",
       "response_fit_method": "batched",
@@ -16,7 +16,7 @@
     "package": "sceptre",
     "version": "0.99.1",
     "language": "R",
-    "written_at": "2026-11-18T17:33:30Z"
+    "written_at": "2026-11-18T17:40:06Z"
   },
   "files": [
     {

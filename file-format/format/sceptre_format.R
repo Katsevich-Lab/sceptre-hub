@@ -35,6 +35,9 @@ known_major <- function(version) identical(format_parts(version)[1], format_part
 SPEC_DIR <- file.path(Sys.getenv("SCEPTRE_FORMAT_DIR", getwd()), "spec")
 TABLE_SPEC <- jsonlite::fromJSON(file.path(SPEC_DIR, "tables.json"), simplifyVector = FALSE)
 SCREEN_SPEC <- jsonlite::fromJSON(file.path(SPEC_DIR, "screen.json"), simplifyVector = FALSE)
+# The optional entries of a data file's metadata (S10.5): a name for people, and
+# what is known about the screen at import and cannot be worked out later.
+OPTIONAL_METADATA <- names(Filter(function(entry) !isTRUE(entry$required), SCREEN_SPEC$metadata$entries))
 GRNA <- "grna"
 DEFAULT_RESPONSE_MODALITY <- "rna"
 # the gRNA table's target coordinates: name in the package = name in the file (S8)
@@ -319,7 +322,7 @@ fmt_write_screen <- function(sce, file) {
                     id = scalar(if (is.null(stamp$id)) new_id() else stamp$id)
                 ),
                 # optional: a label for people, and where the data came from (S10.5)
-                lapply(stamp[intersect(c("name", "source"), names(stamp)[!vapply(stamp, is.null, logical(1))])], scalar)
+                lapply(stamp[intersect(OPTIONAL_METADATA, names(stamp)[!vapply(stamp, is.null, logical(1))])], scalar)
             ))
         ),
         file
@@ -385,7 +388,7 @@ fmt_read_screen <- function(file, response_modality = NULL) {
     SingleCellExperiment::altExp(sce, "gRNA") <- grna
     S4Vectors::metadata(sce) <- list(sceptre = c(
         list(format = as.character(stamp$format), moi = stamp$moi, id = stamp$id, response_modality = main),
-        stamp[intersect(c("name", "source"), names(stamp))]
+        stamp[intersect(OPTIONAL_METADATA, names(stamp))]
     ))
     sce
 }
@@ -714,7 +717,7 @@ package_provenance <- function() {
 
 # The data of a sceptre_object as the SingleCellExperiment fmt_write_screen takes.
 object_screen <- function(object, response_names = NULL, id = NULL, response_modality = DEFAULT_RESPONSE_MODALITY,
-                          name = attr(object, "screen_name"), source = attr(object, "screen_source")) {
+                          metadata = attr(object, "screen_metadata")) {
     ns <- sceptre_ns()
     screen <- ns$file_screen(object)
     meta <- S4Vectors::metadata(screen)
@@ -737,18 +740,18 @@ object_screen <- function(object, response_names = NULL, id = NULL, response_mod
     if (!is.null(response_names)) SummarizedExperiment::rowData(screen)$response_name <- as.character(response_names)
     SingleCellExperiment::altExp(screen, "gRNA") <- grna
     names(SummarizedExperiment::colData(screen)) <- to_file_names(names(SummarizedExperiment::colData(screen)), response_modality)
-    S4Vectors::metadata(screen) <- list(sceptre = list(
-        moi = if (isTRUE(meta$low_moi)) "low" else "high", id = id, response_modality = response_modality,
-        name = name, source = source
+    # `metadata`: the optional entries (name, source, perturbation_type, organism, genome_build)
+    S4Vectors::metadata(screen) <- list(sceptre = c(
+        list(moi = if (isTRUE(meta$low_moi)) "low" else "high", id = id, response_modality = response_modality),
+        as.list(metadata)[intersect(OPTIONAL_METADATA, names(metadata))]
     ))
     screen
 }
 
 write_sceptre_screen <- function(object, file, response_names = NULL, id = attr(object, "screen_id"),
-                                 response_modality = DEFAULT_RESPONSE_MODALITY,
-                                 name = attr(object, "screen_name"), source = attr(object, "screen_source")) {
+                                 response_modality = DEFAULT_RESPONSE_MODALITY, metadata = attr(object, "screen_metadata")) {
     dir.create(dirname(file), recursive = TRUE, showWarnings = FALSE)
-    fmt_write_screen(object_screen(object, response_names, id, response_modality, name, source), file)
+    fmt_write_screen(object_screen(object, response_names, id, response_modality, metadata), file)
 }
 
 called <- function(object) {
@@ -1130,8 +1133,8 @@ read_sceptre_object <- function(screen_file, directory = NULL, response_modality
     field(object, "last_function_called") <- if (length(done) == 0L) "import_data" else STAGE_FUNCTIONS[[utils::tail(done, 1L)]]
     attr(object, "format_provenance") <- provenance
     attr(object, "screen_id") <- S4Vectors::metadata(sce)$sceptre$id
-    attr(object, "screen_name") <- S4Vectors::metadata(sce)$sceptre$name
-    attr(object, "screen_source") <- S4Vectors::metadata(sce)$sceptre$source
+    stamp <- S4Vectors::metadata(sce)$sceptre
+    attr(object, "screen_metadata") <- stamp[intersect(OPTIONAL_METADATA, names(stamp))]
     object
 }
 
@@ -1325,6 +1328,13 @@ validate_screen <- function(file) {
         if (!read(paste0(where, "/moi")) %in% unlist(entries$moi$values)) log$add("S10.2", paste0(where, "/moi"), "must be 'high' or 'low'.")
         if (!known_major(read(paste0(where, "/format")))) log$add("S10.3", paste0(where, "/format"), "is a format this validator does not know.")
         if (!nzchar(read(paste0(where, "/id")))) log$add("S10.1", paste0(where, "/id"), "is empty.")
+    }
+    # optional entries with a fixed vocabulary (S10.6)
+    for (name in OPTIONAL_METADATA) {
+        allowed <- unlist(entries[[name]]$values)
+        if (!is.null(allowed) && nrow(entry(name)) == 1L && scalar_of(name, "STRING") && !read(paste0(where, "/", name)) %in% allowed) {
+            log$add("S10.6", paste0(where, "/", name), "must be one of ", paste(allowed, collapse = ", "), ".")
+        }
     }
 
     index_of <- function(table) {

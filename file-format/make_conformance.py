@@ -345,6 +345,8 @@ def set_scalar(f, name, value):
 
 broken_screen("dataset_name_as_a_number", ["S10.5"], "The optional dataset name is a number",
               lambda f: f["uns/sceptre"].create_dataset("name", data=np.int32(7)) if "name" not in f["uns/sceptre"] else set_scalar(f, "name", np.int32(7)))
+broken_screen("unknown_perturbation_type", ["S10.6"], "The optional perturbation type is not one of the listed kinds",
+              lambda f: set_scalar(f, "perturbation_type", "CRISPRx"))
 broken_screen("moi_medium", ["S10.2"], "`moi` is `medium`", lambda f: set_scalar(f, "moi", "medium"))
 broken_screen("format_from_the_future", ["S10.3"], "The data file's format version is 9.0", lambda f: set_scalar(f, "format", "9.0"))
 broken_screen("format_as_a_number", ["S10.1"], "The data file's format is the integer 0, not a version", lambda f: set_scalar(f, "format", np.int32(0)))

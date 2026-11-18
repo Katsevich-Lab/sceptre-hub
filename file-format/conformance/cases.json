@@ -490,6 +490,16 @@
     "what": "The optional dataset name is a number"
   },
   {
+    "name": "invalid/screens/unknown_perturbation_type.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/unknown_perturbation_type.h5mu",
+    "expect": [
+      "S10.6"
+    ],
+    "level": "not readable",
+    "what": "The optional perturbation type is not one of the listed kinds"
+  },
+  {
     "name": "invalid/screens/moi_medium.h5mu",
     "kind": "screen",
     "path": "conformance/invalid/screens/moi_medium.h5mu",
