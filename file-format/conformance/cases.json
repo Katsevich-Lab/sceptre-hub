@@ -292,19 +292,32 @@
       "S4.2"
     ],
     "level": "readable",
-    "what": "Cell positions stored as 64-bit integers",
+    "what": "Cell positions stored as 64-bit integers beside 32-bit column pointers",
     "reads_as": "conformance/valid/types_written_by_python.h5mu"
   },
   {
-    "name": "invalid/screens/pointers_32_bit.h5mu",
+    "name": "invalid/screens/pointers_64_bit.h5mu",
     "kind": "screen",
-    "path": "conformance/invalid/screens/pointers_32_bit.h5mu",
+    "path": "conformance/invalid/screens/pointers_64_bit.h5mu",
     "expect": [
       "S4.3"
     ],
     "level": "readable",
-    "what": "Column pointers stored as 32-bit integers, as the libraries write them by default",
+    "what": "Column pointers stored as 64-bit integers beside 32-bit cell positions: mixed widths, which scipy rejects in some operations",
     "reads_as": "conformance/valid/types_written_by_python.h5mu"
+  },
+  {
+    "name": "invalid/screens/both_index_arrays_64_bit.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/both_index_arrays_64_bit.h5mu",
+    "expect": [
+      "S4.2",
+      "S4.3"
+    ],
+    "level": "readable",
+    "what": "Both index arrays stored as 64-bit integers in a file small enough for 32-bit. The same file is what a file past the limit must look like: with the limit lowered for the test, the validators pass it",
+    "reads_as": "conformance/valid/types_written_by_python.h5mu",
+    "conforming_with_index_limit": 5
   },
   {
     "name": "invalid/screens/shared_column_named_like_a_modality.h5mu",

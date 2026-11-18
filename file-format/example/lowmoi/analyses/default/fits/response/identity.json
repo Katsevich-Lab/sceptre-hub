@@ -1,5 +1,5 @@
 {
-  "screen_id": "3491be72665ed1105f08902ac62371bd",
+  "screen_id": "fbde340cb79e5c8f3354f9eb2fc97916",
   "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + batch",
   "cells_in_use_sha256": "6d2b62380b12d9ca9ee0236ebd3c278ffaa0fd00eeb92a12d9e13b4ffa1909d6",
   "response_fit_method": "batched",

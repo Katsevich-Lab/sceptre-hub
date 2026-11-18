@@ -2,7 +2,7 @@
   "format": "9.0",
   "response_modality": "rna",
   "screen": {
-    "id": "12df7500633d7560d62515d4146e5259",
+    "id": "f4f61fb9d8b3b82ab6958ea683c648b4",
     "n_cells": 500,
     "n_responses": 100,
     "n_grnas": 60,

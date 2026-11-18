@@ -19,6 +19,8 @@ Rscript verify/two_writers.R
 "$PY" verify/two_writers.py
 "$PY" verify/independent_readers.py
 Rscript verify/independent_readers.R
+"$PY" verify/wide_index.py
+Rscript verify/wide_index.R
 "$PY" verify/derived.py
 Rscript verify/derived.R
 "$PY" verify/summary.py

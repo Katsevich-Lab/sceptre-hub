@@ -192,14 +192,25 @@ scalar <- function(x) {
     x
 }
 
-# Counts as 32-bit integers, cell positions as 32-bit integers, column pointers
-# as 64-bit integers, uncompressed (S4, S11). MuData would write doubles and
-# 32-bit pointers, so fmt_write_screen() has it write an empty matrix and puts
+# The one type of both index arrays of a count matrix (S4.2, S4.3): 32-bit while
+# the stored values, the cells and the features each number at most
+# 2,147,483,647, and 64-bit beyond. It is the type scipy chooses for a matrix of
+# that size. `index_limit` replaces the limit, for tests only: no test file is
+# large enough to reach the real one.
+index_type <- function(n_stored, n_cells, n_features, index_limit = NULL) {
+    rule <- SCREEN_SPEC$counts$index
+    limit <- if (is.null(index_limit)) rule$narrow_up_to else index_limit
+    if (max(as.numeric(n_stored), as.numeric(n_cells), as.numeric(n_features)) <= limit) rule$narrow else rule$wide
+}
+
+# Counts as 32-bit integers and both index arrays in the one type the size
+# requires, uncompressed (S4, S11). MuData would write doubles, so
+# fmt_write_screen() has it write an empty matrix and puts
 # the three arrays in afterwards. Rewriting full-size arrays in place would
 # leave their first copy as dead space in the file: HDF5 does not give it back.
 # `counts` is row-compressed features x cells, which is column-compressed
 # cells x features in the file.
-write_counts <- function(file, modality, counts) {
+write_counts <- function(file, modality, counts, index_limit = NULL) {
     if (any(counts@x != round(counts@x))) fmt_stop("Counts must be integers.")
     group <- paste0("mod/", modality, "/X/")
     put <- function(name, values, h5type) {
@@ -208,8 +219,11 @@ write_counts <- function(file, modality, counts) {
         rhdf5::h5write(values, file, paste0(group, name))
     }
     put("data", as.integer(counts@x), "H5T_STD_I32LE")
-    put("indices", counts@j, "H5T_STD_I32LE")
-    put("indptr", as.numeric(counts@p), "H5T_STD_I64LE")
+    index <- c(int32 = "H5T_STD_I32LE", int64 = "H5T_STD_I64LE")[[index_type(length(counts@x), ncol(counts), nrow(counts), index_limit)]]
+    # R has no 64-bit integer: doubles hold these whole numbers exactly, and HDF5 stores them in the type asked for
+    as_stored <- if (index == "H5T_STD_I64LE") as.numeric else as.integer
+    put("indices", as_stored(counts@j), index)
+    put("indptr", as_stored(counts@p), index)
 }
 
 # Several gRNAs may be delivered on one vector, named by the optional column
@@ -252,7 +266,7 @@ response_modality_of <- function(modalities, requested = NULL, what = "The data 
 #                           main experiment's modality name, "rna" if absent);
 #                           `id` is kept if present; `name` (a label for people)
 #                           and `source` (a URL, DOI or accession) are optional
-fmt_write_screen <- function(sce, file) {
+fmt_write_screen <- function(sce, file, index_limit = NULL) {
     if (file.exists(file)) fmt_stop(file, " exists; a data file is written once.")
     dir.create(dirname(file), recursive = TRUE, showWarnings = FALSE)
     stamp <- S4Vectors::metadata(sce)$sceptre
@@ -325,7 +339,7 @@ fmt_write_screen <- function(sce, file) {
         ),
         file
     )
-    for (name in names(experiments)) write_counts(file, name, experiments[[name]]$counts)
+    for (name in names(experiments)) write_counts(file, name, experiments[[name]]$counts, index_limit)
     written <- TRUE
     invisible(file)
 }
@@ -807,7 +821,8 @@ storage_kind <- function(encoding, dtype) {
     "other"
 }
 
-validate_screen <- function(file) {
+# `index_limit` is for tests only: see index_type().
+validate_screen <- function(file, index_limit = NULL) {
     log <- problem_log()
     listing <- tryCatch(rhdf5::h5ls(file, all = TRUE), error = function(e) NULL)
     if (is.null(listing)) {
@@ -891,12 +906,16 @@ validate_screen <- function(file) {
         }
         filters <- h5_filters(file, paste0(x, "/", names(expect)))
         stored <- children(x)
+        # both index arrays in the one type this file's size requires (S4.2, S4.3)
+        index <- index_type(as.numeric(stored$dim[stored$name == "data"]), length(cells), n_features, index_limit)
         for (array in names(expect)) {
             row <- stored[stored$name == array, , drop = FALSE]
-            if (!is_stored_as(row$dtype, expect[[array]])) {
+            kind <- if (expect[[array]] == "index") index else expect[[array]]
+            why <- if (expect[[array]] == "index") " (the index type a file of this size requires)" else ""
+            if (!is_stored_as(row$dtype, kind)) {
                 # another whole-number type: not conforming, and a reader still accepts it (S4.4)
                 add <- if (row$dclass %in% c("INTEGER", "FLOAT")) log$add_readable else log$add
-                add(rules[[array]], paste0(x, "/", array), "is not stored as ", sub("int", "", expect[[array]]), "-bit signed integers.")
+                add(rules[[array]], paste0(x, "/", array), "is not stored as ", sub("int", "", kind), "-bit signed integers", why, ".")
             }
             if (length(setdiff(filters[[paste0(x, "/", array)]], unlist(SCREEN_SPEC$counts$filters))) > 0L) log$add("S11.1", paste0(x, "/", array), "uses a filter other than gzip.")
         }

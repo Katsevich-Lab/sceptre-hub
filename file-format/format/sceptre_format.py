@@ -301,7 +301,18 @@ def split_covariates(covariates: pd.DataFrame, modalities) -> dict:
     return out
 
 
-def write_screen(mdata, file) -> None:
+def index_type(n_stored, n_cells, n_features, index_limit=None) -> str:
+    """The one type of both index arrays of a count matrix (S4.2, S4.3): 32-bit
+    while the stored values, the cells and the features each number at most
+    2,147,483,647, and 64-bit beyond. It is the type scipy chooses for a matrix of
+    that size, so a matrix scipy built already has it. `index_limit` replaces the
+    limit, for tests only: no test file is large enough to reach the real one."""
+    rule = SCREEN_SPEC["counts"]["index"]
+    limit = rule["narrow_up_to"] if index_limit is None else index_limit
+    return rule["narrow"] if max(int(n_stored), int(n_cells), int(n_features)) <= limit else rule["wide"]
+
+
+def write_screen(mdata, file, index_limit=None) -> None:
     """Write a MuData (as `read_screen` returns it) as a data file. `uns["sceptre"]`
     holds `moi`, and `id` if the dataset already has one. Every modality is written
     under its own name; `grna` is the gRNA modality."""
@@ -349,12 +360,13 @@ def write_screen(mdata, file) -> None:
             obs["n_umis"] = np.asarray(counts.sum(axis=1)).reshape(-1).astype(np.float64)
         if "n_nonzero" not in obs:
             obs["n_nonzero"] = np.bincount(counts.indices, minlength=len(cells)).astype(np.int32)
-        # counts and cell positions as 32-bit integers, column pointers as 64-bit
-        # integers (S4), set before writing: an array rewritten afterwards would
+        # counts as 32-bit integers, and both index arrays in the one type the size
+        # requires (S4), set before writing: an array rewritten afterwards would
         # leave its first copy as dead space in the file
         counts.data = counts.data.astype(np.int32)
-        counts.indices = counts.indices.astype(np.int32)
-        counts.indptr = counts.indptr.astype(np.int64)
+        width = np.dtype(index_type(counts.nnz, *counts.shape, index_limit))
+        counts.indices = counts.indices.astype(width)
+        counts.indptr = counts.indptr.astype(width)
         modalities[name] = ad.AnnData(X=counts, obs=_as_file_frame(obs, True), var=_as_file_frame(source.var, False))
     out = md.MuData(modalities)
     shared = _as_file_frame(mdata.obs.loc[cells, [c for c in mdata.obs.columns if ":" not in str(c)]], True)
@@ -437,12 +449,14 @@ def _scalar(value):
 
 
 def _same_index_width(counts) -> None:
-    """scipy needs a sparse matrix's two index arrays in one integer type. The file
-    holds 64-bit column pointers and 32-bit cell positions (S4); in memory both are
-    32-bit while the nonzeros fit, and 64-bit beyond."""
-    width = np.int32 if counts.indptr[-1] < 2**31 else np.int64
-    counts.indptr = counts.indptr.astype(width, copy=False)
-    counts.indices = counts.indices.astype(width, copy=False)
+    """Leniency for readable files (S4.4). A conforming file already holds both
+    index arrays in one type, and this does nothing to it. A file from another
+    writer may hold them in two, which scipy rejects in some operations; both are
+    then brought to the type the size requires."""
+    width = np.dtype(index_type(counts.nnz, *counts.shape))
+    if counts.indptr.dtype != width or counts.indices.dtype != width:
+        counts.indptr = counts.indptr.astype(width, copy=False)
+        counts.indices = counts.indices.astype(width, copy=False)
 
 
 def read_screen(file, response_modality=None):
@@ -973,7 +987,8 @@ def _index_of(table):
     return _text(table[name][()]) if name is not None and name in table else None
 
 
-def validate_screen(file) -> pd.DataFrame:
+def validate_screen(file, index_limit=None) -> pd.DataFrame:
+    """`index_limit` is for tests only: see `index_type`."""
     import h5py
 
     log = _Problems()
@@ -1052,10 +1067,13 @@ def validate_screen(file) -> pd.DataFrame:
             if group is None or _encoding(group) != SCREEN_SPEC["counts"]["encoding-type"] or shape is None or [int(v) for v in shape] != [len(cells), len(features[name])]:
                 log.add("S3.1", x, "is not a column-compressed (csc_matrix) matrix of cells x features.")
                 continue
+            # both index arrays in the one type this file's size requires (S4.2, S4.3)
+            index = index_type(group["data"].shape[0], len(cells), len(features[name]), index_limit)
             for array, kind in expect.items():
+                kind, why = (index, " (the index type a file of this size requires)") if kind == "index" else (kind, "")
                 if group[array].dtype != np.dtype(kind):
                     # another whole-number type: not conforming, and a reader still accepts it (S4.4)
-                    log.add(rules[array], f"{x}/{array}", f"is not stored as {kind.removeprefix('int')}-bit signed integers.", readable=group[array].dtype.kind in "iuf")
+                    log.add(rules[array], f"{x}/{array}", f"is not stored as {kind.removeprefix('int')}-bit signed integers{why}.", readable=group[array].dtype.kind in "iuf")
                 if _filters(group[array]) - set(SCREEN_SPEC["counts"]["filters"]):
                     log.add("S11.1", f"{x}/{array}", "uses a filter other than gzip.")
             data, indices, indptr = (group[k][()] for k in ("data", "indices", "indptr"))

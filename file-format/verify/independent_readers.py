@@ -33,30 +33,13 @@ for file, writer in FILES.items():
             adata = ad.io.read_elem(f[f"mod/{modality}"])
             shape = tuple(int(v) for v in f[f"mod/{modality}/X"].attrs["shape"])
             results.add(f"anndata reads {modality} of {file} ({writer})", adata.shape == shape, f"{adata.shape}")
-            # scanpy on the matrix exactly as anndata returns it: 64-bit column pointers with
-            # 32-bit cell positions (S4). Each call gets a second, untouched read, because
-            # copying the object would already bring the two index arrays to one width.
-            def as_read():
-                return ad.io.read_elem(f[f"mod/{modality}"])
-            def use(adata_):
-                adata_.X.sum(); adata_[:10, :5].X.toarray(); adata_.X.tocsr()
-                sc.pp.normalize_total(adata_); sc.pp.log1p(adata_)
-                return True
-            results.add(f"scanpy uses {modality} of {file} exactly as anndata reads it "
-                        "(sums, slices, conversion, normalize_total, log1p)", use(as_read()))
-            # One function is known to fail there: scipy rejects mixed index widths in some
-            # operations, for any matrix, ours or not. percent_top=None because the default
-            # asks for the top 500 features, which a 100-feature example does not have.
-            try:
-                sc.pp.calculate_qc_metrics(as_read(), percent_top=None, log1p=False)
-                outcome = "works"
-            except ValueError as error:
-                outcome = f"FAILS ({error})"
-            results.add(f"scanpy.pp.calculate_qc_metrics on {modality} of {file} exactly as anndata reads it", outcome,
-                        "an observation: scipy rejects 64-bit pointers with 32-bit positions in some operations; "
-                        "it works after a copy or with both arrays in one width")
-            # then with both index arrays brought to one width, as the prototype's reader does
-            adata.X.indptr = adata.X.indptr.astype(adata.X.indices.dtype)
+            # scanpy on the matrix exactly as anndata returns it, with nothing done to it:
+            # both index arrays are stored in one width (S4), which scipy requires in some
+            # operations. percent_top=None because the default asks for the top 500
+            # features, which a 100-feature example does not have.
+            results.add(f"both index arrays of {modality} of {file} arrive in one width", adata.X.indices.dtype == adata.X.indptr.dtype,
+                        f"{adata.X.indices.dtype}, {adata.X.indptr.dtype}")
+            adata.X.sum(); adata[:10, :5].X.toarray(); adata.X.tocsr()
             metrics = sc.pp.calculate_qc_metrics(adata, percent_top=None, log1p=False)[0]
             results.add(f"scanpy's total counts equal the stored n_umis, {modality} of {file}",
                         np.array_equal(metrics["total_counts"].to_numpy(), adata.obs["n_umis"].to_numpy(dtype=float)))

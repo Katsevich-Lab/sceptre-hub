@@ -111,8 +111,9 @@ disagree, `spec/` is the rule and the prose is the mistake.
 - A file is **conforming** when it breaks no file rule. It is what a conforming
   writer produces and what the validators pass.
 - A file is **readable** when it is not conforming and a reader MUST still
-  accept it. Today this covers one thing: counts stored in another integer or
-  floating-point type (S4.4), as files from other tools have them.
+  accept it. Today this covers one thing: the arrays of the counts stored in
+  another integer or floating-point type (S4.4), as files from other tools
+  have them. That includes index arrays of two widths, or wider than needed.
 
 The validators report, for a file, which of the three it is: conforming,
 readable, or not readable.
@@ -229,11 +230,19 @@ Rules S3 and S4 apply to the count matrix `X` of every modality.
 
 ### S4. Number types of the counts
 
+**The index type** of a modality is one signed integer type for both of its
+index arrays. It is 32-bit when the number of stored values, the number of
+cells and the number of features are each at most 2,147,483,647, and 64-bit
+otherwise. This is the type scipy chooses for a sparse matrix of that size, so
+the two arrays always have the same width, and a matrix built by scipy already
+has it. A file whose index arrays are wider than its size requires, or differ
+from each other, is readable and not conforming (S4.4).
+
 | Rule | Kind | | Check |
 |---|---|---|---|
 | S4.1 | file | `X/data` MUST be stored as 32-bit signed integers. | V |
-| S4.2 | file | `X/indices` MUST be stored as 32-bit signed integers. | V |
-| S4.3 | file | `X/indptr` MUST be stored as 64-bit signed integers. | V |
+| S4.2 | file | `X/indices` MUST be stored in the index type. | V |
+| S4.3 | file | `X/indptr` MUST be stored in the index type. | V |
 | S4.4 | behaviour | A reader MUST accept any integer or floating-point type for these arrays, provided the values are whole numbers. A file that breaks only S4.1 to S4.3 in this way is readable. | tests (the readable conformance files) |
 
 ### S5. Cell covariates
@@ -492,6 +501,7 @@ and QC stages have run.
 | Value | In the data file | In a table |
 |---|---|---|
 | Counts | 32-bit signed integer (S4) | — |
+| Index arrays of the counts | the index type: 32-bit signed integer, or 64-bit past the limit (S4) | — |
 | Other integers | 32-bit signed integer | 32-bit signed integer |
 | Real numbers | 64-bit float | 64-bit float |
 | True/false | categorical `FALSE`, `TRUE` (S7.5) | Parquet boolean |

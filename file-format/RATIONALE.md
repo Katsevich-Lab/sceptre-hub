@@ -118,8 +118,7 @@ One rule per kind of value, the same in both languages.
 | Value | Type in the file | Why |
 |---|---|---|
 | Counts (`X/data`) | 32-bit signed integer | Counts are integers. One count never approaches 2³¹. R has no unsigned type. *(measured)* 33% smaller than doubles uncompressed. |
-| Row indices of the sparse matrix (`X/indices`) | 32-bit signed integer | A cell's position; enough for 2.1 billion cells. |
-| Column pointers of the sparse matrix (`X/indptr`) | **64-bit** signed integer | Counts the nonzeros. 10 million cells × 20,000 genes at 5% density is 10¹⁰, past 2³¹. *(inferred from arithmetic)* Costs 8 bytes per feature. *(measured)* R reads it, in memory and disk-backed. |
+| The two index arrays of the sparse matrix (`X/indices`, `X/indptr`) | one signed integer type for both: 32-bit, or 64-bit past the limit | 32-bit while the stored values, the cells and the features each number at most 2,147,483,647; 64-bit otherwise. It is the type scipy chooses, so the standard Python tools read the counts with nothing done to them. See S4. |
 | Integers in tables | 32-bit signed integer | R's integer is 32-bit. *(measured)* R's Parquet reader returns 64-bit integers as doubles, and R's MuData reader returns a 64-bit column as all-missing. No value in the format needs more than 32 bits. |
 | Real numbers | 64-bit float (double) | p-values need the range. Never 32-bit. |
 | True/false in Parquet tables | Parquet boolean | Round-trips both ways, with missing values. *(measured)* |
@@ -183,7 +182,7 @@ one rule, and no rounding between what a package computed and what it reads back
 - **Locks in.** The orientation. A file from another tool is usually compressed by cell and is converted once at import.
 - **IGVF.** Compressed by cell (`csr_matrix`), which is what the upstream mapping tools and scanpy produce *(verified, `bin/count_matrix_utils.py`)*. To fit a gene's model, the pipeline splits the whole file into per-gene chunk files first (`bin/chunk_mudata_sceptre.py`). Compression by feature makes that split unnecessary, so this format does not follow IGVF here.
 
-### S4. Count type: 32-bit integers; 64-bit column pointers — *Adopted*
+### S4. Count type: 32-bit integers; one index type for both index arrays — *Decided by Eugene (index type, 18 November); otherwise Adopted*
 
 - **Decision.** As in section 3.
 - **Alternatives.**
@@ -191,8 +190,14 @@ one rule, and no rounding between what a package computed and what it reads back
   - The smallest unsigned type that fits: what public pysceptre does *(verified)*. 298 MB on the same matrix *(measured)*, but the type then differs from file to file and R has no unsigned integers.
 - **Why.** A fixed type makes the two writers agree. With gzip the choice barely matters (98 MB against 103 MB, *measured*), so the smaller unsigned types buy little. R can write these types with six lines after the MuData writer *(measured)*.
 - **Locks in.** Counts are integers. R sceptre does not check this today *(verified, `R/check_functions.R`)*; the fork does *(verified, `storage/count_identity.py`)*.
-- **Two levels: conforming and readable** *(Adopted, 18 November)*. A file whose counts are in another integer or floating-point type, with whole values, is not conforming, and a reader must still accept it. The validators report such a file as "readable", apart from files that are damaged. This is what an IGVF file's counts are. *(measured)* Both readers read the four readable conformance files to the same counts as the conforming file.
-- **A consequence in Python.** *(measured)* scipy refuses some operations on a sparse matrix whose two index arrays have different integer types. A Python reader therefore converts both to one type after reading: 32-bit while the nonzeros fit, 64-bit beyond. This is reader code; the file is unchanged.
+- **Two levels: conforming and readable** *(Adopted, 18 November)*. A file whose counts are in another integer or floating-point type, with whole values, is not conforming, and a reader must still accept it. The validators report such a file as "readable", apart from files that are damaged. This is what an IGVF file's counts are. *(measured)* Both readers read the five readable conformance files to the same counts as the conforming file.
+- **The index type** *(Decided by Eugene, 18 November)*. Both index arrays of a modality are stored in one signed integer type: 32-bit while the stored values, the cells and the features each number at most 2,147,483,647, and 64-bit otherwise. This is scipy's own rule *(verified in scipy 1.18.1: `get_index_dtype`; a matrix with a dimension of 2³¹ − 1 gets 32-bit arrays and one of 2³¹ gets 64-bit)*.
+  - **What it replaced.** Until 18 November the rule was 32-bit cell positions with 64-bit column pointers, always. That rule was invented here; scipy's is the existing convention. *(measured)* Mixed widths made one common scanpy function, `calculate_qc_metrics`, fail on a plain anndata read, because scipy rejects mixed widths in some operations, and they needed a step in our own reader. The case for 64-bit pointers was arithmetic only: the scale test's 699 million nonzeros are under the limit.
+  - **Cost.** Past about 2.1 billion nonzeros both arrays are 64-bit, so a cell position costs 8 bytes, not 4: roughly 12 bytes per nonzero against 8, half as much again before compression, on the datasets where size matters most. And the type now depends on the data. It is still determined by the data alone, so R and Python write the same types; both validators compute the type the size requires.
+  - **Rejected.** Always 64-bit for both: one fixed type, but every file half as much again larger before compression.
+  - **Wider than needed, or two widths, is readable**, like counts in another type: not conforming, and a reader accepts it. The Python reader keeps its step that brings two widths to one, as leniency for such files only; it does nothing to a conforming file.
+  - **What was checked** *(measured, 18 November, `verify/wide_index.*` and the conformance set)*. scanpy's `calculate_qc_metrics` now runs on every example and conformance data file read with anndata alone, for files written by R and by Python. No test file can reach the limit, so the 64-bit branch is tested with the limit lowered, in both writers and both validators: each writer then stores both arrays as 64-bit, the two files hold the same arrays, and each validator passes them under the lowered limit and reports them readable (S4.2, S4.3) under the real one. **64-bit cell positions in R:** the high-MOI example with both arrays 64-bit reads to the same counts through the prototype's reader in memory, through MuData's backed reader (one feature at a time and whole), and through HDF5Array, with no warning beyond those on the 32-bit file.
+  - **What was not checked.** Values above 2,147,483,647 in either array. That needs a file of more than 2.1 billion nonzeros, or cells, and none was built. R holds such values as doubles when read with rhdf5, exactly up to 2⁵³; whether MuData's backed reader and HDF5Array do the same at that size is unmeasured. The test above shows the wider type is handled, not the larger values.
 - **Flag.** R's in-memory sparse matrix cannot hold more than 2³¹ − 1 nonzeros. Past that size R must read disk-backed. That is a limit of R, not of the file.
 - **IGVF.** The smallest unsigned type that fits, chosen from the data's maximum, as public pysceptre does. This is the closest call in this document: IGVF's rule saves about a quarter of the uncompressed size (298 MB against 395 MB above) and nothing meaningful with gzip. This format keeps one fixed type so that the type never depends on the data. Readers here accept IGVF's types as they are. IGVF's code independently works around the same scipy problem with mixed index types (`normalize_sparse_index_dtypes`).
 
@@ -567,8 +572,8 @@ each.
 
 | Where | Change | Why |
 |---|---|---|
-| R writer | Write counts as 32-bit integers with 64-bit column pointers; write file metadata as a native record | S4, S10 |
-| Python writer | Turn off `nullable-string-array`; write 32-bit counts and 64-bit pointers | S7, S4 |
+| R writer | Write counts as 32-bit integers and both index arrays in the index type; write file metadata as a native record | S4, S10 |
+| Python writer | Turn off `nullable-string-array`; write 32-bit counts (scipy already gives the index type) | S7, S4 |
 | Python reader | Bring a sparse matrix's two index arrays to one integer type after reading | S4 |
 | R sceptre | Check at import that counts are integers | S4 |
 | Both | Convert text and true/false covariates to categoricals at import | S7 |
@@ -593,7 +598,7 @@ would cost.
 | # | Question | Settled as | To change it later |
 |---|---|---|---|
 | 1 | Per-stage records or one record? (A2) | Per-stage records, written last | A format change: it moves where settings live |
-| 2 | Count type (S4) | 32-bit integer counts, 64-bit column pointers | Readers already accept any numeric type; only writers change |
+| 2 | Count type (S4) | 32-bit integer counts; both index arrays in one type, 32-bit until the size needs 64 (row 29) | Readers already accept any numeric type; only writers change |
 | 3 | A gRNA under two targets (S8) | Refused, with a message | Add a gRNA-to-target table; nothing else changes |
 | 4 | How to check the rebuilt design matrix (T7) | Term names and the bit-exact hash Eugene decided on | Relax the hash to a warning if a second platform shows last-bit differences |
 | 5 | The `significant` column (T5) | Not stored; one threshold in the stage record | Storing the column too is an added column |
@@ -617,6 +622,7 @@ would cost.
 | 23 | Several gRNAs on one vector (S8) | An optional `vector_id`; one target per vector, and readers refuse otherwise; counts per gRNA (Eugene, 18 November) | Allowing several targets later is a minor change |
 | 24 | The target molecule (S8) | No entry of its own; `perturbation_type` covers it (Eugene, 18 November) | A minor addition |
 | 28 | The coordinate convention (S8) | 1-based, both ends included; all three position columns or none | A format change: it changes what stored numbers mean |
+| 29 | The index type of the counts (S4) | Both index arrays in one width: 32-bit until a dataset needs 64, scipy's rule (Eugene, 18 November). Replaces 32-bit positions with 64-bit pointers | A format change: types |
 | 26 | The layout of the analysis folder (A2) | One folder per stage, holding its record and its tables (Eugene, 18 November) | A format change: paths |
 | 27 | Where fits live (T6) | A cache outside the stages, `fits/response/`, filled by part files, with its own clearing rule; `fits/grna/` reserved (Eugene, 18 November) | A format change: paths |
 | 25 | What kind of screen it was (S10) | Optional `perturbation_type`, `organism`, `genome_build`, recorded now because they cannot be recovered later (Eugene, 18 November) | A new kind of perturbation is a minor addition |
@@ -803,7 +809,7 @@ remove a workaround in the format or its readers.
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
 | Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json`, `spec/fits.schema.json` | JSON Schemas for `analysis.json`, the six stage records, and the record of how cached fits were made |
 | Data-file rules that need computing | `SPEC.md`, section 2 | The order of cells within a feature, uniqueness, the same cells in every modality: code in each language |
-| Conformance files | `conformance/`, built by `make_conformance.py` | 21 conforming files, written by R and by Python; 4 readable ones; and 66 that each break one rule, with the rules and the level a validator must report |
+| Conformance files | `conformance/`, built by `make_conformance.py` | 21 conforming files, written by R and by Python; 5 readable ones; and 66 that each break one rule, with the rules and the level a validator must report |
 | Validators | `validate_screen()`, `validate_analysis()` in both prototype libraries | Check a data file or an analysis folder without building a package object, and report every problem, not only the first |
 
 **Why define it this way.**
@@ -894,8 +900,9 @@ checked:
    conforming file and return the right values. What they do not do is
    interpret it: the version check, the link between an analysis and its data,
    the refusals the specification requires, the covariate table with modality
-   prefixes, true/false arriving as a categorical, derived values, and today
-   the index-width step in Python. The reason is that the format allows only
+   prefixes, true/false arriving as a categorical, and derived values. (Until
+   18 November a Python reader also had to bring the two index arrays to one
+   width; S4 now stores them so.) The reason is that the format allows only
    what both languages read correctly today and makes the writers stay inside
    that set. The burden falls on the two writers we control and not on
    readers, which include tools we do not. Every R-side restriction in S7
@@ -942,51 +949,22 @@ checked:
   It depends on unreviewed branch builds and is meant to move into the packages.
 
 **What the package-free suite found.** Writing it changed one thing and raised
-two questions:
+two questions, one since settled:
 
 - *Fixed.* The two writers stored a feature table's text differently: R as
   text, Python as a categorical, because mudata converts text with repeated
   values as it writes. Both conformed and both read back the same, but the
   files were not the same. The Python writer now stores it as R does.
-- *Open: one common scanpy function fails on the counts as anndata reads
-  them.* anndata and scanpy both open and use the files. The format stores
-  column pointers as 64-bit integers and cell positions as 32-bit (S4), and
-  scipy rejects mixed index widths in some operations. *(measured by a side
-  session on 18 November: scanpy 1.12.5, scipy 1.18.1, anndata 0.13.4, on
-  `example/highmoi/screen.h5mu`)* Sums, conversion to dense or to compression
-  by cell, slicing, `normalize_total`, `log1p`, `scale`, `pca`, `filter_cells`,
-  `filter_genes`, `to_df` and `write_h5ad` work on the raw read.
-  `scanpy.pp.calculate_qc_metrics` fails with "Output dtype not compatible
-  with inputs". It is not particular to these files: a scipy matrix that never
-  touched them fails the same way with 64-bit pointers and 32-bit positions.
-  It works after `.copy()`, or with both arrays in one width, which is what the
-  prototype's reader and IGVF's code do. The suite checks a subset of this on
-  every run.
-
-  The question it raises is whether S4 should store both arrays in one width.
-  **Not decided; S4 is unchanged.** The options:
-
-  - *One width by scipy's rule*: 32-bit when the nonzeros and dimensions fit,
-    64-bit otherwise. Recommended to Eugene by the side session, and by me.
-    - For: it is scipy's own rule, so it is the existing convention and the
-      mixed-width rule is the invented one; a Python writer needs no special
-      handling; a plain anndata read works in every scanpy function, and the
-      fix-up in the Python reader goes away. The case for 64-bit pointers is
-      so far arithmetic only: the scale test's 699 million nonzeros are under
-      the limit of about 2.1 billion.
-    - Against: past the limit a cell position costs 8 bytes, not 4, so about
-      12 bytes per nonzero against 8 before compression, on the datasets where
-      size matters most. The type then depends on the data: still
-      deterministic, so R and Python still write identical files, but the
-      validator must compute the right width and the conformance set needs
-      cases on both sides of the limit. And 64-bit cell positions are untested
-      in R: the scale test covered 64-bit pointers only, R's in-memory matrix
-      cannot hold that many nonzeros, so the disk-backed path would need
-      checking before the rule is relied on.
-  - *Always 64-bit for both*: one fixed type that works in scanpy, but every
-    file is half as much again larger before compression (the 5.7 GB scale
-    file would be about 8.5 GB, an estimate). Advised against.
-  - *Keep S4* and document the copy.
+- *Settled: one common scanpy function failed on the counts as anndata read
+  them.* The format stored column pointers as 64-bit integers and cell
+  positions as 32-bit, and scipy rejects mixed index widths in some operations.
+  *(measured by a side session on 18 November: scanpy 1.12.5, scipy 1.18.1,
+  anndata 0.13.4)* Most of scanpy worked on a raw read;
+  `scanpy.pp.calculate_qc_metrics` failed with "Output dtype not compatible
+  with inputs", as it does for any scipy matrix with those widths. Eugene
+  decided on 18 November to store both arrays in one width by scipy's rule; see
+  S4 for the reason, the cost and what was checked. The suite now runs that
+  function on every file as a check.
 - *Open: the fit cache's record sits inside its folder of parts.* A reader
   pointed at `fits/response/` as a Parquet dataset meets `identity.json` and
   fails; given the part files, or a `*.parquet` pattern, it works. Moving the
@@ -1133,7 +1111,7 @@ mudata 0.4.1, anndata 0.13.4, pandas 3.1.0, pyarrow 26.0.0, h5py 3.16.0.
 
 | Test | Result |
 |---|---|
-| Python writes 32-bit counts and 64-bit column pointers | R reads it in memory and disk-backed |
+| Python writes 32-bit counts and 64-bit column pointers (the rule before 18 November) | R reads it in memory and disk-backed |
 | R writes the same types (six extra lines) | Python reads it with those types |
 | Nested metadata record with scalars | both directions correct; R needs `encoding-scalar` set to write a scalar |
 | Shared cell table | both directions correct |
@@ -1212,6 +1190,12 @@ The run shows that readers, including the backed reader, handle the wider type
 correctly. That the wider type is needed for larger data remains arithmetic,
 not a measurement, and R's in-memory matrix would not fit such data.
 
+**After the index-type decision (18 November).** These files were written under
+the earlier rule, with 64-bit column pointers beside 32-bit cell positions.
+Under the present rule both arrays of this dataset are 32-bit, and the file is
+the same size to within the pointers (8 bytes per feature). The test was not
+run again.
+
 ## Appendix B. What the prototype implements
 
 Everything in sections 3 to 6, and the validators of section 11. The code is
@@ -1247,7 +1231,7 @@ here.
 | Clearing a stage [9] | Its record and files and all later ones are removed |
 | Saved fits whose recorded method differs [9] | Not reused, with a message |
 | Every allowed column type, written by each language and read by the other [9] | Same result both ways |
-| The validators on 21 conforming, 4 readable and 66 broken files [10] | Both languages report the same rules and the same level for every file |
+| The validators on 21 conforming, 5 readable and 66 broken files [10] | Both languages report the same rules and the same level for every file |
 | A covariate with a dot in its name [9] | R and Python build the same design matrix (Python through an alias) |
 
 **Limits that remain.** These are limits of the prototype or of what was

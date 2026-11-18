@@ -13,8 +13,14 @@
     "encoding-type": "csc_matrix",
     "arrays": {
       "data": "int32",
-      "indices": "int32",
-      "indptr": "int64"
+      "indices": "index",
+      "indptr": "index"
+    },
+    "index": {
+      "$comment": "The one type of both index arrays (S4.2, S4.3). It is `narrow` while the largest of the number of stored values, the number of cells and the number of features is at most `narrow_up_to`, and `wide` beyond. This is the type scipy chooses for a sparse matrix of that size.",
+      "narrow": "int32",
+      "wide": "int64",
+      "narrow_up_to": 2147483647
     },
     "rules": {
       "data": "S4.1",

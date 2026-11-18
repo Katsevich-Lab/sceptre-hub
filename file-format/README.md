@@ -55,6 +55,7 @@ libraries:
 | `encodings` | Every kind of value, written by each language's standard libraries and read by the other's. The kinds the format allows come back correct; the kinds it forbids still break, as recorded in `verify/expected_encodings.json` |
 | `two_writers` | R and Python each write the same seeded random content. The files are compared array by array and column by column, and each language reads the other's file and compares it with the source |
 | `independent_readers` | Tools outside this code read the files: anndata, scanpy, polars and duckdb in Python; HDF5Array and arrow in R |
+| `wide_index` | The 64-bit branch of the index type (S4), with the limit lowered because no test file reaches it: both writers, both validators, and R's readers (in memory, MuData's backed reader, HDF5Array) on a file whose index arrays are both 64-bit |
 | conformance | Both validators and both readers on every file of `conformance/` |
 | `derived` | What a reader computes from the files (cells per gRNA and per target, cells in use, pairs passing QC, log2 fold change, significance, control groups) against what sceptre held, in `example/*/expected/`. Those values were produced by sceptre once; running the check does not load it |
 
