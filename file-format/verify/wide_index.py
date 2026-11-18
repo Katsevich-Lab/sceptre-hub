@@ -41,8 +41,7 @@ with h5py.File(wide) as f, h5py.File(source) as g:
                     np.array_equal(metrics["total_counts"].to_numpy(), adata.obs["n_umis"].to_numpy(dtype=float)))
 results.add("the validator passes it under the lowered limit", len(sf.validate_screen(wide, index_limit=1)) == 0)
 found = sf.validate_screen(wide)
-results.add("under the real limit it is readable, breaking S4.2 and S4.3 only",
-            sf.conformance_level(found) == "readable" and sorted(set(found["rule"])) == ["S4.2", "S4.3"])
+results.add("under the real limit it does not conform, breaking S4.2 and S4.3 only", sorted(set(found["rule"])) == ["S4.2", "S4.3"])
 back = sf.read_screen(wide)
 results.add("the prototype's reader returns the same counts", all((back[m].X != sf.read_screen(source)[m].X).nnz == 0 for m in ("rna", "grna")))
 results.save()

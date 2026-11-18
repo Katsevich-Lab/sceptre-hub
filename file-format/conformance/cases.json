@@ -4,7 +4,7 @@
     "kind": "screen",
     "path": "conformance/valid/types_written_by_r.h5mu",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "Every allowed kind of column, written by R"
   },
   {
@@ -12,7 +12,7 @@
     "kind": "screen",
     "path": "conformance/valid/types_written_by_python.h5mu",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The same data, written by Python"
   },
   {
@@ -20,7 +20,7 @@
     "kind": "screen",
     "path": "conformance/valid/highmoi_written_by_r.h5mu",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The high-MOI example, written by R"
   },
   {
@@ -28,7 +28,7 @@
     "kind": "screen",
     "path": "conformance/valid/highmoi_written_by_python.h5mu",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The high-MOI example, written by Python"
   },
   {
@@ -36,7 +36,7 @@
     "kind": "screen",
     "path": "conformance/valid/types_gzip_counts.h5mu",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "Counts compressed with gzip, which S11 allows"
   },
   {
@@ -44,7 +44,7 @@
     "kind": "screen",
     "path": "conformance/valid/types_extra_modality_and_columns.h5mu",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "A modality no analysis uses, and a gRNA column the format does not define",
     "copy_keeps_modalities": "rna"
   },
@@ -53,7 +53,7 @@
     "kind": "screen",
     "path": "conformance/valid/highmoi_grnas_on_shared_vectors.h5mu",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "Each target's two gRNAs are on one vector (`vector_id`); a non-targeting gRNA's vector is named after it"
   },
   {
@@ -61,7 +61,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/left_sided_written_by_r",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The `left_sided` example analysis, written by R",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -70,7 +70,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/bonferroni_written_by_r",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The `bonferroni` example analysis, written by R",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -79,7 +79,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/singleton_written_by_r",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The `singleton` example analysis, written by R",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -88,7 +88,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/stopped_after_qc_written_by_r",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The `stopped_after_qc` example analysis, written by R",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -97,7 +97,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/with_resamples_written_by_r",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The `with_resamples` example analysis, written by R",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -106,7 +106,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/left_sided_written_by_python",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The `left_sided` analysis, written by Python",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -115,7 +115,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/left_sided_written_by_python",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The same, checked against the Python-written data file",
     "screen": "conformance/valid/highmoi_written_by_python.h5mu"
   },
@@ -124,7 +124,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/data_file_at_a_url",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The hint to the data file is a URL",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -133,7 +133,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/no_hint_to_the_data_file",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The analysis gives no hint of where its data file is",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -142,7 +142,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/fits_from_two_jobs",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The fit cache was filled by two jobs, and one response is in both parts",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -151,7 +151,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/fits_formula_spaced_differently",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "A part of the fit cache records the analysis's formula with other spacing; its fits are used",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu",
     "fits_used": true
@@ -161,7 +161,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/fits_made_with_another_method",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The one part of the fit cache was made with a method other than the analysis's: allowed, and a reader takes no fit from it",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu",
     "fits_used": false
@@ -171,7 +171,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/stale_part_beside_a_current_one",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "Beside the current part is one left by an earlier QC, made for other cells: allowed, and a reader given the current identity reads the current part only",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu",
     "fits_for": {
@@ -190,7 +190,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/testing_stage_cleared_fits_kept",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "The calibration stage was cleared for a rerun; the fit cache remains",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -199,7 +199,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/stage_written_in_another_language",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "A stage written by an implementation in a third language",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -208,7 +208,7 @@
     "kind": "analysis",
     "path": "conformance/valid/analyses/tables_in_parts",
     "expect": [],
-    "level": "conforming",
+    "conforms": true,
     "what": "A table as a folder of parts, with dictionary-encoded identifiers, an unknown column, and an unknown file beside it",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -219,7 +219,7 @@
     "expect": [
       "S1.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A text file with the right extension"
   },
   {
@@ -229,7 +229,7 @@
     "expect": [
       "S2.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The gRNA modality is named `guide`"
   },
   {
@@ -239,7 +239,7 @@
     "expect": [
       "S2.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A modality named `1rna`"
   },
   {
@@ -249,7 +249,7 @@
     "expect": [
       "S2.3"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The gRNA modality lists two cells in the other order"
   },
   {
@@ -259,7 +259,7 @@
     "expect": [
       "S3.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The RNA counts are marked as compressed by cell (`csr_matrix`), as in an IGVF file"
   },
   {
@@ -269,7 +269,7 @@
     "expect": [
       "S3.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The last column pointer is larger than the number of stored values"
   },
   {
@@ -279,7 +279,7 @@
     "expect": [
       "S3.3"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "Two cell positions of the first gene are swapped"
   },
   {
@@ -289,7 +289,7 @@
     "expect": [
       "S3.4"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A zero is stored as if it were a count"
   },
   {
@@ -299,7 +299,7 @@
     "expect": [
       "S4.1"
     ],
-    "level": "readable",
+    "conforms": false,
     "what": "Counts stored as doubles, as R's MuData writes them by default",
     "reads_as": "conformance/valid/types_written_by_python.h5mu"
   },
@@ -310,7 +310,7 @@
     "expect": [
       "S4.1"
     ],
-    "level": "readable",
+    "conforms": false,
     "what": "Counts stored as 16-bit unsigned integers, as an IGVF file has them",
     "reads_as": "conformance/valid/types_written_by_python.h5mu"
   },
@@ -321,7 +321,7 @@
     "expect": [
       "S4.2"
     ],
-    "level": "readable",
+    "conforms": false,
     "what": "Cell positions stored as 64-bit integers beside 32-bit column pointers",
     "reads_as": "conformance/valid/types_written_by_python.h5mu"
   },
@@ -332,7 +332,7 @@
     "expect": [
       "S4.3"
     ],
-    "level": "readable",
+    "conforms": false,
     "what": "Column pointers stored as 64-bit integers beside 32-bit cell positions: mixed widths, which scipy rejects in some operations",
     "reads_as": "conformance/valid/types_written_by_python.h5mu"
   },
@@ -344,7 +344,7 @@
       "S4.2",
       "S4.3"
     ],
-    "level": "readable",
+    "conforms": false,
     "what": "Both index arrays stored as 64-bit integers in a file small enough for 32-bit. The same file is what a file past the limit must look like: with the limit lowered for the test, the validators pass it",
     "reads_as": "conformance/valid/types_written_by_python.h5mu",
     "conforming_with_index_limit": 5
@@ -356,7 +356,7 @@
     "expect": [
       "S5.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A shared cell column named `rna_quality`"
   },
   {
@@ -366,7 +366,7 @@
     "expect": [
       "S5.4"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A cell column named `donor-age`, which no formula can use"
   },
   {
@@ -376,7 +376,7 @@
     "expect": [
       "S6.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The gRNA modality's cell table has no `n_nonzero`"
   },
   {
@@ -386,7 +386,7 @@
     "expect": [
       "S6.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "`n_umis` stored as a categorical instead of a number"
   },
   {
@@ -396,7 +396,7 @@
     "expect": [
       "S7.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A true/false cell column stored as booleans, as Python writes it by default"
   },
   {
@@ -406,7 +406,7 @@
     "expect": [
       "S7.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A 64-bit integer cell column, as pandas writes integers by default"
   },
   {
@@ -416,7 +416,7 @@
     "expect": [
       "S7.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A cell covariate stored as plain text instead of a categorical"
   },
   {
@@ -426,7 +426,7 @@
     "expect": [
       "S7.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A gRNA column in anndata's nullable string encoding, which R cannot open"
   },
   {
@@ -436,7 +436,7 @@
     "expect": [
       "S7.3"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A categorical with a code beyond its categories"
   },
   {
@@ -446,7 +446,7 @@
     "expect": [
       "S7.4"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "An integer cell column holding R's missing-integer value"
   },
   {
@@ -456,7 +456,7 @@
     "expect": [
       "S8.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The gRNA table has no `grna_target`"
   },
   {
@@ -466,7 +466,7 @@
     "expect": [
       "S8.5"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The gRNA table stores `grna_group`, which depends on the analysis"
   },
   {
@@ -476,7 +476,7 @@
     "expect": [
       "S8.7"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "Two gRNAs with different targets share a `vector_id`: a combinatorial screen",
     "reader_refuses": true
   },
@@ -487,7 +487,7 @@
     "expect": [
       "S8.8"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A vector is named with the identifier of a gRNA on another vector",
     "reader_refuses": true
   },
@@ -498,7 +498,7 @@
     "expect": [
       "S8.6"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "`vector_id` stored as numbers"
   },
   {
@@ -508,7 +508,7 @@
     "expect": [
       "S8.10"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A target starts at position 0: a 0-based coordinate, as in a BED file"
   },
   {
@@ -518,7 +518,7 @@
     "expect": [
       "S8.10"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A target ends before it starts"
   },
   {
@@ -528,7 +528,7 @@
     "expect": [
       "S8.11"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A gRNA has a target start and end and no chromosome"
   },
   {
@@ -538,7 +538,7 @@
     "expect": [
       "S8.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "`target_start` stored as text"
   },
   {
@@ -548,7 +548,7 @@
     "expect": [
       "S9.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "Two cells have the same identifier"
   },
   {
@@ -558,7 +558,7 @@
     "expect": [
       "S9.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A gene and a gRNA have the same identifier"
   },
   {
@@ -568,7 +568,7 @@
     "expect": [
       "S9.4"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A cell identifier contains a line feed"
   },
   {
@@ -578,7 +578,7 @@
     "expect": [
       "S10.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The file has no `uns/sceptre`"
   },
   {
@@ -588,7 +588,7 @@
     "expect": [
       "S10.5"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The optional dataset name is a number"
   },
   {
@@ -598,7 +598,7 @@
     "expect": [
       "S10.6"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The optional perturbation type is not one of the listed kinds"
   },
   {
@@ -608,7 +608,7 @@
     "expect": [
       "S10.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "`moi` is `medium`"
   },
   {
@@ -618,7 +618,7 @@
     "expect": [
       "S10.3"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The data file's format version is 9.0"
   },
   {
@@ -628,7 +628,7 @@
     "expect": [
       "S10.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The data file's format is the integer 0, not a version"
   },
   {
@@ -638,7 +638,7 @@
     "expect": [
       "A1.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "`analysis.json` is missing",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -649,7 +649,7 @@
     "expect": [
       "A1.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "`analysis.json` does not name a response modality",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -660,7 +660,7 @@
     "expect": [
       "A1.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "`analysis.json` names `grna` as the response modality",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -671,7 +671,7 @@
     "expect": [
       "A1.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The response modality is `protein`, which the data file does not have",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -682,7 +682,7 @@
     "expect": [
       "A1.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The analysis's format version is 9.0",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -693,7 +693,7 @@
     "expect": [
       "A1.4"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The hint to the data file is an absolute local path",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -704,7 +704,7 @@
     "expect": [
       "A1.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The dataset identifier is that of another data file; the parts of the fit cache are then another dataset's, which is allowed and unused",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -715,7 +715,7 @@
     "expect": [
       "A2.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The record in `discovery/` says it is the record of the power stage",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu",
     "reader_refuses": true
@@ -727,7 +727,7 @@
     "expect": [
       "A2.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The parameters record has `side` set to `up`",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -738,7 +738,7 @@
     "expect": [
       "A2.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The parameters record has no `seed`",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -750,7 +750,7 @@
       "A2.2",
       "A4.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The assignment record is missing while later stages remain",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -761,7 +761,7 @@
     "expect": [
       "A5.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A table that a record lists is not in the folder",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -773,7 +773,7 @@
       "A5.2",
       "T2.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "`cells.parquet` has fewer rows than its stage wrote",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -784,7 +784,7 @@
     "expect": [
       "A2.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A record lists a table by a path that leaves the stage's folder",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu",
     "reader_refuses": true
@@ -797,7 +797,7 @@
       "A4.1",
       "A5.4"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The QC record does not list `cells.parquet`, which is still in the folder",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -808,7 +808,7 @@
     "expect": [
       "A4.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The discovery record is gone and its results table remains",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -819,7 +819,7 @@
     "expect": [
       "T0.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "`cells.parquet` has no `in_use` column",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -830,7 +830,7 @@
     "expect": [
       "T0.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "`pass_qc` is stored as integers",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -841,7 +841,7 @@
     "expect": [
       "T0.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The assignment table is in reverse order",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -852,7 +852,7 @@
     "expect": [
       "T0.4"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The assignment table has the same (gRNA, cell) twice",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -863,7 +863,7 @@
     "expect": [
       "T0.5"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The assignment table names a cell the data file does not have",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -874,7 +874,7 @@
     "expect": [
       "T3.3"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A pair-QC table has a `grna_id` column in an analysis that pools gRNAs by target",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -885,7 +885,7 @@
     "expect": [
       "T5.6"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The discovery results of a bonferroni analysis have a `grna_id` column",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -896,7 +896,7 @@
     "expect": [
       "T5.3"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The discovery results store a `significant` column",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -907,7 +907,7 @@
     "expect": [
       "T5.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The discovery results have neither `fold_change` nor `log_2_fold_change`",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -918,7 +918,7 @@
     "expect": [
       "T6.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A part of the fit cache does not say how its fits were made, as after a tool rewrote it; a reader takes no fit from it",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu",
     "fits_used": false
@@ -930,7 +930,7 @@
     "expect": [
       "T6.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The identity inside a part of the fit cache lacks `cells_in_use_sha256`",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -941,7 +941,7 @@
     "expect": [
       "T6.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The identity inside a part of the fit cache is not JSON",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu",
     "fits_used": false
@@ -953,7 +953,7 @@
     "expect": [
       "T6.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The fit cache holds a JSON file beside its parts, as drafts before 18 November had",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -964,7 +964,7 @@
     "expect": [
       "T6.3"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "An analysis that stopped after assignment holds a fit cache",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -975,7 +975,7 @@
     "expect": [
       "T6.2"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "A saved fit has fewer coefficients than the design has terms",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
@@ -986,7 +986,7 @@
     "expect": [
       "T7.1"
     ],
-    "level": "not readable",
+    "conforms": false,
     "what": "The formula has an interaction, outside the additive subset; the fit cache was made for another formula, which is allowed and unused",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   }

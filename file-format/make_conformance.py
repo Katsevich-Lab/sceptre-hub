@@ -31,11 +31,10 @@ cases = []
 
 
 def case(kind, path, expect, what, screen=None, reads_as=None):
-    """`level` is what a validator must conclude: "conforming"; "readable" (not
-    conforming, and a reader must still accept the file, giving the same data as
-    the file `reads_as`); or "not readable"."""
-    level = "conforming" if not expect else ("readable" if reads_as is not None else "not readable")
-    entry = {"name": str(Path(path).relative_to(ROOT)), "kind": kind, "path": str(path), "expect": sorted(expect), "level": level, "what": what}
+    """`expect` is the rules a validator must report; a file conforms when there are
+    none. `reads_as` names a conforming file that a reader must get the same counts
+    from, although this one does not conform (S4.4)."""
+    entry = {"name": str(Path(path).relative_to(ROOT)), "kind": kind, "path": str(path), "expect": sorted(expect), "conforms": not expect, "what": what}
     if screen is not None:
         entry["screen"] = str(screen)
     if reads_as is not None:
@@ -228,13 +227,13 @@ case("analysis", parts, [], "A table as a folder of parts, with dictionary-encod
 # ---------------------------------------------------------------- invalid data files
 
 
-def broken_screen(name, expect, what, change, source=types_py, readable=False, reader_refuses=False):
+def broken_screen(name, expect, what, change, source=types_py, still_read=False, reader_refuses=False):
     path = INVALID / "screens" / f"{name}.h5mu"
     path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(source, path)
     with h5py.File(path, "r+") as f:
         change(f)
-    case("screen", path, expect, what, reads_as=source if readable else None)
+    case("screen", path, expect, what, reads_as=source if still_read else None)
     if reader_refuses:
         cases[-1]["reader_refuses"] = True   # a reader must stop, not only the validator
 
@@ -299,14 +298,14 @@ def stored_zero(f):
 
 broken_screen("stored_zero", ["S3.4"], "A zero is stored as if it were a count", stored_zero)
 broken_screen("counts_as_doubles", ["S4.1"], "Counts stored as doubles, as R's MuData writes them by default",
-              lambda f: replace(f, "mod/rna/X/data", f["mod/rna/X/data"][()].astype(np.float64)), readable=True)
+              lambda f: replace(f, "mod/rna/X/data", f["mod/rna/X/data"][()].astype(np.float64)), still_read=True)
 broken_screen("counts_as_uint16", ["S4.1"], "Counts stored as 16-bit unsigned integers, as an IGVF file has them",
-              lambda f: replace(f, "mod/rna/X/data", f["mod/rna/X/data"][()].astype(np.uint16)), readable=True)
-# A small file's index type is 32-bit (S4). Wider arrays, in one or both, are readable.
+              lambda f: replace(f, "mod/rna/X/data", f["mod/rna/X/data"][()].astype(np.uint16)), still_read=True)
+# A small file's index type is 32-bit (S4). Wider arrays, in one or both, do not conform, and a reader still reads them (S4.4).
 broken_screen("cell_positions_64_bit", ["S4.2"], "Cell positions stored as 64-bit integers beside 32-bit column pointers",
-              lambda f: replace(f, "mod/rna/X/indices", f["mod/rna/X/indices"][()].astype(np.int64)), readable=True)
+              lambda f: replace(f, "mod/rna/X/indices", f["mod/rna/X/indices"][()].astype(np.int64)), still_read=True)
 broken_screen("pointers_64_bit", ["S4.3"], "Column pointers stored as 64-bit integers beside 32-bit cell positions: mixed widths, which scipy rejects in some operations",
-              lambda f: replace(f, "mod/rna/X/indptr", f["mod/rna/X/indptr"][()].astype(np.int64)), readable=True)
+              lambda f: replace(f, "mod/rna/X/indptr", f["mod/rna/X/indptr"][()].astype(np.int64)), still_read=True)
 
 
 def both_wide(f):
@@ -316,7 +315,7 @@ def both_wide(f):
 
 broken_screen("both_index_arrays_64_bit", ["S4.2", "S4.3"], "Both index arrays stored as 64-bit integers in a file small enough for 32-bit. "
               "The same file is what a file past the limit must look like: with the limit lowered for the test, the validators pass it",
-              both_wide, readable=True)
+              both_wide, still_read=True)
 cases[-1]["conforming_with_index_limit"] = 5   # the rna modality has 6 cells
 broken_screen("shared_column_named_like_a_modality", ["S5.1"], "A shared cell column named `rna_quality`",
               lambda f: add_column(f, "obs", "rna_quality", np.arange(6, dtype=np.float64)))
@@ -561,5 +560,7 @@ broken_analysis("formula_with_an_interaction", ["T7.1"], "The formula has an int
                 lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("formula", "~log(rna_n_umis) * batch")))
 
 (ROOT / "cases.json").write_text(json.dumps(cases, indent=2) + "\n")
-levels = {level: sum(1 for c in cases if c["level"] == level) for level in ("conforming", "readable", "not readable")}
-print(f"{len(cases)} cases: {levels}; rules covered: {len({r for c in cases for r in c['expect']})}")
+conforming = sum(1 for c in cases if c["conforms"])
+still_read = sum(1 for c in cases if "reads_as" in c)
+print(f"{len(cases)} cases: {conforming} conform, {len(cases) - conforming} do not ({still_read} of those a reader still reads); "
+      f"rules covered: {len({r for c in cases for r in c['expect']})}")

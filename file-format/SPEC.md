@@ -106,22 +106,12 @@ language.
 **Precedence.** Where a file of `spec/` and the prose of this document
 disagree, `spec/` is the rule and the prose is the mistake.
 
-**Two levels.**
+**Conforming.** A file conforms when it breaks no file rule, and otherwise it
+does not. It is what a conforming writer produces and what the validators
+pass. Writers are strict and readers are lenient: a reader accepts some files
+that do not conform, where a behaviour rule says so (S4.4, S12.1).
 
-- A file is **conforming** when it breaks no file rule. It is what a conforming
-  writer produces and what the validators pass.
-- A file is **readable** when it is not conforming and a reader MUST still
-  accept it. Today this covers one thing: the arrays of the counts stored in
-  another integer or floating-point type (S4.4), as files from other tools
-  have them. That includes index arrays of two widths, or wider than needed.
-
-The validators report, for a file, which of the three it is: conforming,
-readable, or not readable.
-
-## Terms
-
-| Term | Meaning |
-|---|---|
+---|---|
 | **Cell** | One row of every count matrix; one observation. Cells have identifiers |
 | **Modality** | One kind of measurement on the cells, with its own count matrix, cell table and feature table |
 | **Feature** | One column of a modality's count matrix: a gene, a gRNA, a peak, a protein. Features have identifiers |
@@ -236,14 +226,14 @@ cells and the number of features are each at most 2,147,483,647, and 64-bit
 otherwise. This is the type scipy chooses for a sparse matrix of that size, so
 the two arrays always have the same width, and a matrix built by scipy already
 has it. A file whose index arrays are wider than its size requires, or differ
-from each other, is readable and not conforming (S4.4).
+from each other, does not conform; a reader still reads it (S4.4).
 
 | Rule | Kind | | Check |
 |---|---|---|---|
 | S4.1 | file | `X/data` MUST be stored as 32-bit signed integers. | V |
 | S4.2 | file | `X/indices` MUST be stored in the index type. | V |
 | S4.3 | file | `X/indptr` MUST be stored in the index type. | V |
-| S4.4 | behaviour | A reader MUST accept any integer or floating-point type for these arrays, provided the values are whole numbers. A file that breaks only S4.1 to S4.3 in this way is readable. | tests (the readable conformance files) |
+| S4.4 | behaviour | A reader MUST accept any integer or floating-point type for `X/data`, `X/indices` and `X/indptr`, provided the values are whole numbers, and read the same counts as from a conforming file. Such a file still does not conform. | tests (conformance files with other number types and mixed index widths, read by both readers) |
 
 ### S5. Cell covariates
 
@@ -514,25 +504,25 @@ and QC stages have run.
 
 ## 6. Conformance
 
-- **Files.** `conformance/` holds files that conform, files that are readable
-  and files that each break one rule. `conformance/cases.json` lists them with
-  the rules a validator must report for each and the level it must conclude.
+- **Files.** `conformance/` holds files that conform and files that each break
+  one rule or a few. `conformance/cases.json` lists them with the rules a
+  validator must report for each, and, for the files of S4.4, the conforming
+  file a reader must get the same counts from.
   `make_conformance.py` builds them from `example/`.
 - **Validators.** `validate_screen(file)` and `validate_analysis(directory,
   screen_file)` exist with the same names in `format/sceptre_format.R` and
   `format/sceptre_format.py`. They read files directly, build no package
-  object, and return every problem they find as rows of `rule`, `where`,
-  `message` and `readable`. `conformance_level()` turns the rows into
-  "conforming", "readable" or "not readable".
+  object, and return every problem they find as rows of `rule`, `where` and
+  `message`. A file conforms when there are no rows.
 - **No canonical writer.** The format is defined by this document and `spec/`.
   Any code whose files pass the validators and read back correctly in the
   standard libraries is a conforming writer.
 - **The package-free suite.** `verify/run.sh` runs every check of the format
   that needs neither sceptre nor pysceptre.
 - **Agreement.** `check_conformance.R` and `check_conformance.py` run the two
-  validators over every case. Both MUST report exactly the expected rules and
-  level, and each reader MUST read every readable file to the same counts as
-  the conforming file it was made from.
+  validators over every case. Both MUST report exactly the expected rules,
+  and each reader MUST read every file of S4.4 to the same counts as the
+  conforming file it was made from.
 - **What the validators do not check.** They do not rebuild the design matrix
   (T7.4), recompute anything from the counts, or check the meaning of a value,
   only its form.
@@ -556,7 +546,7 @@ reported in `RATIONALE.md`, Appendix A.
 | Reuse of saved fits, and refusal when the method differs | tested | tested |
 | Continue an analysis the other language stopped | tested | tested |
 | Validators, on all conformance cases | tested | tested |
-| Read counts stored in another number type (readable files) | tested | tested |
+| Read counts and index arrays stored in another number type (S4.4) | tested | tested |
 | A covariate name with a dot in a formula | tested | tested through an alias: pysceptre's own formula parser does not take dots |
 | gzip-compressed counts | validated, and read in an earlier measurement | validated; read not tested |
 | Reading counts from disk, one feature at a time | at scale, through MuData's backed reader (as the `sceptre3` branch does) and through rhdf5 | at scale, through h5py; pysceptre's own reader not tested |

@@ -25,8 +25,8 @@ source. `verify/two_writers.R` is the R library doing exactly this, and shows
 what has to be written.
 
 **A reader.** `conformance/cases.json` lists every conformance file with what
-must be concluded about it: the rules broken, whether it is conforming,
-readable or not readable, and whether a reader must refuse it.
+must be concluded about it: the rules broken, whether it conforms, whether a
+reader must still read it (S4.4), and whether a reader must refuse it.
 `check_conformance.py` and `check_conformance.R` are the two libraries'
 runs over that list; another reader is tested by running it over the same
 list and comparing with the same expectations. `example/*/expected/` holds
@@ -34,8 +34,8 @@ values a reader should be able to derive from the example analyses.
 
 **What "passing" means.** There is no canonical writer. A writer conforms when
 its files pass the validators and read back correctly in the standard
-libraries; a reader conforms when it accepts every conforming and readable
-file, gets the source back, and refuses what must be refused.
+libraries; a reader conforms when it accepts every conforming file and every
+file S4.4 names, gets the source back, and refuses what must be refused.
 
 ## To do
 

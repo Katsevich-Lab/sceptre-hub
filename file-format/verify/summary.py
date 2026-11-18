@@ -17,8 +17,8 @@ cases = {c["name"]: c for c in json.loads(Path("conformance/cases.json").read_te
 for language, path in conformance.items():
     results = json.loads(Path(path).read_text())
     rows["conformance"][language] = [
-        {"check": name, "result": "pass" if name not in cases or (sorted(r["rules"]) == cases[name]["expect"] and r["level"] == cases[name]["level"]
-                                                                 and False not in r.values()) else "fail", "detail": ""}
+        {"check": name, "result": "pass" if name not in cases or (sorted(r["rules"]) == cases[name]["expect"] and r["conforms"] == cases[name]["conforms"]
+                                                                 and False not in [v for k, v in r.items() if k != "conforms"]) else "fail", "detail": ""}
         for name, r in results.items()]
 
 failed, observations = [], []

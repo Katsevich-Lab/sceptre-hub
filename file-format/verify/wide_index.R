@@ -68,7 +68,7 @@ check("R's writer, with the limit lowered, writes 64-bit index arrays", all(grep
 check("R's validator passes R's file under the lowered limit", nrow(validate_screen(mine, index_limit = 1)) == 0L)
 check("R's validator passes Python's file under the lowered limit", nrow(validate_screen(wide, index_limit = 1)) == 0L)
 found <- validate_screen(mine)
-check("under the real limit R's file is readable, breaking S4.2 and S4.3 only", conformance_level(found) == "readable" && identical(sort(unique(found$rule)), c("S4.2", "S4.3")))
+check("under the real limit R's file does not conform, breaking S4.2 and S4.3 only", identical(sort(unique(found$rule)), c("S4.2", "S4.3")))
 same <- all(vapply(c("mod/rna/X/data", "mod/rna/X/indices", "mod/rna/X/indptr", "mod/grna/X/data", "mod/grna/X/indices", "mod/grna/X/indptr"), function(path) {
     identical(as.vector(rhdf5::h5read(mine, path, bit64conversion = "double")), as.vector(rhdf5::h5read(wide, path, bit64conversion = "double")))
 }, logical(1)))

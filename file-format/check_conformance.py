@@ -1,6 +1,6 @@
 """Runs the Python validators over conformance/cases.json and writes what they
 report for each case to conformance/results-python.json: the rules, and whether
-the file is conforming, readable or not readable. A "readable" file is then read,
+the file conforms. A file that does not conform and must still be read (S4.4) is then read,
 and must give the same counts as the conforming file it was made from.
 
     python check_conformance.py
@@ -30,7 +30,7 @@ for case in cases:
         found = sf.validate_screen(case["path"])
     else:
         found = sf.validate_analysis(case["path"], case.get("screen"))
-    result = {"rules": sorted(set(found["rule"])), "level": sf.conformance_level(found)}
+    result = {"rules": sorted(set(found["rule"])), "conforms": len(found) == 0}
     if "reads_as" in case:
         result["reads_correctly"] = same_counts(case["path"], case["reads_as"])
     if "conforming_with_index_limit" in case:
@@ -58,9 +58,9 @@ for case in cases:
                 result["copy_kept_modalities"] = sorted(a["mod"]) == sorted(b["mod"]) and len(sf.validate_screen(copy)) == 0
     results[case["name"]] = result
     failed = [k for k in ("reads_correctly", "reader_refused", "copy_kept_modalities", "wide_branch", "fits_as_expected") if result.get(k) is False]
-    if result["rules"] != case["expect"] or result["level"] != case["level"] or failed:
+    if result["rules"] != case["expect"] or result["conforms"] != case["conforms"] or failed:
         wrong += 1
-        print(f"MISMATCH {case['name']}: expected {case['expect']} ({case['level']}), reported {result}")
+        print(f"MISMATCH {case['name']}: expected {case['expect']}, reported {result}")
         print(found.to_string(index=False))
 # A writer's own behaviour: a stage that did not finish leaves a folder without a
 # record; writing the stage again must leave nothing of the first attempt (A2.3).
@@ -74,7 +74,7 @@ with tempfile.TemporaryDirectory() as folder:
     record = saved["stages"]["assignment"]
     sf.write_stage(retry, "assignment", {"settings": record["settings"]}, {"assignment/assignments": saved["tables"]["assignment/assignments"]}, record["provenance"])
     clean = not (retry / "assignment/flagged_cells.parquet").exists() and len(sf.validate_analysis(retry)) == 0
-    results["(writer) a retried stage leaves nothing of the first attempt"] = {"rules": [], "level": "conforming", "holds": clean}
+    results["(writer) a retried stage leaves nothing of the first attempt"] = {"rules": [], "conforms": True, "holds": clean}
     if not clean:
         wrong += 1
         print("MISMATCH: a retried stage left files of its first attempt")
@@ -87,7 +87,7 @@ with tempfile.TemporaryDirectory() as folder:
     with h5py.File(wide) as f:
         types = {str(f[f"mod/{m}/X/{a}"].dtype) for m in f["mod"] for a in ("indices", "indptr")}
     holds = types == {"int64"} and len(sf.validate_screen(wide, index_limit=1)) == 0 and same_counts(wide, source)
-    results["(writer) past the index limit both index arrays are 64-bit"] = {"rules": [], "level": "conforming", "holds": holds}
+    results["(writer) past the index limit both index arrays are 64-bit"] = {"rules": [], "conforms": True, "holds": holds}
     if not holds:
         wrong += 1
         print("MISMATCH: the writer's 64-bit branch")

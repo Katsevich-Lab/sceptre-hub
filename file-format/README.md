@@ -22,7 +22,7 @@ conformance files, the validators and a harness for testing any implementation
 | `spec/` | The machine-readable parts: `screen.json` (the structure of a data file), `tables.json` (every table's columns, types and key) and JSON Schemas for the JSON records |
 | `format/` | The prototype's format code: reader, writer and validators in R (`sceptre_format.R`) and Python (`sceptre_format.py`), with the same names. It uses neither sceptre nor pysceptre. Temporary: the reader and writer are to move into the packages |
 | `example/` | Files in the format: a high-MOI dataset with seven analyses, a low-MOI dataset with one, and a small synthetic data file with every kind of column. `example/*/expected/` holds what sceptre itself held for each analysis, captured once. The example files are frozen: the code that made them needed sceptre and was removed after commit `7e10af4` |
-| `conformance/` | Files that conform, files a reader must still accept, and files that each break one rule, with what a validator must report (`cases.json`) |
+| `conformance/` | Files that conform and files that each break a rule, with what a validator must report (`cases.json`). Five of the broken ones store counts or index arrays in another number type, which a reader must still read |
 | `verify/` | **The package-free suite**: every check of the format that needs neither sceptre nor pysceptre |
 | `scale-test/` | The scripts and recorded results of one run on a real screen of 207,324 cells |
 | `make_conformance.py`, `check_conformance.R`, `check_conformance.py` | Build `conformance/` from `example/`, and run each language's validators and readers over every case |

@@ -189,13 +189,14 @@ one rule, and no rounding between what a package computed and what it reads back
   - The smallest unsigned type that fits: what public pysceptre does *(verified)*. 298 MB on the same matrix *(measured)*, but the type then differs from file to file and R has no unsigned integers.
 - **Why.** A fixed type makes the two writers agree. With gzip the choice barely matters (98 MB against 103 MB, *measured*), so the smaller unsigned types buy little. R can write these types with six lines after the MuData writer *(measured)*.
 - **Locks in.** Counts are integers. R sceptre does not check this today *(verified, `R/check_functions.R`)*; the fork does *(verified, `storage/count_identity.py`)*.
-- **Two levels: conforming and readable** *(Adopted, 18 November)*. A file whose counts are in another integer or floating-point type, with whole values, is not conforming, and a reader must still accept it. The validators report such a file as "readable", apart from files that are damaged. This is what an IGVF file's counts are. *(measured)* Both readers read the five readable conformance files to the same counts as the conforming file.
+- **One level: a file conforms or it does not** *(Decided by Eugene, 18 November)*. A file whose counts or index arrays are in another integer or floating-point type, with whole values, does not conform, and a reader must still read it (S4.4). That is "readers lenient, writers strict" as one behaviour rule. *(measured)* Both readers read the five such conformance files to the same counts as the conforming file.
+  - **Tried and dropped: a middle level, "readable".** Until 18 November the validators reported three levels: conforming, readable (not conforming, but a reader must accept it) and not readable. It was added for counts in another number type, as IGVF writes them. It was dropped because no real file from another tool would land in it: an IGVF file also has other modality names, the other matrix layout and assignments as a layer, so it breaks many rules and needs an importer regardless. The level existed for a file that does not occur, and the index-type decision was adding more cases to it. The validators now return rule, place and message, and a file conforms when they return nothing.
 - **The index type** *(Decided by Eugene, 18 November)*. Both index arrays of a modality are stored in one signed integer type: 32-bit while the stored values, the cells and the features each number at most 2,147,483,647, and 64-bit otherwise. This is scipy's own rule *(verified in scipy 1.18.1: `get_index_dtype`; a matrix with a dimension of 2³¹ − 1 gets 32-bit arrays and one of 2³¹ gets 64-bit)*.
   - **What it replaced.** Until 18 November the rule was 32-bit cell positions with 64-bit column pointers, always. That rule was invented here; scipy's is the existing convention. *(measured)* Mixed widths made one common scanpy function, `calculate_qc_metrics`, fail on a plain anndata read, because scipy rejects mixed widths in some operations, and they needed a step in our own reader. The case for 64-bit pointers was arithmetic only: the scale test's 699 million nonzeros are under the limit.
   - **Cost.** Past about 2.1 billion nonzeros both arrays are 64-bit, so a cell position costs 8 bytes, not 4: roughly 12 bytes per nonzero against 8, half as much again before compression, on the datasets where size matters most. And the type now depends on the data. It is still determined by the data alone, so R and Python write the same types; both validators compute the type the size requires.
   - **Rejected.** Always 64-bit for both: one fixed type, but every file half as much again larger before compression.
-  - **Wider than needed, or two widths, is readable**, like counts in another type: not conforming, and a reader accepts it. The Python reader keeps its step that brings two widths to one, as leniency for such files only; it does nothing to a conforming file.
-  - **What was checked** *(measured, 18 November, `verify/wide_index.*` and the conformance set)*. scanpy's `calculate_qc_metrics` now runs on every example and conformance data file read with anndata alone, for files written by R and by Python. No test file can reach the limit, so the 64-bit branch is tested with the limit lowered, in both writers and both validators: each writer then stores both arrays as 64-bit, the two files hold the same arrays, and each validator passes them under the lowered limit and reports them readable (S4.2, S4.3) under the real one. **64-bit cell positions in R:** the high-MOI example with both arrays 64-bit reads to the same counts through the prototype's reader in memory, through MuData's backed reader (one feature at a time and whole), and through HDF5Array, with no warning beyond those on the 32-bit file.
+  - **Wider than needed, or two widths, does not conform**, like counts in another type, and a reader still reads it (S4.4). The Python reader keeps its step that brings two widths to one, as leniency for such files only; it does nothing to a conforming file.
+  - **What was checked** *(measured, 18 November, `verify/wide_index.*` and the conformance set)*. scanpy's `calculate_qc_metrics` now runs on every example and conformance data file read with anndata alone, for files written by R and by Python. No test file can reach the limit, so the 64-bit branch is tested with the limit lowered, in both writers and both validators: each writer then stores both arrays as 64-bit, the two files hold the same arrays, and each validator passes them under the lowered limit and reports S4.2 and S4.3 under the real one. **64-bit cell positions in R:** the high-MOI example with both arrays 64-bit reads to the same counts through the prototype's reader in memory, through MuData's backed reader (one feature at a time and whole), and through HDF5Array, with no warning beyond those on the 32-bit file.
   - **What was not checked.** Values above 2,147,483,647 in either array. That needs a file of more than 2.1 billion nonzeros, or cells, and none was built. R holds such values as doubles when read with rhdf5, exactly up to 2⁵³; whether MuData's backed reader and HDF5Array do the same at that size is unmeasured. The test above shows the wider type is handled, not the larger values.
 - **Flag.** R's in-memory sparse matrix cannot hold more than 2³¹ − 1 nonzeros. Past that size R must read disk-backed. That is a limit of R, not of the file.
 - **IGVF.** The smallest unsigned type that fits, chosen from the data's maximum, as public pysceptre does. This is the closest call in this document: IGVF's rule saves about a quarter of the uncompressed size (298 MB against 395 MB above) and nothing meaningful with gzip. This format keeps one fixed type so that the type never depends on the data. Readers here accept IGVF's types as they are. IGVF's code independently works around the same scipy problem with mixed index types (`normalize_sparse_index_dtypes`).
@@ -632,13 +633,14 @@ would cost.
 | 18 | `n_umis` and `n_nonzero` (S6) | Required for every modality | Loosening it is safe for old files |
 | 19 | Covariate names (S5) | Letters, digits, underscores, dots | Widening it is safe for old files |
 | 20 | When tables have `grna_id` (T3, T5) | Fixed by strategy and stage | Follows sceptre's output |
-| 21 | Counts in another number type (S4) | Not conforming; readable | Nothing |
+| 21 | Counts in another number type (S4) | Not conforming; a reader still reads them (S4.4). See row 31 | Nothing |
 | 22 | The hint to the data file (A1) | A relative path or a URL, never absolute; recorded only when the file is near; an optional dataset name and source; no dataset version (Eugene, 18 November) | Loosening the form is safe for old files |
 | 23 | Several gRNAs on one vector (S8) | An optional `vector_id`; one target per vector, and readers refuse otherwise; counts per gRNA (Eugene, 18 November) | Allowing several targets later is a minor change |
 | 24 | The target molecule (S8) | No entry of its own; `perturbation_type` covers it (Eugene, 18 November) | A minor addition |
 | 28 | The coordinate convention (S8) | 1-based, both ends included; all three position columns or none | A format change: it changes what stored numbers mean |
 | 29 | The index type of the counts (S4) | Both index arrays in one width: 32-bit until a dataset needs 64, scipy's rule (Eugene, 18 November). Replaces 32-bit positions with 64-bit pointers | A format change: types |
 | 30 | Where the fit cache's identity lives (T6) | Inside each part file, in its Parquet key-value metadata; no `identity.json`; clearing the cache becomes housekeeping (Eugene, 18 November) | A format change: where a record lives |
+| 31 | Conforming and "readable" as two levels (S4) | Dropped: a file conforms or it does not, and one behaviour rule says what a reader still accepts (Eugene, 18 November) | The validators' output: no `readable` column, no `conformance_level()` |
 | 26 | The layout of the analysis folder (A2) | One folder per stage, holding its record and its tables (Eugene, 18 November) | A format change: paths |
 | 27 | Where fits live (T6) | A cache outside the stages, `fits/response/`, filled by part files, with its own clearing rule; `fits/grna/` reserved (Eugene, 18 November) | A format change: paths |
 | 25 | What kind of screen it was (S10) | Optional `perturbation_type`, `organism`, `genome_build`, recorded now because they cannot be recovered later (Eugene, 18 November) | A new kind of perturbation is a minor addition |
@@ -826,7 +828,7 @@ remove a workaround in the format or its readers.
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
 | Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json`, `spec/fits.schema.json` | JSON Schemas for `analysis.json`, the six stage records, and the identity each part of the fit cache carries |
 | Data-file rules that need computing | `SPEC.md`, section 2 | The order of cells within a feature, uniqueness, the same cells in every modality: code in each language |
-| Conformance files | `conformance/`, built by `make_conformance.py` | 23 conforming files, written by R and by Python; 5 readable ones; and 68 that each break one rule, with the rules and the level a validator must report |
+| Conformance files | `conformance/`, built by `make_conformance.py` | 23 conforming files, written by R and by Python, and 73 that each break a rule, with the rules a validator must report. Five of the 73 store counts or index arrays in another number type, which a reader must still read (S4.4) |
 | Validators | `validate_screen()`, `validate_analysis()` in both prototype libraries | Check a data file or an analysis folder without building a package object, and report every problem, not only the first |
 
 **Why define it this way.**
@@ -862,11 +864,10 @@ implementation by someone who has only the specification.
 
 ### What was checked
 
-*(measured)* Both validators accept all 23 conforming files, report the 5
-readable files as readable, and report exactly the expected rules for all 68
-broken ones. The two languages report the same rules and the same level for
-every case. Both readers read each readable file to the same counts as the
-conforming file it was made from. 57 rules are exercised by at least one broken
+*(measured)* Both validators accept all 23 conforming files and report exactly the expected
+rules for all 73 broken ones. The two languages report the same rules for
+every case. Both readers read each of the five files of S4.4 to the same
+counts as the conforming file it was made from. 57 rules are exercised by at least one broken
 file. The validators check two more rules that have no conformance file: S11.1
 (no filter other than gzip), because R cannot read a file compressed otherwise
 at all, and T0.3 (row groups of at most a million rows), because the file would
@@ -885,7 +886,7 @@ objecting; he can overturn any of them.
 
 | # | Question | Settled as | Rule |
 |---|---|---|---|
-| 1 | Is a data file with another count type (16-bit unsigned, as IGVF writes) a conforming file? | No. It is *readable*: not conforming, and a reader must accept it. The validators report the two levels separately (*Adopted*) | S4.1, S4.4 |
+| 1 | Is a data file with another count type (16-bit unsigned, as IGVF writes) a conforming file? | No, and a reader must still read it. A separate "readable" level was tried and dropped (section 8, row 31) | S4.1, S4.4 |
 | 2 | Are `n_umis`, `n_nonzero` and `p_mito` required? | `n_umis` and `n_nonzero` are required for every modality; `p_mito` is optional (*Adopted*) | S6 |
 | 3 | Must a required table exist when it has no rows? | Yes | A5.4 |
 | 4 | When do the pair-QC and results tables have a `grna_id` column? | A rule, fixed by strategy and stage, and checked (*Adopted*) | T3.3, T5.6 |
@@ -1267,7 +1268,7 @@ it last ran, at commit `7e10af4`, before it was removed. Nothing reruns it.
 | Clearing a stage [9] | Its record and files and all later ones are removed |
 | Saved fits whose recorded method differs [9] | Not reused, with a message |
 | Every allowed column type, written by each language and read by the other [9] | Same result both ways |
-| The validators on 23 conforming, 5 readable and 68 broken files [10] | Both languages report the same rules and the same level for every file |
+| The validators on the conformance files [10] | Both languages report the same rules for every file |
 | A covariate with a dot in its name [9] | R and Python build the same design matrix (Python through an alias) |
 
 **Limits that remain.** These are limits of the prototype or of what was

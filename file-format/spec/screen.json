@@ -177,14 +177,6 @@
       }
     }
   },
-  "readable_but_not_conforming": {
-    "$comment": "Rules whose breach a reader must still accept, when the array is of another integer or floating-point type and holds whole numbers.",
-    "rules": [
-      "S4.1",
-      "S4.2",
-      "S4.3"
-    ]
-  },
   "grna_table_forbidden": [
     {
       "name": "grna_group",

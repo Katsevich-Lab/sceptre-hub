@@ -1,6 +1,6 @@
 # Runs the R validators over conformance/cases.json and writes what they report
 # for each case to conformance/results-r.json: the rules, and whether the file
-# is conforming, readable or not readable. A "readable" file is then read, and
+# conforms. A file that does not conform and must still be read (S4.4) is then read, and
 # must give the same counts as the conforming file it was made from.
 #     Rscript check_conformance.R
 source("format/setup.R")
@@ -15,7 +15,7 @@ wrong <- 0L
 results <- list()
 for (case in cases) {
     found <- if (case$kind == "screen") validate_screen(case$path) else validate_analysis(case$path, case$screen)
-    result <- list(rules = I(sort(unique(found$rule), method = "radix")), level = conformance_level(found))
+    result <- list(rules = I(sort(unique(found$rule), method = "radix")), conforms = nrow(found) == 0L)
     if (!is.null(case$reads_as)) result$reads_correctly <- same_counts(case$path, case$reads_as)
     if (!is.null(case$conforming_with_index_limit)) {
         # the 64-bit branch of S4: no test file reaches the real limit, so the limit is lowered.
@@ -47,11 +47,11 @@ for (case in cases) {
     }
     results[[case$name]] <- result
     expected <- sort(as.character(unlist(case$expect)), method = "radix")
-    if (!identical(as.character(result$rules), expected) || result$level != case$level || isFALSE(result$reads_correctly) ||
+    if (!identical(as.character(result$rules), expected) || !identical(result$conforms, case$conforms) || isFALSE(result$reads_correctly) ||
         isFALSE(result$reader_refused) || isFALSE(result$copy_kept_modalities) || isFALSE(result$wide_branch) || isFALSE(result$fits_as_expected)) {
         wrong <- wrong + 1L
-        cat("MISMATCH ", case$name, ": expected ", paste(expected, collapse = ", "), " (", case$level, "); reported ",
-            paste(result$rules, collapse = ", "), " (", result$level, ")\n", sep = "")
+        cat("MISMATCH ", case$name, ": expected ", paste(expected, collapse = ", "), "; reported ",
+            paste(result$rules, collapse = ", "), "\n", sep = "")
         print(found, row.names = FALSE)
     }
 }
@@ -69,7 +69,7 @@ invisible(file.copy(file.path(source_analysis, "qc/cells.parquet"), file.path(re
 record <- saved$stages$assignment
 fmt_write_stage(retry, "assignment", list(settings = record$settings), list("assignment/assignments" = saved$tables[["assignment/assignments"]]), record$provenance)
 clean <- !file.exists(file.path(retry, "assignment/flagged_cells.parquet")) && nrow(validate_analysis(retry)) == 0L
-results[["(writer) a retried stage leaves nothing of the first attempt"]] <- list(rules = I(character()), level = "conforming", holds = clean)
+results[["(writer) a retried stage leaves nothing of the first attempt"]] <- list(rules = I(character()), conforms = TRUE, holds = clean)
 if (!clean) {
     wrong <- wrong + 1L
     cat("MISMATCH: a retried stage left files of its first attempt\n")
@@ -83,7 +83,7 @@ listing <- rhdf5::h5ls(wide, all = TRUE)
 types <- listing$dtype[grepl("/X$", listing$group) & listing$name %in% c("indices", "indptr")]
 holds <- length(types) == 4L && all(grepl("^H5T_STD_I64", types)) && nrow(validate_screen(wide, index_limit = 1)) == 0L && same_counts(wide, wide_source)
 rhdf5::h5closeAll()
-results[["(writer) past the index limit both index arrays are 64-bit"]] <- list(rules = I(character()), level = "conforming", holds = holds)
+results[["(writer) past the index limit both index arrays are 64-bit"]] <- list(rules = I(character()), conforms = TRUE, holds = holds)
 if (!holds) {
     wrong <- wrong + 1L
     cat("MISMATCH: the writer's 64-bit branch\n")

@@ -812,17 +812,14 @@ count_types <- function(file) {
 # `where`, `message`), with no rows when the files conform. The Python library
 # has the same two functions and reports the same rules.
 
-# `readable` marks a problem that makes a file not conforming while a reader
-# must still accept it (another whole-number type for the counts, S4.4).
 problem_log <- function() {
     found <- list()
-    record <- function(readable) function(rule, where, ...) {
-        found[[length(found) + 1L]] <<- data.frame(rule = rule, where = where, message = paste0(...), readable = readable)
-    }
     list(
-        add = record(FALSE), add_readable = record(TRUE),
+        add = function(rule, where, ...) {
+            found[[length(found) + 1L]] <<- data.frame(rule = rule, where = where, message = paste0(...))
+        },
         all = function() {
-            if (length(found) == 0L) return(data.frame(rule = character(), where = character(), message = character(), readable = logical()))
+            if (length(found) == 0L) return(data.frame(rule = character(), where = character(), message = character()))
             out <- unique(do.call(rbind, found))
             out <- out[order(out$rule, out$where, out$message, method = "radix"), ]
             rownames(out) <- NULL
@@ -833,11 +830,6 @@ problem_log <- function() {
 
 MODALITY_NAME <- SCREEN_SPEC$modalities$name_pattern
 
-# One word for what a set of problems means: "conforming" (none), "readable"
-# (not conforming, and a reader must still accept the file) or "not readable".
-conformance_level <- function(problems) {
-    if (nrow(problems) == 0L) "conforming" else if (all(problems$readable)) "readable" else "not readable"
-}
 
 # The compression filters of HDF5 datasets.
 h5_filters <- function(file, paths) {
@@ -955,9 +947,8 @@ validate_screen <- function(file, index_limit = NULL) {
             kind <- if (expect[[array]] == "index") index else expect[[array]]
             why <- if (expect[[array]] == "index") " (the index type a file of this size requires)" else ""
             if (!is_stored_as(row$dtype, kind)) {
-                # another whole-number type: not conforming, and a reader still accepts it (S4.4)
-                add <- if (row$dclass %in% c("INTEGER", "FLOAT")) log$add_readable else log$add
-                add(rules[[array]], paste0(x, "/", array), "is not stored as ", sub("int", "", kind), "-bit signed integers", why, ".")
+                # not conforming; a reader still accepts any whole-number type here (S4.4)
+                log$add(rules[[array]], paste0(x, "/", array), "is not stored as ", sub("int", "", kind), "-bit signed integers", why, ".")
             }
             if (length(setdiff(filters[[paste0(x, "/", array)]], unlist(SCREEN_SPEC$counts$filters))) > 0L) log$add("S11.1", paste0(x, "/", array), "uses a filter other than gzip.")
         }

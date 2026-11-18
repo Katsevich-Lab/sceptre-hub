@@ -451,7 +451,7 @@ def _scalar(value):
 
 
 def _same_index_width(counts) -> None:
-    """Leniency for readable files (S4.4). A conforming file already holds both
+    """A reader accepts any whole-number type for the index arrays (S4.4). A conforming file already holds both
     index arrays in one type, and this does nothing to it. A file from another
     writer may hold them in two, which scipy rejects in some operations; both are
     then brought to the type the size requires."""
@@ -980,25 +980,14 @@ MODALITY_NAME = SCREEN_SPEC["modalities"]["name_pattern"]
 
 
 class _Problems:
-    """`readable` marks a problem that makes a file not conforming while a reader
-    must still accept it (another whole-number type for the counts, S4.4)."""
-
     def __init__(self):
         self.found = set()
 
-    def add(self, rule, where, message, readable=False):
-        self.found.add((rule, str(where), message, readable))
+    def add(self, rule, where, message):
+        self.found.add((rule, str(where), message))
 
     def all(self) -> pd.DataFrame:
-        return pd.DataFrame(sorted(self.found), columns=["rule", "where", "message", "readable"])
-
-
-def conformance_level(problems: pd.DataFrame) -> str:
-    """One word for what a set of problems means: "conforming" (none), "readable"
-    (not conforming, and a reader must still accept the file) or "not readable"."""
-    if len(problems) == 0:
-        return "conforming"
-    return "readable" if bool(problems["readable"].all()) else "not readable"
+        return pd.DataFrame(sorted(self.found), columns=["rule", "where", "message"])
 
 
 def _storage_kind(node) -> str:
@@ -1125,8 +1114,8 @@ def validate_screen(file, index_limit=None) -> pd.DataFrame:
             for array, kind in expect.items():
                 kind, why = (index, " (the index type a file of this size requires)") if kind == "index" else (kind, "")
                 if group[array].dtype != np.dtype(kind):
-                    # another whole-number type: not conforming, and a reader still accepts it (S4.4)
-                    log.add(rules[array], f"{x}/{array}", f"is not stored as {kind.removeprefix('int')}-bit signed integers{why}.", readable=group[array].dtype.kind in "iuf")
+                    # not conforming; a reader still accepts any whole-number type here (S4.4)
+                    log.add(rules[array], f"{x}/{array}", f"is not stored as {kind.removeprefix('int')}-bit signed integers{why}.")
                 if _filters(group[array]) - set(SCREEN_SPEC["counts"]["filters"]):
                     log.add("S11.1", f"{x}/{array}", "uses a filter other than gzip.")
             data, indices, indptr = (group[k][()] for k in ("data", "indices", "indptr"))
