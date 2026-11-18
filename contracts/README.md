@@ -10,8 +10,8 @@ cover only the boundaries between repositories, never internals.
   Other implementations show agreement by reproducing R's outputs.
 - **Executable, not prose.** Whatever a test can check is a test or a
   machine-readable file. Prose explains intent and tolerances only.
-- **Changes go through a proposal,** together with the matching test or fixture
-  change. There are no prose-only edits.
+- **Changes are decided by the maintainers,** together with the matching test or
+  fixture change. There are no prose-only edits.
 - **The methods themselves** are specified by the published papers and the
   [book](https://timothy-barry.github.io/sceptre-book/). They are not
   restated here.

@@ -8,8 +8,8 @@ arrow means "finish this before starting that". Work with no path between it can
 run in parallel.
 
 Each item is marked **Now** (in progress or ready to start), **Next** (waiting on
-an item marked Now) or **Later** (further down the graph, or needing a proposal
-first).
+an item marked Now) or **Later** (further down the graph, or needing a decision by the
+maintainers first).
 
 ```mermaid
 flowchart LR
@@ -93,7 +93,7 @@ that are Now. The dashed hexagon is the Bioconductor acceptance gate.
 | **IR Fast import in R** | Import rebuilt in R's own C++ code using the techniques of the redesigned converter prototyped during development: streamed parsing straight into gene-major output, guide aggregation as a sparse matrix product, an uncompressed or lightly compressed output option, and optionally overlapped decompression. That prototype imported the full Replogle screen in about 5 minutes on two CPU threads, against about 43 minutes for the current importer. A quick measurement of the two cheap changes (output compression and guide aggregation) on the current importer can start now. | R5 | R | Later (measurement Now) |
 | **IP Fast import in pysceptre** | The same converter as a native pysceptre importer writing standard AnnData/MuData storage, with an optional GPU mode (which adds little over CPU at full scale) | P1 | pysceptre | Next |
 | **R6 CPU speedups, results unchanged** | Speedups already implemented on development branches, where together they ran a full Gasperini permutation analysis 4.8× and a CRT analysis 3.6× faster than the released version, with identical output. They include native Poisson fitting, a dispersion cache, a fused scoring kernel, shared permutation prefixes, faster QC and import, and fit reuse. Brought over one at a time, each with unchanged results and a timing. | R3 | R | Next |
-| **R7 Faster fitting methods (results change)** | Prototyped accelerations that change numerical results: an accelerated logistic fitter for CRT, marginal guide-fit initialization, and a native binomial QR fitter. Each needs a method proposal and validation. | R3, R2, a proposal | R | Later |
+| **R7 Faster fitting methods (results change)** | Prototyped accelerations that change numerical results: an accelerated logistic fitter for CRT, marginal guide-fit initialization, and a native binomial QR fitter. Each needs a decision by the maintainers and validation. | R3, R2, a decision by the maintainers | R | Later |
 | **P1 Organize and land existing GPU code** | Existing GPU, native sampler and execution code reviewed and merged in pieces | — | pysceptre | Now |
 | **P2 Diagnose the full-scale GPU run** | One instrumented full-scale GPU CRT run that shows where the time goes | — | pysceptre | Now |
 | **P3 GPU at full scale** | Full-screen CRT and permutation on GPU, matching CPU results, with a timing table against 32 CPU cores | P1, P2, X2 | pysceptre | Next |
@@ -101,7 +101,7 @@ that are Now. The dashed hexagon is the Bioconductor acceptance gate.
 | **X2 pysceptre matches R** | pysceptre vendors the R parity fixtures and checks them in CI, within stated tolerances | R2, P1 | pysceptre | Next |
 | **X3 Data-model mapping** | Fixture inputs provided as both SCE and AnnData/MuData, and a short note on how fields correspond | R4, P4 | Both | Later |
 | **G Improved gRNA assignment** | The overhauled assignment method, validated and integrated | R3 | R, then pysceptre | Now (method); integration Next |
-| **S1 SPA in R** | Saddlepoint approximation for resampling p-values, chosen among the existing prototypes and validated | R3, a method proposal | R | Now (proposal); implementation Next |
+| **S1 SPA in R** | Saddlepoint approximation for resampling p-values, chosen among the existing prototypes and validated | R3, a decision by the maintainers | R | Now (decision); implementation Next |
 | **S2 SPA in pysceptre and on GPU** | The same method in Python, following the R reference | S1, P3 | pysceptre | Later |
 | **W Wilcoxon test** | Wilcoxon as an additional association test. Prototypes exist in both packages. | R4, P4 | Both | Later |
 | **N Nextflow hardening** | Containers, tests, CI, array jobs and nf-core-style documentation, on top of stable package interfaces | R5, X2, X3 | Pipeline | Later |
@@ -119,7 +119,7 @@ that are Now. The dashed hexagon is the Bioconductor acceptance gate.
 - **Why Nextflow comes late.** The pipeline wraps the packages. Hardening it
   before their data structures and interfaces settle would mean redoing the
   work.
-- **Method changes need a proposal** before implementation: G, S1, R7, PW and
+- **Method changes need a decision by the maintainers** before implementation: G, S1, R7, PW and
   C.
 
 ## Not on the roadmap
@@ -133,9 +133,9 @@ Considered and set aside for now:
   estimator rather than a speedup; native Poisson fitting (R6) already speeds up
   the current method.
 
-Any of these can return through a proposal.
+Any of these can return by a decision of the maintainers.
 
 ## Reviewing this roadmap
 
 The maintainers review the roadmap at least quarterly, and when an item
-finishes. Changes are made by pull request to this file.
+finishes.

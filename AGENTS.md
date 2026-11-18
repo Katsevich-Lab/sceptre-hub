@@ -9,41 +9,27 @@ rules, those apply too.
 - Read [ROADMAP.md](ROADMAP.md) and [CONTRIBUTING.md](CONTRIBUTING.md). Work only
   on items that serve the current priorities, unless a maintainer asks
   otherwise.
-- Work from an issue. If there is none, ask a maintainer before starting.
-- When the scope is unclear, stop and ask on the issue.
+- When the scope is unclear, stop and ask.
 
 ## Scope
 
-- One open pull request at a time per repository. Wait for it to be merged
-  before starting the next.
 - No new public functions, dependencies, object formats or result columns
-  without a maintainer's sign-off. Decisions that span languages need an
-  accepted proposal.
+  without a maintainer's sign-off.
 - Do not add work that was not asked for, even if it seems useful. Suggest it
-  as an issue instead.
+  instead.
 
-## Pull requests
+## Changes
 
-- Keep pull requests small and single-purpose. Behavior-preserving changes are
-  separate from changes that alter results.
-- State what the pull request checks and how that was verified. Report failures
-  and skipped checks plainly.
-- Before opening a pull request, run the checks and a fresh-context review, and
-  address the findings. Follow the review stages and round limits in
-  [CONTRIBUTING.md](CONTRIBUTING.md#review).
-- A pull request's approver cannot also be its author, because GitHub does not
-  let authors approve their own pull requests. Open the pull request from your
-  own account, unless you are the repository's approver (see
-  [Approval](CONTRIBUTING.md#approval)). In that case, open it from the lab's
-  machine account, `katsevich-lab-bot`. Never print or commit its token.
-- Report progress on the issue and pull request, not in separate status or
-  handoff documents.
+- Keep behavior-preserving changes separate from changes that alter results.
+- State what a change checks and how that was verified. Report failures and
+  skipped checks plainly.
 - Write commit messages, comments and documentation in plain language a
   maintainer can read quickly.
 - If a change alters R's output on the parity fixtures, say so. Regenerate the
-  fixtures and bump their version in the same pull request only when the
-  change is intended; otherwise fix the code. See
+  fixtures and bump their version in the same change only when the change is
+  intended; otherwise fix the code. See
   [contracts/parity.md](contracts/parity.md).
+- Never print or commit a token.
 
 ## Repository hygiene
 
@@ -56,5 +42,4 @@ rules, those apply too.
 ## Never
 
 - Push to the Bioconductor staging repository or publish a release.
-- Merge your own pull request.
-- Change defaults or statistical methods without an accepted proposal.
+- Change defaults or statistical methods without a maintainer's decision.

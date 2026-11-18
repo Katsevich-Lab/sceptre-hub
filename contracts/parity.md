@@ -47,5 +47,5 @@ implementation uncovers a bug in R, fix R first in a bug-fix pull request,
 regenerate the fixtures, and then let the other implementations follow.
 
 A deliberate divergence from R (for example, GPU random draws that differ from
-R's) needs an accepted proposal. It gets its own tolerance tier, recorded in the
+R's) needs a decision by the maintainers. It gets its own tolerance tier, recorded in the
 tolerances file.
