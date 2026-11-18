@@ -36,3 +36,13 @@ values a reader should be able to derive from the example analyses.
 its files pass the validators and read back correctly in the standard
 libraries; a reader conforms when it accepts every conforming and readable
 file, gets the source back, and refuses what must be refused.
+
+## To do
+
+Two more independent readers in R, agreed to wait: **anndataR** and
+**zellkonverter**. Notes for whoever adds them, neither verified against
+current versions: both are believed to read single `.h5ad` files and not
+`.h5mu`, so the test would be to export one modality to `.h5ad` and open it;
+and zellkonverter reads through Python's anndata, so it largely repeats a check
+that exists. The reason to do it sooner is if R users will open these files
+outside sceptre soon.

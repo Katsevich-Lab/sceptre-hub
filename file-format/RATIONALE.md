@@ -886,6 +886,25 @@ checked:
    by `SPEC.md` and `spec/`, and the validators are the arbiter. Any code whose
    files pass the validators and read back correctly in the standard libraries
    is a conforming writer.
+   *Custom writers, generic readers plus a thin layer* (accepted by Eugene,
+   18 November). Each conforming writer is a wrapper around the standard
+   writer, not a replacement. R needs the most: counts written by hand, and
+   column conversions. Python needs a setting, types set before writing, and
+   the same conversions. Readers can be generic: the standard libraries open a
+   conforming file and return the right values. What they do not do is
+   interpret it: the version check, the link between an analysis and its data,
+   the refusals the specification requires, the covariate table with modality
+   prefixes, true/false arriving as a categorical, derived values, and today
+   the index-width step in Python. The reason is that the format allows only
+   what both languages read correctly today and makes the writers stay inside
+   that set. The burden falls on the two writers we control and not on
+   readers, which include tools we do not. Every R-side restriction in S7
+   traces to MuData's reader or writer, not to SingleCellExperiment: it cannot
+   open pandas' nullable strings, reads a Python boolean as text and a 64-bit
+   integer column as all missing, and writes a logical as an integer, missing
+   integers in a form Python cannot open, and missing text as empty. If MuData
+   is fixed or replaced, several restrictions could be lifted. None has been
+   reported upstream.
 2. **A round trip through one's own reader and writer is weak evidence.** It
    tests that the pair is self-consistent and cannot catch an error they share.
    It is a fair requirement of a package that adopts the format. Stronger
@@ -929,16 +948,45 @@ two questions:
   text, Python as a categorical, because mudata converts text with repeated
   values as it writes. Both conformed and both read back the same, but the
   files were not the same. The Python writer now stores it as R does.
-- *Open: counts cannot be handed to scanpy as anndata reads them.* The format
-  stores column pointers as 64-bit integers and cell positions as 32-bit (S4).
-  scipy's compiled routines refuse a matrix whose two index arrays differ in
-  width, so `scanpy.pp.calculate_qc_metrics` fails on a modality read with
-  anndata alone. The prototype's reader brings both to one width, and IGVF's
-  code does the same; a user who opens the file with standard tools gets an
-  error. The alternatives are to store both arrays in one width (32-bit until
-  the nonzeros need 64, as scipy and anndata write natively, at the price of a
-  type that depends on the data; or always 64-bit, at four more bytes per
-  nonzero), or to keep S4 and document the step. This is Eugene's to decide.
+- *Open: one common scanpy function fails on the counts as anndata reads
+  them.* anndata and scanpy both open and use the files. The format stores
+  column pointers as 64-bit integers and cell positions as 32-bit (S4), and
+  scipy rejects mixed index widths in some operations. *(measured by a side
+  session on 18 November: scanpy 1.12.5, scipy 1.18.1, anndata 0.13.4, on
+  `example/highmoi/screen.h5mu`)* Sums, conversion to dense or to compression
+  by cell, slicing, `normalize_total`, `log1p`, `scale`, `pca`, `filter_cells`,
+  `filter_genes`, `to_df` and `write_h5ad` work on the raw read.
+  `scanpy.pp.calculate_qc_metrics` fails with "Output dtype not compatible
+  with inputs". It is not particular to these files: a scipy matrix that never
+  touched them fails the same way with 64-bit pointers and 32-bit positions.
+  It works after `.copy()`, or with both arrays in one width, which is what the
+  prototype's reader and IGVF's code do. The suite checks a subset of this on
+  every run.
+
+  The question it raises is whether S4 should store both arrays in one width.
+  **Not decided; S4 is unchanged.** The options:
+
+  - *One width by scipy's rule*: 32-bit when the nonzeros and dimensions fit,
+    64-bit otherwise. Recommended to Eugene by the side session, and by me.
+    - For: it is scipy's own rule, so it is the existing convention and the
+      mixed-width rule is the invented one; a Python writer needs no special
+      handling; a plain anndata read works in every scanpy function, and the
+      fix-up in the Python reader goes away. The case for 64-bit pointers is
+      so far arithmetic only: the scale test's 699 million nonzeros are under
+      the limit of about 2.1 billion.
+    - Against: past the limit a cell position costs 8 bytes, not 4, so about
+      12 bytes per nonzero against 8 before compression, on the datasets where
+      size matters most. The type then depends on the data: still
+      deterministic, so R and Python still write identical files, but the
+      validator must compute the right width and the conformance set needs
+      cases on both sides of the limit. And 64-bit cell positions are untested
+      in R: the scale test covered 64-bit pointers only, R's in-memory matrix
+      cannot hold that many nonzeros, so the disk-backed path would need
+      checking before the rule is relied on.
+  - *Always 64-bit for both*: one fixed type that works in scanpy, but every
+    file is half as much again larger before compression (the 5.7 GB scale
+    file would be about 8.5 GB, an estimate). Advised against.
+  - *Keep S4* and document the copy.
 - *Open: the fit cache's record sits inside its folder of parts.* A reader
   pointed at `fits/response/` as a Parquet dataset meets `identity.json` and
   fails; given the part files, or a `*.parquet` pattern, it works. Moving the
@@ -1222,7 +1270,8 @@ tested, not open choices:
 - Refused with a message: a gRNA under two targets; a formula outside the
   additive subset.
 - Tested once at scale, for the data file only (Appendix A): 207,324 cells.
-  Not tested: an analysis at scale, a second platform, Zarr, methods other than
+  Not tested: an analysis at scale, a second platform, Zarr, the R readers
+  anndataR and zellkonverter, methods other than
   those in the examples, and a file whose second modality
   is real data (the `atac` and `hashing` test reuses the RNA counts and a
   synthetic matrix).

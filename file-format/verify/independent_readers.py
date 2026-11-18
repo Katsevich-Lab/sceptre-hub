@@ -33,17 +33,28 @@ for file, writer in FILES.items():
             adata = ad.io.read_elem(f[f"mod/{modality}"])
             shape = tuple(int(v) for v in f[f"mod/{modality}/X"].attrs["shape"])
             results.add(f"anndata reads {modality} of {file} ({writer})", adata.shape == shape, f"{adata.shape}")
-            # scanpy recomputes the per-cell totals from the counts; the file stores them.
-            # First on the matrix exactly as anndata returns it: 64-bit column pointers
-            # with 32-bit cell positions (S4), which scipy's compiled routines reject.
+            # scanpy on the matrix exactly as anndata returns it: 64-bit column pointers with
+            # 32-bit cell positions (S4). Each call gets a second, untouched read, because
+            # copying the object would already bring the two index arrays to one width.
+            def as_read():
+                return ad.io.read_elem(f[f"mod/{modality}"])
+            def use(adata_):
+                adata_.X.sum(); adata_[:10, :5].X.toarray(); adata_.X.tocsr()
+                sc.pp.normalize_total(adata_); sc.pp.log1p(adata_)
+                return True
+            results.add(f"scanpy uses {modality} of {file} exactly as anndata reads it "
+                        "(sums, slices, conversion, normalize_total, log1p)", use(as_read()))
+            # One function is known to fail there: scipy rejects mixed index widths in some
+            # operations, for any matrix, ours or not. percent_top=None because the default
+            # asks for the top 500 features, which a 100-feature example does not have.
             try:
-                # a second, untouched read: copying the object would already change the index widths
-                sc.pp.calculate_qc_metrics(ad.io.read_elem(f[f"mod/{modality}"]), percent_top=None, log1p=False)
-                as_read = "works"
+                sc.pp.calculate_qc_metrics(as_read(), percent_top=None, log1p=False)
+                outcome = "works"
             except ValueError as error:
-                as_read = f"FAILS ({error})"
-            results.add(f"scanpy on {modality} of {file} exactly as anndata reads it", as_read,
-                        "an observation: the format stores pointers and positions in different widths")
+                outcome = f"FAILS ({error})"
+            results.add(f"scanpy.pp.calculate_qc_metrics on {modality} of {file} exactly as anndata reads it", outcome,
+                        "an observation: scipy rejects 64-bit pointers with 32-bit positions in some operations; "
+                        "it works after a copy or with both arrays in one width")
             # then with both index arrays brought to one width, as the prototype's reader does
             adata.X.indptr = adata.X.indptr.astype(adata.X.indices.dtype)
             metrics = sc.pp.calculate_qc_metrics(adata, percent_top=None, log1p=False)[0]
