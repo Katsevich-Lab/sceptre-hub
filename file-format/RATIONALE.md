@@ -8,7 +8,7 @@ format. Sections here and there share their letters and numbers (S3, A1, T5,
 
 **Status:** draft (format 0.1), November 2026. Every choice below is
 implemented in the prototype beside this file. None has been reviewed;
-[`REVIEW.md`](REVIEW.md) is a one-page guide for reviewers. Until sceptre's
+`notebook.html` is the introduction, and says what review is asked for. Until sceptre's
 first release that reads and writes these files, the format may change and no
 migration code is promised. At that release it is frozen as format 1.0 (S10).
 [Section 9](#9-fixed-now-free-to-grow) says which parts would be expensive to
@@ -681,7 +681,7 @@ table of planned additions below says which additions are not safe to ignore.
 
 ### To settle before the freeze
 
-- **Review** ([`REVIEW.md`](REVIEW.md) says where to look).
+- **Review** (`notebook.html` says where to look).
 - **An analysis at scale.** The data file has been through one real large dataset, in both languages and disk-backed (Appendix A). No analysis larger than the 1,000-cell examples has been written or read in this format.
 
 ### Planned additions to the format
@@ -749,7 +749,7 @@ remove a workaround in the format or its readers.
 | Piece | Where | What it is for |
 |---|---|---|
 | The rules | `SPEC.md` | Numbered statements, each a file rule, a behaviour rule or guidance, with a scope, a glossary and the library versions it is defined against. A validator's report cites them (`S4.1`) |
-| The reviewer's page | `REVIEW.md` | One page: the format in ten lines, the choices that are expensive to change, the questions that need a view, and what can be skipped |
+| The introduction | `notebook.html` | One page: what is on disk, the choices that are expensive to change with their reasons in short, the questions that need a view, and what has been tested |
 | The reasons | this document | Why each rule is what it is |
 | Data-file definition | `spec/screen.json` | The structure of a data file as data: required groups, number types, encodings, allowed column kinds, required columns and metadata. Both validators read it |
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
@@ -842,9 +842,10 @@ passing:
 - what a reader derives from the files, against values sceptre computed,
   stored beside the examples.
 
-**The notebook** (`notebook.qmd`) is an introduction, not a check: it shows
-the example data file and one analysis as annotated trees, with descriptions
-read from `spec/`, and how to open both with standard libraries. It renders R
+**The notebook** (`notebook.qmd`, rendered to `notebook.html`) is the
+introduction, not a check: it shows the example data file and one analysis as
+annotated trees, with descriptions read from `spec/`, and reports what the
+verification suite found when it was rendered. It renders R
 and Python in one process *(measured, macOS only)*. R's arrow and Python's
 pyarrow cannot both be loaded in that process, so its R side reads Parquet
 with nanoparquet.

@@ -30,7 +30,7 @@ Two limits of this version:
 This document states the rules. It gives no reasons: for each rule, the
 section of [`RATIONALE.md`](RATIONALE.md) with the same letter and number
 (S3, A1, T5, ...) explains the choice, its alternatives and the evidence.
-[`REVIEW.md`](REVIEW.md) is a one-page guide for reviewers.
+`notebook.html` is the introduction, and says what review is asked for.
 
 ## Versions and changes
 

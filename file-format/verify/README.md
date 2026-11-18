@@ -1,8 +1,8 @@
 # The verification suite
 
 Every check of the format. It needs neither sceptre nor pysceptre.
-`verify/run.sh` runs all of it and prints a summary; `../README.md` says what
-each check shows and which libraries it needs.
+`verify/run.sh` runs all of it and prints a summary. `../notebook.html` says
+what each check shows, and `../README.md` which libraries it needs.
 
 ## Testing another implementation
 
