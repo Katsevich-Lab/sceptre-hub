@@ -1,6 +1,6 @@
 # Reviewing the sceptre file format: one page
 
-The specification and its rationale are about 1,400 lines. This page says where
+The specification and its rationale are about 1,600 lines. This page says where
 review time is best spent. It should take ten minutes to read.
 
 ## The format in ten lines
@@ -42,30 +42,28 @@ files. Disagreement is cheap now and costly then.
 ## Questions that need your view
 
 1. **Is the scope right?** The specification fixes the form of results and leaves their meaning (what a p-value tests) to sceptre's method documentation.
-2. **Is anything missing that a real screen needs?** In particular for gRNA annotation: the format has a target, its position and an optional vector, and no gRNA type or spacer sequence yet (`RATIONALE.md`, section 10).
+2. **Is anything missing that a real screen needs?** In particular for gRNA annotation: the format has a target, its position and an optional vector, and no gRNA type or spacer sequence yet (`RATIONALE.md`, section 9).
 3. **Coordinates.** Target positions are 1-based with both ends included, as in GTF files and in sceptre's own data, and the genome build can be recorded. Is that the right convention, and should the build be required when positions are present?
 4. **Scope.** A gRNA has one target, and so does a vector carrying several gRNAs; combinatorial screens are refused. DNA-targeting is assumed. Are those limits acceptable for now?
 5. **The fitting-method default.** Saved fits are shared between R and Python only when the method matches, and the current default differs from the alternatives on a few responses (T6). This is a scientific decision the format does not make.
 6. **Is the restriction to additive formulas acceptable?** An analysis with an interaction or a spline cannot be saved.
-7. **Twelve smaller questions** that writing the rules down exposed are listed in `RATIONALE.md`, section 11, with how each was settled.
 
 ## What you can skip
 
 These can be added or changed later without breaking any file, so they do not
 need review now:
 
-- **Optional columns and tables not yet in the format**: gRNA type, spacer, gene annotation, per-cell QC reasons, assignment scores. Section 10 of the rationale lists them.
+- **Optional columns and tables not yet in the format**: gRNA type, spacer, gene annotation, per-cell QC reasons, assignment scores. Section 9 of the rationale lists them.
 - **The wording of individual rules.** It will change. The sorting of rules into file rules, behaviour rules and guidance is meant to be final; the sentences are not.
 - **Compression settings and Parquet details.** Readers do not depend on them.
 - **The prototype code** in `format/`. It exists to show the format works in both languages and will be replaced by code in the packages.
-- **Comparisons with IGVF and pertpy** (section 9), unless you know those formats and see an error.
+- **Comparisons with IGVF and pertpy** (section 8), unless you know those formats and see an error.
 
 ## What has and has not been tested
 
-- **Tested without either package** (`verify/run.sh`): R and Python write identical files from the same content; each reads the other's and gets the source back; tools outside this code (anndata, polars, duckdb, HDF5Array, arrow) read them; two validators agree on a set of valid and deliberately broken files.
-- **A notebook** (`notebook.qmd`, rendered with `./render.sh`) walks through the format in R and Python with standard libraries only. It was rendered on macOS only.
-- **Tested with the packages, up to commit `7e10af4` only:** every example analysis was rebuilt as a sceptre and a pysceptre object and matched the original, which showed the files held everything an analysis needs. That suite was then removed, because it needed unreviewed builds of both packages on one machine. Changes to the format after that commit have no such check until the packages adopt the format.
-- **No open finding** from the independent readers. Two were settled on 18 November: one scanpy function failed on the counts as read, fixed by storing both index arrays in one width (S4); and a dataset reader pointed at the fit cache's folder tripped on a JSON record inside it, fixed by putting the identity of the fits inside each part file (T6).
+- **Tested** (`verify/run.sh`, with neither package): R and Python write identical files from the same content; each reads the other's and gets the source back; tools outside this code (anndata, scanpy, pandas, polars, duckdb, HDF5Array, arrow) read them; two validators agree on a set of valid and deliberately broken files.
+- **A notebook** (`notebook.qmd`, rendered with `./render.sh`) walks through the format in R and Python. It was rendered on macOS only.
+- **Whether the files hold everything an analysis needs** was checked once, by rebuilding sceptre and pysceptre objects from the example files (`RATIONALE.md`, Appendix B). Nothing here repeats that check; it returns when the packages adopt the format.
 - **Tested once at scale:** the data file, on a real screen of 207,324 cells, written by both languages to identical files and read back in memory and from disk (`RATIONALE.md`, Appendix A).
 - **Not tested:** an analysis larger than 1,000 cells; a second operating system; real data in a second measured modality.
 - **Known limit:** everything was written and implemented by one author. An independent implementation from the specification alone has not been attempted.

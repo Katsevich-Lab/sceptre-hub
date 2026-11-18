@@ -1,9 +1,9 @@
 """Builds conformance/: files that conform to SPEC.md and files that each break
 one of its rules, with the rules a validator must report for each
 (conformance/cases.json). It builds from the committed files in example/, which
-are frozen: nothing here regenerates them. Run from this folder:
+are fixed: nothing here regenerates them. Run from the folder that holds format/:
 
-    python make_conformance.py
+    python verify/make_conformance.py
 
 The valid files are written by R (copied from example/) and by Python (written
 here with sceptre_format.py). Every invalid file is a copy of a valid one with
@@ -548,7 +548,7 @@ broken_analysis("fit_identity_incomplete", ["T6.1"], "The identity inside a part
 broken_analysis("fit_identity_not_json", ["T6.1"], "The identity inside a part of the fit cache is not JSON",
                 lambda p: restamp(fit_part(p), lambda v: "poisson, all cells"))
 cases[-1]["fits_used"] = False
-broken_analysis("identity_file_in_the_fit_cache", ["T6.1"], "The fit cache holds a JSON file beside its parts, as drafts before 18 November had",
+broken_analysis("identity_file_in_the_fit_cache", ["T6.1"], "The fit cache holds a JSON file beside its parts, which a folder reader would trip on",
                 lambda p: (p / "fits/response/identity.json").write_text("{}\n"))
 broken_analysis("fits_before_qc", ["T6.3"], "An analysis that stopped after assignment holds a fit cache",
                 lambda p: [shutil.rmtree(p / s) for s in ("qc", "calibration", "power", "discovery")])

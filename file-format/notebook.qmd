@@ -19,8 +19,7 @@ choose a language in any tab set and every tab set on the page follows.
 
 The files it reads are the committed ones in `example/` and `conformance/`.
 The code that does the reading and writing is the prototype in `format/`
-(`sceptre_format.R`, `sceptre_format.py`), which is temporary: it moves into
-the packages when they adopt the format. What it writes goes to
+(`sceptre_format.R`, `sceptre_format.py`). What it writes goes to
 `verify/out/notebook/`, which is not committed.
 
 R and Python run in **one process** here (knitr, with reticulate for Python),
@@ -527,8 +526,8 @@ other = "conformance/valid/analyses/fits_made_with_another_method"
 ## What this notebook does not show
 
 - **Whether the files hold everything an analysis needs.** Only rebuilding a
-  real sceptre object tests that. A suite that did so was removed for now; see
-  `README.md`.
+  real sceptre object tests that, which happens when the packages adopt the
+  format.
 - **Anything about results**: whether sceptre and pysceptre compute the same
   p-values from these files is a question about the packages.
 - **Scale.** These examples have 500 and 1,000 cells. One run on 207,324 cells

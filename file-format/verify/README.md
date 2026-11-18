@@ -1,6 +1,6 @@
-# The package-free suite
+# The verification suite
 
-Every check of the format that needs neither sceptre nor pysceptre.
+Every check of the format. It needs neither sceptre nor pysceptre.
 `verify/run.sh` runs all of it and prints a summary; `../README.md` says what
 each check shows and which libraries it needs.
 
@@ -27,7 +27,7 @@ what has to be written.
 **A reader.** `conformance/cases.json` lists every conformance file with what
 must be concluded about it: the rules broken, whether it conforms, whether a
 reader must still read it (S4.4), and whether a reader must refuse it.
-`check_conformance.py` and `check_conformance.R` are the two libraries'
+`verify/check_conformance.py` and `verify/check_conformance.R` are the two libraries'
 runs over that list; another reader is tested by running it over the same
 list and comparing with the same expectations. `example/*/expected/` holds
 values a reader should be able to derive from the example analyses.
@@ -39,10 +39,9 @@ file S4.4 names, gets the source back, and refuses what must be refused.
 
 ## To do
 
-Two more independent readers in R, agreed to wait: **anndataR** and
-**zellkonverter**. Notes for whoever adds them, neither verified against
+Two more independent readers in R: **anndataR** and **zellkonverter**. Notes for whoever adds them, neither verified against
 current versions: both are believed to read single `.h5ad` files and not
 `.h5mu`, so the test would be to export one modality to `.h5ad` and open it;
 and zellkonverter reads through Python's anndata, so it largely repeats a check
-that exists. The reason to do it sooner is if R users will open these files
-outside sceptre soon.
+that exists. They matter once R users open these files outside
+sceptre.

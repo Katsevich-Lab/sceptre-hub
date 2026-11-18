@@ -1,4 +1,4 @@
-# Shared by the package-free checks: recording results, and making sure that
+# Shared by the checks: recording results, and making sure that
 # the sceptre package was not loaded.
 dir.create("verify/out/results", recursive = TRUE, showWarnings = FALSE)
 results <- list()

@@ -1,4 +1,4 @@
-"""Prints what every check of the package-free suite found, and exits with an
+"""Prints what every check of the verification suite found, and exits with an
 error if any failed.
 
     python verify/summary.py

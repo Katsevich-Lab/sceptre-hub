@@ -1,5 +1,5 @@
 #!/bin/sh
-# The package-free suite: every check of the format that needs neither sceptre
+# The verification suite: every check of the format. It needs neither sceptre
 # nor pysceptre. It uses the committed files in example/ and conformance/ as
 # they are, standard libraries, and the format code in format/.
 #     verify/run.sh
@@ -9,8 +9,8 @@ cd "$(dirname "$0")/.."
 export LANG=en_US.UTF-8
 PY="${SCEPTRE_FORMAT_PYTHON:-python3}"
 rm -rf verify/out
-"$PY" check_conformance.py
-Rscript check_conformance.R
+"$PY" verify/check_conformance.py
+Rscript verify/check_conformance.R
 "$PY" verify/encodings.py write
 Rscript verify/encodings.R
 "$PY" verify/encodings.py read

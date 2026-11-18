@@ -2,7 +2,7 @@
 # for each case to conformance/results-r.json: the rules, and whether the file
 # conforms. A file that does not conform and must still be read (S4.4) is then read, and
 # must give the same counts as the conforming file it was made from.
-#     Rscript check_conformance.R
+#     Rscript verify/check_conformance.R
 source("format/setup.R")
 same_counts <- function(a, b) {
     x <- fmt_read_screen(a)

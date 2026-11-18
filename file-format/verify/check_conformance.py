@@ -3,7 +3,7 @@ report for each case to conformance/results-python.json: the rules, and whether
 the file conforms. A file that does not conform and must still be read (S4.4) is then read,
 and must give the same counts as the conforming file it was made from.
 
-    python check_conformance.py
+    python verify/check_conformance.py
 """
 
 import json

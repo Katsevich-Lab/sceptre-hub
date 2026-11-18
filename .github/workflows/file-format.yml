@@ -1,4 +1,4 @@
-# The package-free checks of the file format (file-format/verify/run.sh), on
+# The verification suite of the file format (file-format/verify/run.sh), on
 # Linux and macOS. It installs standard libraries only: neither sceptre nor
 # pysceptre.
 #
@@ -35,7 +35,7 @@ jobs:
           install.packages(c("BiocManager", "jsonlite", "nanoparquet", "jsonvalidate", "arrow", "Matrix"))
           BiocManager::install(c("MuData", "rhdf5", "HDF5Array", "SingleCellExperiment", "MultiAssayExperiment"), ask = FALSE, update = FALSE)
         shell: Rscript {0}
-      - name: Package-free checks
+      - name: Verification suite
         run: file-format/verify/run.sh
       - uses: actions/upload-artifact@v4
         if: always()

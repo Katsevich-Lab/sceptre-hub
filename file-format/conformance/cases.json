@@ -954,7 +954,7 @@
       "T6.1"
     ],
     "conforms": false,
-    "what": "The fit cache holds a JSON file beside its parts, as drafts before 18 November had",
+    "what": "The fit cache holds a JSON file beside its parts, which a folder reader would trip on",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {

@@ -1,4 +1,4 @@
-"""Shared by the package-free checks: recording results, and making sure that
+"""Shared by the checks: recording results, and making sure that
 neither sceptre nor pysceptre was loaded."""
 import json
 import sys

@@ -1,9 +1,8 @@
 """Derived values against frozen expectations. What a reader computes from the
 files (which cells each gRNA and each target has, which cells are in use, which
 pairs pass QC, the log2 fold change, which results are significant, the control
-groups) is compared with what sceptre itself held, captured once into
-example/<dataset>/expected/ by the package suite, which was removed after commit
-7e10af4 (see README.md). Running this loads neither sceptre nor pysceptre.
+groups) is compared with what sceptre itself held, stored in
+example/<dataset>/expected/. Running this loads neither sceptre nor pysceptre.
 
     python verify/derived.py
 """

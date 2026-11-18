@@ -1,100 +1,74 @@
 # The sceptre file format: specification and prototype
 
-> **Draft, not accepted.** This folder is a proposal for a format, with a
-> working prototype. It has not been reviewed and is not a contract.
+> **Draft.** It has not been reviewed and is not a contract. The format is
+> version 0.1 until sceptre's first release that uses it, which freezes it as
+> 1.0.
 
-A proposed on-disk format for Perturb-seq data and analyses, the same files in
-R and Python, with one data file and any number of analyses of it.
+An on-disk format for Perturb-seq data and analyses: the same files in R and
+Python, with one data file and any number of analyses of it.
 
-**The code here is a prototype by one author, not a reference implementation.**
-It exists to show that the format works in both languages while the format is
-still being decided. When that is done, the reader and writer move into
-sceptre and pysceptre, which become the two reference implementations, and the
-copy here is retired. What stays is the specification, `spec/`, the
-conformance files, the validators and a harness for testing any implementation
-(`verify/README.md`).
+The format is defined by `SPEC.md` and `spec/`, and the validators decide
+whether a file conforms. The code in `format/` is a prototype by one author,
+not a reference implementation: its reader and writer are to move into sceptre
+and pysceptre, which become the two reference implementations.
 
 | Folder or file | What it is |
 |---|---|
 | `REVIEW.md` | One page for reviewers: the format in ten lines, what is expensive to change later, the open questions, and what can be skipped |
 | `SPEC.md` | The specification: scope, terms, and numbered statements sorted into file rules, behaviour rules and guidance; no reasons |
-| `RATIONALE.md` | The reasons: every choice with its alternatives, evidence, what it locks in, and how it compares with the IGVF pipeline's format |
+| `RATIONALE.md` | The reasons: every choice with its alternatives and evidence, comparisons with the IGVF pipeline's format and with pertpy, what is fixed and what can grow, and the measurements |
 | `spec/` | The machine-readable parts: `screen.json` (the structure of a data file), `tables.json` (every table's columns, types and key) and JSON Schemas for the JSON records |
-| `format/` | The prototype's format code: reader, writer and validators in R (`sceptre_format.R`) and Python (`sceptre_format.py`), with the same names. It uses neither sceptre nor pysceptre. Temporary: the reader and writer are to move into the packages |
-| `example/` | Files in the format: a high-MOI dataset with seven analyses, a low-MOI dataset with one, and a small synthetic data file with every kind of column. `example/*/expected/` holds what sceptre itself held for each analysis, captured once. The example files are frozen: the code that made them needed sceptre and was removed after commit `7e10af4` |
-| `conformance/` | Files that conform and files that each break a rule, with what a validator must report (`cases.json`). Five of the broken ones store counts or index arrays in another number type, which a reader must still read |
-| `verify/` | **The package-free suite**: every check of the format that needs neither sceptre nor pysceptre |
-| `notebook.qmd`, `render.sh` | **The notebook**: one document that walks through the format in R and in Python, in tabs, with standard libraries only. Its render stops if a comparison fails. R and Python run in one process; tested on macOS only, and not known to work on Linux |
-| `scale-test/` | The scripts and recorded results of one run on a real screen of 207,324 cells |
-| `make_conformance.py`, `check_conformance.R`, `check_conformance.py` | Build `conformance/` from `example/`, and run each language's validators and readers over every case |
+| `format/` | The prototype: reader, writer and validators in R (`sceptre_format.R`) and Python (`sceptre_format.py`), with the same names. It uses neither sceptre nor pysceptre |
+| `example/` | Files in the format: a high-MOI dataset with six analyses, a low-MOI dataset with one, and a small synthetic data file with every kind of column. `example/*/expected/` holds values that sceptre itself computed for each analysis |
+| `conformance/` | Files that conform and files that each break a rule, with what a validator must report (`cases.json`) |
+| `verify/` | The verification suite: every check of the format, and the scripts that build and check `conformance/` |
+| `notebook.qmd`, `render.sh` | One document that walks through the format in R and in Python, in tabs. Its render stops if a comparison fails |
+| `scale-test/` | Recorded results of one run on a real screen of 207,324 cells |
 
-Start with `REVIEW.md`. Then `SPEC.md` for what the format is, or sections 1 and 2 of
-`RATIONALE.md` for the idea in two pages, then the notebook. In
-`RATIONALE.md`:
+Start with `REVIEW.md`, then `SPEC.md` for what the format is and
+`RATIONALE.md` for why.
 
-- section 9 compares the format with IGVF's and with pertpy's conventions;
-- section 10 says what is fixed, what can be added later, and which changes to
-  the packages would simplify the format;
-- section 11 says how the format is formally defined and lists the questions
-  that writing it down precisely raised.
+## Running the checks
 
-The format is a draft (version 0.1) until sceptre's first release that uses it, which freezes it as 1.0.
+```sh
+verify/run.sh     # the verification suite; SCEPTRE_FORMAT_PYTHON picks the Python to use
+./render.sh       # the notebook
+```
 
-## The package-free suite, and what was removed
-
-**The package-free suite** (`verify/run.sh`) is the evidence about the format.
-It loads neither sceptre nor pysceptre, uses the committed files in `example/`
-and `conformance/` as they are, and runs on a machine that has only standard
-libraries:
+Both use standard libraries only and the committed files in `example/` and
+`conformance/` as they are.
 
 | Check | What it shows |
 |---|---|
+| conformance | Both validators and both readers on every file of `conformance/` |
 | `encodings` | Every kind of value, written by each language's standard libraries and read by the other's. The kinds the format allows come back correct; the kinds it forbids still break, as recorded in `verify/expected_encodings.json` |
 | `two_writers` | R and Python each write the same seeded random content. The files are compared array by array and column by column, and each language reads the other's file and compares it with the source |
-| `independent_readers` | Tools outside this code read the files: anndata, scanpy, polars and duckdb in Python; HDF5Array and arrow in R |
-| `wide_index` | The 64-bit branch of the index type (S4), with the limit lowered because no test file reaches it: both writers, both validators, and R's readers (in memory, MuData's backed reader, HDF5Array) on a file whose index arrays are both 64-bit |
-| conformance | Both validators and both readers on every file of `conformance/` |
-| `derived` | What a reader computes from the files (cells per gRNA and per target, cells in use, pairs passing QC, log2 fold change, significance, control groups) against what sceptre held, in `example/*/expected/`. Those values were produced by sceptre once; running the check does not load it |
+| `independent_readers` | Tools outside this code read the files: anndata, scanpy, pandas, polars and duckdb in Python; HDF5Array and arrow in R |
+| `wide_index` | The 64-bit branch of the index type (S4), with the limit lowered because no test file reaches it |
+| `derived` | What a reader computes from the files (cells per gRNA and per target, cells in use, pairs passing QC, log2 fold change, significance, control groups) against the values in `example/*/expected/` |
 
-```sh
-verify/run.sh               # SCEPTRE_FORMAT_PYTHON picks the Python to use
-```
-
-It needs, in R: `MuData`, `rhdf5`, `HDF5Array`, `SingleCellExperiment`,
+They need, in R: `MuData`, `rhdf5`, `HDF5Array`, `SingleCellExperiment`,
 `MultiAssayExperiment`, `Matrix`, `jsonlite`, `nanoparquet`, `jsonvalidate`,
-`arrow` (`nanoparquet` and `jsonvalidate` may be in `./rlib`). In Python:
-`mudata`, `anndata`, `h5py`, `pyarrow`, `pandas`, `scipy`, `jsonschema`,
-`scanpy`, `polars`, `duckdb`.
+`arrow` (`nanoparquet` and `jsonvalidate` may be in `./rlib`), and for the
+notebook `reticulate` and quarto. In Python: `mudata`, `anndata`, `h5py`,
+`pyarrow`, `pandas`, `scipy`, `jsonschema`, `scanpy`, `polars`, `duckdb`.
 
-**The package suite was removed for now** (Eugene, 18 November). It rebuilt
-sceptre and pysceptre objects from the files, and it needed unreviewed
-`sceptre3` builds of both packages that exist on one machine, with code that
-reached into internals the rebuild of the packages will change. It is in git
-history up to commit `7e10af4` and comes back inside the packages when they adopt
-the format. What that costs:
+`verify/README.md` says how another reader or writer is tested against the
+same files.
 
-- **The sufficiency check is gone.** Rebuilding a real sceptre object is the
-  only test that the files hold everything an analysis needs, and it found most
-  of the gaps in earlier drafts. The format passed it at every step up to
-  commit `7e10af4`. Changes after that commit are not covered until the packages
-  test them.
-- **The example files are frozen.** The code that generated them ran sceptre.
-  A format change from now on converts the committed files in place with
-  package-free code, written as part of that change and kept: it is a direct
-  test that old files can be carried forward.
-- **The frozen expectations stay.** `example/*/expected/` holds what sceptre
-  itself held for each analysis, produced once by the removed code.
-- **The parity checks are gone**: an analysis stopped in R and finished in
-  pysceptre, and the agreement of the two design matrices. Those compare the
-  packages, which is not the format's job.
+## What is and is not tested
 
-Generated and not committed: `rlib/`, `verify/out/`, `conformance/results-*.json`
-and the rendered `notebook.html`.
+- **Tested:** the two languages write the same files and read each other's;
+  tools outside this code read them; two validators agree on every conformance
+  file; values a reader derives match what sceptre computed. One run at scale
+  covered the data file.
+- **Not tested: whether the files hold everything a real analysis needs.**
+  That takes rebuilding a sceptre object from them, and is tested when the
+  packages adopt the format. `SPEC.md` marks the rules that have no test.
+- **The example files are fixed.** Nothing here regenerates them, so a format
+  change converts them in place, with code kept beside the change.
+- **One platform.** Everything ran on macOS. The notebook runs R and Python in
+  one process and is not known to work on Linux.
 
-## Scope
-
-The format is defined by `SPEC.md` and `spec/`, and the validators decide
-whether a file conforms. There is no canonical writer: the standard libraries
-do not write conforming files as they come, and any code whose files pass the
-validators and read back correctly is a conforming writer. Appendix B of
-`RATIONALE.md` lists what was checked and the limits that remain.
+Generated and not committed: `rlib/`, `verify/out/`,
+`conformance/results-*.json` and `notebook.html`.
