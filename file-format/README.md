@@ -2,9 +2,6 @@
 
 > **Draft, not accepted.** This folder is a proposal for a format, with a
 > working prototype. It has not been reviewed and is not a contract.
-> [`contracts/file-formats.md`](../contracts/file-formats.md), the hub's
-> existing format registry, is stale and will be replaced; this draft does not
-> follow it.
 
 A proposed on-disk format for Perturb-seq data and analyses, the same files in
 R and Python, with one data file and any number of analyses of it.
