@@ -83,7 +83,7 @@ final; the sorting into kinds is.
 - **none**: nothing tests it yet.
 
 Of the 122 statements, 82 are file rules, 29 behaviour rules and 11
-guidance. The validators check 79 of the file rules, a test covers 1 more
+guidance. The validators check 79 of the file rules (T0.9 in part), a test covers 1 more
 (T4.3), and 2 have no test (A3.2, T7.3). Tests or the conformance run
 cover 19 of the behaviour rules; 10 have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A1.5, A3.5, A6.2, T1.3, T7.4.
 Six of these untested rules (A1.5, A3.2, A3.5, T1.3, T7.3, T7.4) were tested by the
