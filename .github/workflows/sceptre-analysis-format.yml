@@ -5,7 +5,10 @@
 #   writers  the checks of the writers. Today these are the two writers in
 #            format/; when sceptre and pysceptre write the formats, this part
 #            installs them and checks their files instead.
-# It installs standard libraries only: neither sceptre nor pysceptre.
+# Those install standard libraries only: neither sceptre nor pysceptre.
+# A third part, on Linux, installs sceptre at a fixed commit and runs the
+# checks that need it (sceptre-analysis-format/sceptre-suite/run.sh): that an
+# analysis by sceptre is the same after being written to the files and rebuilt.
 name: sceptre analysis format
 
 # The analysis format builds on the data file format, so it runs when a push
@@ -54,3 +57,24 @@ jobs:
         with:
           name: results-${{ matrix.part }}-${{ matrix.os }}
           path: sceptre-analysis-format/verify/out/results/
+
+  sceptre:
+    name: sceptre (ubuntu-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - name: System libraries for R packages
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev libhdf5-dev libnode-dev
+      - name: R libraries, and sceptre 0.99.1
+        run: |
+          install.packages(c("BiocManager", "remotes", "jsonlite", "nanoparquet", "jsonvalidate", "Matrix"))
+          BiocManager::install(c("MuData", "rhdf5", "HDF5Array", "SingleCellExperiment", "MultiAssayExperiment"), ask = FALSE, update = FALSE)
+          BiocManager::install("Katsevich-Lab/sceptre@20c33349c2c5a0df66589e37f67238e67c53bcb0", ask = FALSE, update = FALSE)
+          for (package in c("sceptre", "MuData", "nanoparquet", "jsonvalidate")) library(package, character.only = TRUE)
+        shell: Rscript {0}
+      - name: sceptre suite
+        shell: bash
+        run: sceptre-analysis-format/sceptre-suite/run.sh

@@ -395,7 +395,10 @@ and QC stages have run.
   standard libraries is a conforming writer. The writers in `format/` are
   temporary.
 - **The verification suite.** `verify/run.sh` runs every check of the format.
-  It needs neither sceptre nor pysceptre. `verify/run.sh format` runs the
+  It needs neither sceptre nor pysceptre, and neither do the validators.
+  `sceptre-suite/run.sh` runs the checks that need sceptre: that an analysis
+  by sceptre 0.99.1 is the same after being written to these files and
+  rebuilt from them. `verify/run.sh format` runs the
   checks that use no writer, and `verify/run.sh writers` the checks of the
   two writers in `format/`.
 - **Agreement.** `verify/check_conformance.R` and `verify/check_conformance.py` run the two

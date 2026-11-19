@@ -388,9 +388,9 @@ Each example was also taken the other way. A `sceptre_object` rebuilt from the
 data file and the folder alone has the same content, slot by slot, as the
 object the folder was written from, except for two intermediate quantities
 that sceptre computes again. And running sceptre again from only the settings
-in the records gives the same results. The code that did this reads the
-inside of a `sceptre_object` and is not part of the format; `RATIONALE.md`,
-Appendix B, has the details.
+in the records gives the same results. The code that does this is in
+`sceptre-suite/`. It reads the inside of a `sceptre_object`, so it is test
+code for one version of sceptre and not part of the format.
 
 ## Native reading
 
@@ -436,8 +436,9 @@ data file it was given.
 
 ## Validation
 
-Four things check the format: a validator, a set of test folders, a suite of
-checks, and automatic runs of that suite on every change.
+Five things check the format: a validator, a set of test folders, a suite of
+checks that uses no package, a second suite that uses sceptre, and automatic
+runs of both on every change.
 
 ### What "conforms" means
 
@@ -549,13 +550,34 @@ print(nt.status({
   files themselves, the same two groups will check the packages' files
   instead.
 
+### The sceptre suite
+
+The validator and the suite above deliberately use neither package: a folder
+must be checkable wherever it is, whoever wrote it. But the format also claims
+to hold exactly what a sceptre analysis holds, and only sceptre can test that.
+`sceptre-suite/run.sh` installs nothing itself and needs sceptre 0.99.1. It
+has sceptre run the eight example analyses again, and then checks three
+things for each:
+
+- **The examples are what sceptre produces.** The folder written from
+  sceptre's object conforms, and equals the example in the repository.
+- **Nothing is lost.** A `sceptre_object` rebuilt from the data file and the
+  folder alone equals the object the folder was written from, slot by slot.
+  Two slots are left out, `M_matrix` and `n_nonzero_tot_vector`, which sceptre
+  computes again from the data.
+- **The settings are complete.** sceptre, run again from only the settings in
+  the records, gives the same results.
+
+If sceptre's output and the format drift apart, this suite fails.
+
 ### Automatic runs
 
 The suite runs by itself on GitHub whenever a change is pushed to this folder
 or to the data file format's folder, since this format depends on that one. It
 runs on three fresh machines: Linux, macOS and Windows. Each installs only
-standard libraries, then runs `verify/run.sh`. A failure on any of them marks
-the change as failing. The current state and the history of runs are at the
+standard libraries, then runs `verify/run.sh`. A fourth machine installs
+sceptre 0.99.1 and runs the sceptre suite. A failure on any of them marks the
+change as failing. The current state and the history of runs are at the
 [workflow's page](https://github.com/Katsevich-Lab/sceptre-hub/actions/workflows/sceptre-analysis-format.yml).
 
 ### At real size
@@ -619,9 +641,10 @@ These can be added or changed later without breaking any analysis.
 | `RATIONALE.md` | The reasons: every choice with its alternatives and evidence, the comparison with the IGVF pipeline's outputs, planned additions, and the measurements |
 | `spec/` | The machine-readable parts: `tables.json` (every table's columns, types and key) and JSON Schemas for the JSON records |
 | `format/` | The prototype: writers, readers and validators in R and Python, with the same names. It uses the data file format's code and neither sceptre nor pysceptre |
-| `example/` | Seven analyses in the format, of the data file format's example files. `example/*/expected/` holds the values sceptre computed for them |
+| `example/` | Eight analyses in the format, of the data file format's example files. `example/*/expected/` holds the values sceptre computed for them |
 | `conformance/` | Analysis folders that conform and folders that each break a rule, with what a validator must report |
 | `verify/` | The suite of checks, and how to test another implementation against the same files |
+| `sceptre-suite/` | The checks that need sceptre, and the code that takes a `sceptre_object` to and from the files |
 | `scale-test/` | Recorded measurements of the tables at real size |
 
 </details>

@@ -4538,7 +4538,7 @@ ENSG00000099949
 </ul>
 </div>
 <p>This analysis has no <code>cell_covariates.parquet</code> and no <code>resamples.parquet</code>, which are optional, and it uses the <code>union</code> strategy, so its tables have no <code>grna_id</code>. Seven more example analyses are in <code>example/</code>, among them one under the <code>singleton</code> strategy, one that assigned gRNAs with the <code>mixture</code> method, one of sceptre’s low-MOI example data, one that stopped after quality control, and one that kept its resampled statistics.</p>
-<p>Each example was also taken the other way. A <code>sceptre_object</code> rebuilt from the data file and the folder alone has the same content, slot by slot, as the object the folder was written from, except for two intermediate quantities that sceptre computes again. And running sceptre again from only the settings in the records gives the same results. The code that did this reads the inside of a <code>sceptre_object</code> and is not part of the format; <code>RATIONALE.md</code>, Appendix B, has the details.</p>
+<p>Each example was also taken the other way. A <code>sceptre_object</code> rebuilt from the data file and the folder alone has the same content, slot by slot, as the object the folder was written from, except for two intermediate quantities that sceptre computes again. And running sceptre again from only the settings in the records gives the same results. The code that does this is in <code>sceptre-suite/</code>. It reads the inside of a <code>sceptre_object</code>, so it is test code for one version of sceptre and not part of the format.</p>
 </section>
 <section id="native-reading" class="level2">
 <h2 class="anchored" data-anchor-id="native-reading">Native reading</h2>
@@ -4598,7 +4598,7 @@ ENSG00000099949
 </section>
 <section id="validation" class="level2">
 <h2 class="anchored" data-anchor-id="validation">Validation</h2>
-<p>Four things check the format: a validator, a set of test folders, a suite of checks, and automatic runs of that suite on every change.</p>
+<p>Five things check the format: a validator, a set of test folders, a suite of checks that uses no package, a second suite that uses sceptre, and automatic runs of both on every change.</p>
 <section id="what-conforms-means" class="level3">
 <h3 class="anchored" data-anchor-id="what-conforms-means">What “conforms” means</h3>
 <p>The specification has 73 numbered statements of three kinds.</p>
@@ -5448,9 +5448,19 @@ What a writer must do beyond producing a conforming folder: a stage written agai
 <li>The first four groups use no writer: they check the validators and standard libraries against files already in the repository. The last two check the prototype writers in <code>format/</code>. When sceptre and pysceptre write these files themselves, the same two groups will check the packages’ files instead.</li>
 </ul>
 </section>
+<section id="the-sceptre-suite" class="level3">
+<h3 class="anchored" data-anchor-id="the-sceptre-suite">The sceptre suite</h3>
+<p>The validator and the suite above deliberately use neither package: a folder must be checkable wherever it is, whoever wrote it. But the format also claims to hold exactly what a sceptre analysis holds, and only sceptre can test that. <code>sceptre-suite/run.sh</code> installs nothing itself and needs sceptre 0.99.1. It has sceptre run the eight example analyses again, and then checks three things for each:</p>
+<ul>
+<li><strong>The examples are what sceptre produces.</strong> The folder written from sceptre’s object conforms, and equals the example in the repository.</li>
+<li><strong>Nothing is lost.</strong> A <code>sceptre_object</code> rebuilt from the data file and the folder alone equals the object the folder was written from, slot by slot. Two slots are left out, <code>M_matrix</code> and <code>n_nonzero_tot_vector</code>, which sceptre computes again from the data.</li>
+<li><strong>The settings are complete.</strong> sceptre, run again from only the settings in the records, gives the same results.</li>
+</ul>
+<p>If sceptre’s output and the format drift apart, this suite fails.</p>
+</section>
 <section id="automatic-runs" class="level3">
 <h3 class="anchored" data-anchor-id="automatic-runs">Automatic runs</h3>
-<p>The suite runs by itself on GitHub whenever a change is pushed to this folder or to the data file format’s folder, since this format depends on that one. It runs on three fresh machines: Linux, macOS and Windows. Each installs only standard libraries, then runs <code>verify/run.sh</code>. A failure on any of them marks the change as failing. The current state and the history of runs are at the <a href="https://github.com/Katsevich-Lab/sceptre-hub/actions/workflows/sceptre-analysis-format.yml">workflow’s page</a>.</p>
+<p>The suite runs by itself on GitHub whenever a change is pushed to this folder or to the data file format’s folder, since this format depends on that one. It runs on three fresh machines: Linux, macOS and Windows. Each installs only standard libraries, then runs <code>verify/run.sh</code>. A fourth machine installs sceptre 0.99.1 and runs the sceptre suite. A failure on any of them marks the change as failing. The current state and the history of runs are at the <a href="https://github.com/Katsevich-Lab/sceptre-hub/actions/workflows/sceptre-analysis-format.yml">workflow’s page</a>.</p>
 </section>
 <section id="at-real-size" class="level3">
 <h3 class="anchored" data-anchor-id="at-real-size">At real size</h3>
@@ -5527,7 +5537,7 @@ What is in this folder
 </tr>
 <tr class="even">
 <td><code>example/</code></td>
-<td>Seven analyses in the format, of the data file format’s example files. <code>example/*/expected/</code> holds the values sceptre computed for them</td>
+<td>Eight analyses in the format, of the data file format’s example files. <code>example/*/expected/</code> holds the values sceptre computed for them</td>
 </tr>
 <tr class="odd">
 <td><code>conformance/</code></td>
@@ -5538,6 +5548,10 @@ What is in this folder
 <td>The suite of checks, and how to test another implementation against the same files</td>
 </tr>
 <tr class="odd">
+<td><code>sceptre-suite/</code></td>
+<td>The checks that need sceptre, and the code that takes a <code>sceptre_object</code> to and from the files</td>
+</tr>
+<tr class="even">
 <td><code>scale-test/</code></td>
 <td>Recorded measurements of the tables at real size</td>
 </tr>

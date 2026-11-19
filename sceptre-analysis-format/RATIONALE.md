@@ -548,7 +548,8 @@ Beyond the points in the data file format's rationale:
 **The verification suite** (`verify/run.sh`) loads neither sceptre nor
 pysceptre and runs on the committed files with standard libraries only.
 *(measured, on macOS, Linux and Windows)* Each group of checks runs in R and in
-Python, all passing:
+Python, all passing. The checks that need sceptre are a separate suite,
+`sceptre-suite/run.sh` (Appendix B):
 
 - the validators on the conformance set. Both validators accept all 17
   conforming analyses and report exactly the expected rules for all 44 broken
@@ -652,15 +653,18 @@ data file format's code; `example/` holds analyses in the format.
 
 **Sufficiency, checked with sceptre 0.99.1.** For each of the eight example
 analyses, a `sceptre_object` produced by sceptre 0.99.1 was written to files
-and rebuilt from them, in R on macOS. The code that did so reads the object's
-internal slots and is not in this folder. Nothing here reruns these checks:
+and rebuilt from them. The code that does so is in `sceptre-suite/`: it reads
+the object's internal slots, so it works with that version of sceptre only.
+`sceptre-suite/run.sh` runs these checks, and they run on every change
+(section 8):
 
 | What | Result |
 |---|---|
 | sceptre object written to files, then validated | Conforms, for all eight |
 | sceptre object rebuilt from the data file and the analysis folder: the data through `import_data()`, the parameters through `set_analysis_parameters()` from the recorded settings, the rest from the tables | Every slot the format stores comes back identical, or identical up to row order or integer-versus-double storage of a whole number. `cells_w_zero_or_twoplus_grnas` comes back as the same set of cells in a different order |
 | Slots the format does not store | `M_matrix` and `n_nonzero_tot_vector`, intermediates that sceptre recomputes; they are not rebuilt |
-| The whole pipeline rerun from only the data file and the settings recorded in the files, for `left_sided`, `singleton`, `bonferroni`, `mixture_assignment` and the low-MOI `default` | Calibration, power and discovery results equal the original's (every p-value identical for the 1,406 discovery pairs of `left_sided`), apart from the order of tied rows, which follows the order the pairs were given in and which the format does not keep (T3.1) |
+| sceptre run again and its objects written to files | Equal to the committed examples, with numbers compared to a relative tolerance of 10^-8 |
+| The whole pipeline rerun from only the data file and the settings recorded in the files | Calibration, power and discovery results equal the original's (every p-value identical for the 1,406 discovery pairs of `left_sided`), apart from the order of tied rows, which follows the order the pairs were given in and which the format does not keep (T3.1) |
 
 No round trip through pysceptre, in either direction, has been done for this
 version of the format.
@@ -688,7 +692,7 @@ tested, not open choices:
 
 The data files are the examples of the data file format, under
 `../perturb-seq-data-format/example/`. Each analysis was written from a
-`sceptre_object` produced by sceptre 0.99.1, by a converter that reads the
-object's internal slots and is not in this folder. These files are fixed:
-nothing here regenerates them, and `example/*/expected/` holds what sceptre
-itself held for each analysis, for the checks that load no package.
+`sceptre_object` produced by sceptre 0.99.1, by the code in `sceptre-suite/`
+(`sceptre-suite/make_example.R` writes them again). `example/*/expected/`
+holds what sceptre itself held for each analysis, for the checks that load no
+package.

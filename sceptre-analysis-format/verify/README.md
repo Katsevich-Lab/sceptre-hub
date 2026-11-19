@@ -1,7 +1,7 @@
 # The verification suite
 
-Every check of the sceptre analysis format. It needs neither sceptre nor
-pysceptre. It uses the data file format in `../../perturb-seq-data-format`:
+Every check of the sceptre analysis format that needs neither sceptre nor
+pysceptre; the checks that need sceptre are in `../sceptre-suite`. It uses the data file format in `../../perturb-seq-data-format`:
 its code, its example files and its conformance files. `verify/run.sh` runs
 all of it and prints a summary; `verify/run.sh format` runs the part that uses
 no writer (the validators and standard readers on the committed files, and the
