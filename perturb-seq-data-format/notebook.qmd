@@ -61,7 +61,7 @@ apart, the earlier one wins. Open one for its reason and what follows from it.
 ```{python}
 #| echo: false
 #| output: asis
-print(nt.principles("RATIONALE.md", "https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md"))
+print(nt.principles("RATIONALE.md", "https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md", "## 2. The eight principles"))
 ```
 
 ## What is on disk

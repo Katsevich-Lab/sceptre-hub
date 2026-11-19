@@ -2207,7 +2207,8 @@ vertical-align: -.125em;
     <h2 id="toc-title">Table of contents</h2>
    
   <ul class="collapse">
-  <li><a href="#what-is-on-disk" id="toc-what-is-on-disk" class="nav-link active" data-scroll-target="#what-is-on-disk">What is on disk</a></li>
+  <li><a href="#the-principles" id="toc-the-principles" class="nav-link active" data-scroll-target="#the-principles">The principles</a></li>
+  <li><a href="#what-is-on-disk" id="toc-what-is-on-disk" class="nav-link" data-scroll-target="#what-is-on-disk">What is on disk</a></li>
   <li><a href="#open-the-tables-yourself" id="toc-open-the-tables-yourself" class="nav-link" data-scroll-target="#open-the-tables-yourself">Open the tables yourself</a></li>
   <li><a href="#the-choices-to-review" id="toc-the-choices-to-review" class="nav-link" data-scroll-target="#the-choices-to-review">The choices to review</a></li>
   <li><a href="#questions-for-reviewers" id="toc-questions-for-reviewers" class="nav-link" data-scroll-target="#questions-for-reviewers">Questions for reviewers</a></li>
@@ -2240,8 +2241,8 @@ vertical-align: -.125em;
 </header>
 
 
-<p>This page is the way into the format. It shows what an analysis folder holds, why it is that way, what review is asked for, and what has been tested. Most of it is folded: open what you want to read.</p>
-<p>An analysis is an analysis of a data file in the <a href="https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/notebook.html">Perturb-seq data file format</a>. That format is separate, has its own version, and knows nothing about analyses. This one builds on it and follows the same <a href="https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/notebook.html#the-principles">eight principles</a>.</p>
+<p>This page is the way into the format. It gives the principles, shows what an analysis folder holds, what review is asked for, and what has been tested. Most of it is folded: open what you want to read.</p>
+<p>An analysis is an analysis of a data file in the <a href="https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/notebook.html">Perturb-seq data file format</a>. That format is separate, has its own version, and knows nothing about analyses. This one builds on it.</p>
 <p>Two reference documents sit behind this page: <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/SPEC.md"><code>SPEC.md</code></a> has the rules, numbered, and <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/RATIONALE.md"><code>RATIONALE.md</code></a> has the full reasons, with evidence, under the same numbers.</p>
 <div class="callout callout-style-simple callout-note">
 <div class="callout-body d-flex">
@@ -2297,6 +2298,82 @@ function treeAll(button, open) {
   if (!open) tree.querySelector("details").open = true;
 }
 </script>
+<section id="the-principles" class="level2">
+<h2 class="anchored" data-anchor-id="the-principles">The principles</h2>
+<p>Every choice in the format follows from these eight. Where two of them pull apart, the earlier one wins. Open one for its reason and what follows from it. Several are the principles of the data file format, applied to an analysis folder.</p>
+<details class="fold">
+<summary>
+<strong>1. The same files from R and Python.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> An analysis is started in one language and continued or read in the other, and what a file means should not depend on which wrote it.</li>
+<li><strong>What follows.</strong> Tables are Parquet, with the few column types both languages read and write correctly (T0.1). A real number in a record is written with 17 significant digits, so the number read is the number written (A3.4). Nothing depends on arithmetic giving the same bits on two platforms: a stored value is read, never rebuilt (<code>log_2_fold_change</code>, T5), and the design matrix has no hash (T7). Saved fits cross languages only where the fitting method is the same (T6.5).</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>2. An analysis is kept apart from its data.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone.</li>
+<li><strong>What follows.</strong> An analysis is a folder of its own. It names its data file by identifier and by hashes of the identifier lists (A1), never modifies it, can be stored anywhere, and can be read for its results without it. Every analysis choice lives here: which modality is the response (A1), the low or high MOI preset (A3.6), the assignments (T1), the cells in use (T2) and the grouping of gRNAs (T4).</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>3. Every file is written once.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> A file edited in place can be left half-written, cannot be written safely by parallel jobs, and no longer shows which step produced what.</li>
+<li><strong>What follows.</strong> No stage edits a file an earlier stage wrote: stages add files (A6.2). Rerunning a stage deletes its files and those of later stages (A4.2). Parallel jobs write part files. A stage’s record is written last, so an unfinished stage can be told from a finished one (A2). <code>significant</code> is not stored, because it depends on the whole table (T5.3).</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>4. Identifiers, never positions.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> A row number means something only for one file in one order, and R counts from 1 where Python counts from 0.</li>
+<li><strong>What follows.</strong> Tables name cells, gRNAs and responses by identifier, and every identifier exists in the data file (T0.5). Tables survive subsetting, reordering and being written in pieces.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>5. Existing conventions before invented ones.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> An existing format comes with readers, tools and users. An invented encoding needs code in two languages and has no other reader.</li>
+<li><strong>What follows.</strong> Parquet and JSON are used as specified, and the records are defined by JSON Schemas. How a part of the fit cache was made is stored in Parquet’s own key-value metadata (T6.1). The data is a file of the Perturb-seq data file format, not something redefined here.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>6. Readers ignore what they do not know.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> The format will grow, and files outlive the code that wrote them. Older software has to keep working on newer files where it can, and fail cleanly where it cannot.</li>
+<li><strong>What follows.</strong> Columns and files the format does not define are ignored, or kept where a table says so (T0.8). They can be added with a minor version. Software refuses an analysis of a major version it does not know (A1.1).</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>7. What follows from other stored values is not stored.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> Two copies of one fact can disagree, and the file then does not say which is right.</li>
+<li><strong>What follows.</strong> There is no <code>significant</code> column (T5.3) and no count of gRNAs per cell (T2). The exception is a value that cannot be rebuilt to the same number on every platform: <code>log_2_fold_change</code> is stored beside <code>fold_change</code>, and the validators check that the two agree (T5.2).</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>8. Files are harder to change than code.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> Code is corrected in the next release. A file already written stays as it is for years.</li>
+<li><strong>What follows.</strong> How today’s code reads data is evidence when the pattern is sound. Where it is not, the format is chosen on its merits and the code change is listed in <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/RATIONALE.md#5-code-changes-this-implies">section 5</a>: the members of a control group are a table, not text inside the group’s name (T4).</li>
+</ul>
+</details>
+</section>
 <section id="what-is-on-disk" class="level2">
 <h2 class="anchored" data-anchor-id="what-is-on-disk">What is on disk</h2>
 <p>An analysis is <strong>one folder</strong>, kept apart from the data file it analyses. One data file can have any number of analyses. There is one subfolder per completed stage. Tables are Parquet files, and every row names cells, gRNAs and responses by identifier, never by position. The tree below is read from the example in <code>example/highmoi/analyses/left_sided/</code>. Open a folder to see its files, and a file to see what it holds.</p>

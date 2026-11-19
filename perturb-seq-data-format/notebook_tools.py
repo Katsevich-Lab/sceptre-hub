@@ -166,11 +166,11 @@ def status(shows: dict) -> str:
     return f"<table class='status'><thead><tr><th>Check</th><th>What it shows</th><th>Passed in R</th><th>Passed in Python</th></tr></thead><tbody>{lines}</tbody></table>"
 
 
-def principles(rationale, link) -> str:
-    """The eight principles, read from the table of section 2 of the data file
-    format's RATIONALE.md, so the page and the document cannot differ."""
+def principles(rationale, link, heading) -> str:
+    """The principles, read from the table under `heading` in a RATIONALE.md, so
+    the page and the document cannot differ."""
     out = []
-    for line in Path(rationale).read_text().split("## 2. The eight principles")[1].split("\n---")[0].splitlines():
+    for line in Path(rationale).read_text().split(f"\n{heading}\n")[1].split("\n---")[0].splitlines():
         cells = [c.strip() for c in line.strip().strip("|").split(" | ")]
         if len(cells) == 4 and cells[0].isdigit():
             number, principle, why, follows = cells

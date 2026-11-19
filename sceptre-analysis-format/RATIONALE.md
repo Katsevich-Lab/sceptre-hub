@@ -9,8 +9,7 @@ section T5 below.
 
 An analysis is an analysis of one data file in the Perturb-seq data file
 format. [That format's rationale](../perturb-seq-data-format/RATIONALE.md) holds what the two share, and this
-document refers to it instead of repeating it: the [eight
-principles](../perturb-seq-data-format/RATIONALE.md#2-the-eight-principles) every choice below follows from, the
+document refers to it instead of repeating it: the
 sections S1 to S12 that the S numbers here cite, how the evidence is tagged
 and where the IGVF and code facts come from, and [how a format is defined
 and checked](../perturb-seq-data-format/RATIONALE.md#7-how-the-format-is-defined-and-checked).
@@ -33,6 +32,25 @@ and what it locks into files. Where this document and `SPEC.md` disagree,
 `SPEC.md` is the rule and the disagreement is a mistake to fix. Evidence is
 tagged *(verified)*, *(measured)*, *(inferred)* or *(not independently
 checked)*, as the data file format's rationale defines.
+
+---
+
+## The principles
+
+Every choice below follows from these. Where a choice needed a trade-off, the
+earlier principle wins. Several are the [data file format's
+principles](../perturb-seq-data-format/RATIONALE.md#2-the-eight-principles), applied to an analysis folder.
+
+| # | Principle | Why | What follows |
+|---|---|---|---|
+| 1 | **The same files from R and Python.** | An analysis is started in one language and continued or read in the other, and what a file means should not depend on which wrote it. | Tables are Parquet, with the few column types both languages read and write correctly (T0.1). A real number in a record is written with 17 significant digits, so the number read is the number written (A3.4). Nothing depends on arithmetic giving the same bits on two platforms: a stored value is read, never rebuilt (`log_2_fold_change`, T5), and the design matrix has no hash (T7). Saved fits cross languages only where the fitting method is the same (T6.5). |
+| 2 | **An analysis is kept apart from its data.** | One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. | An analysis is a folder of its own. It names its data file by identifier and by hashes of the identifier lists (A1), never modifies it, can be stored anywhere, and can be read for its results without it. Every analysis choice lives here: which modality is the response (A1), the low or high MOI preset (A3.6), the assignments (T1), the cells in use (T2) and the grouping of gRNAs (T4). |
+| 3 | **Every file is written once.** | A file edited in place can be left half-written, cannot be written safely by parallel jobs, and no longer shows which step produced what. | No stage edits a file an earlier stage wrote: stages add files (A6.2). Rerunning a stage deletes its files and those of later stages (A4.2). Parallel jobs write part files. A stage's record is written last, so an unfinished stage can be told from a finished one (A2). `significant` is not stored, because it depends on the whole table (T5.3). |
+| 4 | **Identifiers, never positions.** | A row number means something only for one file in one order, and R counts from 1 where Python counts from 0. | Tables name cells, gRNAs and responses by identifier, and every identifier exists in the data file (T0.5). Tables survive subsetting, reordering and being written in pieces. |
+| 5 | **Existing conventions before invented ones.** | An existing format comes with readers, tools and users. An invented encoding needs code in two languages and has no other reader. | Parquet and JSON are used as specified, and the records are defined by JSON Schemas. How a part of the fit cache was made is stored in Parquet's own key-value metadata (T6.1). The data is a file of the Perturb-seq data file format, not something redefined here. |
+| 6 | **Readers ignore what they do not know.** | The format will grow, and files outlive the code that wrote them. Older software has to keep working on newer files where it can, and fail cleanly where it cannot. | Columns and files the format does not define are ignored, or kept where a table says so (T0.8). They can be added with a minor version. Software refuses an analysis of a major version it does not know (A1.1). |
+| 7 | **What follows from other stored values is not stored.** | Two copies of one fact can disagree, and the file then does not say which is right. | There is no `significant` column (T5.3) and no count of gRNAs per cell (T2). The exception is a value that cannot be rebuilt to the same number on every platform: `log_2_fold_change` is stored beside `fold_change`, and the validators check that the two agree (T5.2). |
+| 8 | **Files are harder to change than code.** | Code is corrected in the next release. A file already written stays as it is for years. | How today's code reads data is evidence when the pattern is sound. Where it is not, the format is chosen on its merits and the code change is listed in [section 5](#5-code-changes-this-implies): the members of a control group are a table, not text inside the group's name (T4). |
 
 ---
 

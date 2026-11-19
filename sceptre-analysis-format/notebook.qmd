@@ -13,15 +13,14 @@ execute:
   message: false
 ---
 
-This page is the way into the format. It shows what an analysis folder holds,
-why it is that way, what review is asked for, and what has been tested. Most
+This page is the way into the format. It gives the principles, shows what an
+analysis folder holds, what review is asked for, and what has been tested. Most
 of it is folded: open what you want to read.
 
 An analysis is an analysis of a data file in the
 [Perturb-seq data file format](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/notebook.html).
 That format is separate, has its own version, and knows nothing about
-analyses. This one builds on it and follows the same
-[eight principles](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/notebook.html#the-principles).
+analyses. This one builds on it.
 
 Two reference documents sit behind this page: [`SPEC.md`](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/SPEC.md)
 has the rules, numbered, and [`RATIONALE.md`](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/RATIONALE.md)
@@ -53,6 +52,19 @@ nt.table_spec = json.loads(Path("spec/tables.json").read_text())
 ```
 
 {{< include ../perturb-seq-data-format/_notebook_style.md >}}
+
+## The principles
+
+Every choice in the format follows from these eight. Where two of them pull
+apart, the earlier one wins. Open one for its reason and what follows from it.
+Several are the principles of the data file format, applied to an analysis
+folder.
+
+```{python}
+#| echo: false
+#| output: asis
+print(nt.principles("RATIONALE.md", "https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/RATIONALE.md", "## The principles"))
+```
 
 ## What is on disk
 

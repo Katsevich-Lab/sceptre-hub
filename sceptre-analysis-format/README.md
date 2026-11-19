@@ -11,8 +11,8 @@ each stage, the same files in R and in Python. It builds on the
 has its own version, and knows nothing about analyses.
 
 **Start with [the notebook](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/sceptre-analysis-format/notebook.html).**
-It shows what an analysis folder holds, the choices to review and their
-reasons, the questions for reviewers, what has been tested, and what each
+It gives the principles, shows what an analysis folder holds, the choices to
+review and their reasons, the questions for reviewers, what has been tested, and what each
 folder here holds. Its source is `notebook.qmd`.
 
 Behind it are two reference documents: `SPEC.md` (the rules, numbered) and

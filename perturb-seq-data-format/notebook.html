@@ -2303,38 +2303,38 @@ function treeAll(button, open) {
 <p>Every choice in the format follows from these eight. Where two of them pull apart, the earlier one wins. Open one for its reason and what follows from it.</p>
 <details class="fold">
 <summary>
-<strong>1. The same files from R and Python.</strong>
+<strong>1. The same file from R and Python.</strong>
 </summary>
 <ul>
 <li><strong>Why.</strong> Screens are analysed in both languages, and what a file means should not depend on which language wrote or read it.</li>
-<li><strong>What follows.</strong> Only encodings that both languages read <em>and</em> write correctly today are allowed; that subset was measured, not assumed (Appendix A). Both languages read the files with standard libraries, so the format has no reader of its own.</li>
+<li><strong>What follows.</strong> Only encodings that both languages read <em>and</em> write correctly today are allowed; that subset was measured, not assumed (Appendix A). Both languages read the file with standard libraries, so the format has no reader of its own.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>2. Data and analysis are separate.</strong>
+<strong>2. Data only: nothing in the file depends on an analysis.</strong>
 </summary>
 <ul>
-<li><strong>Why.</strong> One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. Anything in the data file that depended on an analysis choice would fit one analysis only, or force the file to be rewritten.</li>
-<li><strong>What follows.</strong> The data file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis, where sceptre sums them at import today. An analysis is a folder of its own, which names its data file by identifier (A1).</li>
+<li><strong>Why.</strong> One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. Anything in the file that depended on an analysis choice would fit one analysis only, or force the file to be rewritten.</li>
+<li><strong>What follows.</strong> The file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis. There is no label for low or high multiplicity of infection, which selects an analysis’s defaults (S10). No modality is named for a role such as “response”: which one an analysis tests is that analysis’s choice (S2). The file is written once and no analysis modifies it (S12.2).</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>3. Every file is written once.</strong>
+<strong>3. It belongs to no tool.</strong>
 </summary>
 <ul>
-<li><strong>Why.</strong> A file edited in place can be left half-written, cannot be written safely by parallel jobs, and no longer shows which step produced what.</li>
-<li><strong>What follows.</strong> No stage edits a file an earlier stage wrote: stages add files. Rerunning a stage deletes its files and those of later stages. Parallel jobs write part files. A stage’s record is written last, so an unfinished stage can be told from a finished one (A2). <code>significant</code> is not stored, because it depends on the whole table (T5.3).</li>
+<li><strong>Why.</strong> A file that many tools read and write cannot carry one tool’s name or assumptions, and data outlives the tool that imported it.</li>
+<li><strong>What follows.</strong> The format is a set of names and rules on a standard MuData file. Its own entries sit at the top level of <code>uns</code>, under no tool’s name (S10). Entries, modalities and columns that other tools add are left alone (S10.2, S2). The validator needs no analysis tool.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>4. Identifiers, never positions in a table or matrix.</strong>
+<strong>4. Every cell and feature has an identifier.</strong>
 </summary>
 <ul>
-<li><strong>Why.</strong> A row number means something only for one file in one order, and R counts from 1 where Python counts from 0.</li>
-<li><strong>What follows.</strong> Tables name cells, gRNAs and responses by identifier, and every identifier exists in the data file (T0.5). Tables survive subsetting, reordering and being written in pieces.</li>
+<li><strong>Why.</strong> Other files refer to the cells and features of a data file: analyses, annotations, results. A row number means something only for one file in one order, and R counts from 1 where Python counts from 0.</li>
+<li><strong>What follows.</strong> Cell identifiers are unique, and feature identifiers are unique across the modalities of a file (S9.1, S9.2). Cells without barcodes are given identifiers, which are stored (S9.3). A gRNA names its target and its vector, and does not point at a row.</li>
 </ul>
 </details>
 <details class="fold">
@@ -2343,7 +2343,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> An existing format comes with readers, tools and users. An invented encoding needs code in two languages and has no other reader.</li>
-<li><strong>What follows.</strong> AnnData, MuData and Parquet encodings are used as specified. The format adds names and rules, not encodings. Target positions follow the convention of GTF files (S8.10).</li>
+<li><strong>What follows.</strong> AnnData and MuData encodings are used as specified. The format adds names and rules, not encodings. Target positions follow the convention of GTF files (S8.10).</li>
 </ul>
 </details>
 <details class="fold">
@@ -2352,7 +2352,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> The format will grow, and files outlive the code that wrote them. Older software has to keep working on newer files where it can, and fail cleanly where it cannot.</li>
-<li><strong>What follows.</strong> Columns, keys and files that do not change the meaning of what is already there can be added with a minor version (S10). Software refuses a file of a major version it does not know (S10.3).</li>
+<li><strong>What follows.</strong> Columns, modalities and entries that do not change the meaning of what is already there can be added with a minor version (S10). Software refuses a file of a major version it does not know (S10.3).</li>
 </ul>
 </details>
 <details class="fold">
@@ -2361,7 +2361,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Two copies of one fact can disagree, and the file then does not say which is right.</li>
-<li><strong>What follows.</strong> There is no <code>significant</code> column and no count of gRNAs per cell (T5, T2). Two exceptions. A value that nearly every analysis needs and that takes a full pass over the counts to recompute is stored: <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> (S6). So is a value that cannot be rebuilt to the same number on every platform: <code>log_2_fold_change</code> (T5).</li>
+<li><strong>What follows.</strong> There are no logarithms or percentages of stored columns, and no per-cell top gRNA (S6). The exception is a value that nearly every analysis needs and that takes a full pass over the counts to recompute: <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> are stored (S6).</li>
 </ul>
 </details>
 <details class="fold">
@@ -2370,7 +2370,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Code is corrected in the next release. A file already written stays as it is for years.</li>
-<li><strong>What follows.</strong> How today’s code reads data is evidence when the pattern is sound. Where it is not, the format is chosen on its merits and the code change is listed in <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/RATIONALE.md#5-code-changes-this-implies">the sceptre analysis format’s rationale</a>: the members of a control group are a table, not text inside the group’s name (T4).</li>
+<li><strong>What follows.</strong> Each choice is made on its merits and before the freeze. How existing code reads data is evidence when the pattern is sound, and never the only reason. What does not lock anything in is left open: compression is the writer’s choice, because HDF5 decompresses transparently (S11). <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md#6-fixed-now-free-to-grow">Section 6</a> says which parts would be expensive to change.</li>
 </ul>
 </details>
 </section>
