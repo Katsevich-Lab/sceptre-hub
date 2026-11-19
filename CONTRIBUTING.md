@@ -11,7 +11,7 @@ changes are reviewed there.
 | A decision that spans languages: new methods, changed defaults, new result columns, public functions in more than one package | Decided by the maintainers and recorded in this repository |
 | A design decision within one package, such as a new object layout | A short design note in that repository, reviewed before code |
 | A bug, task or feature in one package | An issue in that repository |
-| Ranked priorities | [ROADMAP.md](ROADMAP.md) |
+| Phases and priorities | [ROADMAP.md](ROADMAP.md) |
 | Contracts the implementations must agree on | [contracts/](contracts/) |
 
 ## Who decides

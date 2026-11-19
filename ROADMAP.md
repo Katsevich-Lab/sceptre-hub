@@ -1,141 +1,47 @@
 # SCEPTRE roadmap
 
-Last reviewed: October 2026.
-
-This roadmap covers the whole SCEPTRE ecosystem: the R package, pysceptre and
-the Nextflow pipeline. It is a dependency graph rather than a ranked list. An
-arrow means "finish this before starting that". Work with no path between it can
-run in parallel.
-
-Each item is marked **Now** (in progress or ready to start), **Next** (waiting on
-an item marked Now) or **Later** (further down the graph, or needing a decision by the
-maintainers first).
+This roadmap covers the R package (sceptre), the Python package (pysceptre)
+and the Nextflow pipeline. Work proceeds in four phases. An arrow means
+"finish this before starting that"; the two halves of a phase run in parallel.
 
 ```mermaid
-flowchart LR
-  R1["R1 Bug fixes during<br/>Bioconductor review"]:::r
-  R2["R2 Pin R's behavior"]:::r
-  P1["P1 Organize and land<br/>existing GPU code"]:::py
-  P2["P2 Diagnose the<br/>full-scale GPU run"]:::py
-  R3["R3 Internal restructure"]:::r
-  X2["X2 pysceptre<br/>matches R"]:::shared
-  P4["P4 AnnData/MuData<br/>entry point"]:::py
-  P3["P3 GPU at full scale<br/>vs 32 CPUs"]:::py
-  R4["R4 SingleCellExperiment<br/>object"]:::r
-  R6["R6 CPU speedups,<br/>results unchanged"]:::r
-  R7["R7 Faster fitting methods<br/>(results change)"]:::r
-  G["G Improved gRNA<br/>assignment"]:::method
-  S1["S1 SPA in R"]:::method
-  R5["R5 Disk-backed counts,<br/>10x import"]:::r
-  IR["IR Fast import in R"]:::r
-  IP["IP Fast import<br/>in pysceptre"]:::py
-  X3["X3 R ↔ Python<br/>data-model mapping"]:::shared
-  S2["S2 SPA in pysceptre<br/>and on GPU"]:::py
-  W["W Wilcoxon test"]:::method
-  PW["PW Per-pair power"]:::method
-  C["C Improved calibration"]:::method
-  N["N Nextflow pipeline<br/>hardening"]:::nf
-  BA{{"Bioconductor<br/>acceptance"}}:::gate
-
-  R1 --> R3
-  R2 --> R3
-  R2 --> X2
-  P1 --> X2
-  P1 --> P3
-  P2 --> P3
-  X2 --> P3
-  P1 --> P4
-  R3 --> R4
-  BA -.-> R4
-  R4 --> R5
-  R5 --> IR
-  P1 --> IP
-  R3 --> R6
-  R3 --> R7
-  R2 --> R7
-  R3 --> G
-  R3 --> S1
-  S1 --> S2
-  P3 --> S2
-  R4 --> X3
-  P4 --> X3
-  R4 --> W
-  P4 --> W
-  R4 --> PW
-  R4 --> C
-  R5 --> N
-  X2 --> N
-  X3 --> N
-
-  classDef r fill:#dbeafe,stroke:#1d4ed8,color:#111
-  classDef py fill:#dcfce7,stroke:#15803d,color:#111
-  classDef shared fill:#f3f4f6,stroke:#4b5563,color:#111
-  classDef method fill:#fef3c7,stroke:#b45309,color:#111
-  classDef nf fill:#fce7f3,stroke:#be185d,color:#111
-  classDef gate fill:#fff,stroke:#6b7280,stroke-dasharray:4 3,color:#111
+flowchart TB
+  P1["Phase 1<br/>Agree on input and output formats"]
+  P2a["Phase 2a<br/>Shore up the R package"]
+  P2b["Phase 2b<br/>Shore up the Python package"]
+  P3a["Phase 3a<br/>Shore up the Nextflow pipeline"]
+  P3b["Phase 3b<br/>GPU acceleration"]
+  P4["Phase 4<br/>New methods"]
+  P1 --> P2a
+  P1 --> P2b
+  P2a --> P3a
+  P2b --> P3b
+  P3a --> P4
+  P3b --> P4
+  class P1 now
   classDef now stroke-width:3px
-  class R1,R2,P1,P2,G,S1 now
 ```
 
-Colors: blue = R package, green = pysceptre, gray = shared, amber = new or
-changed statistical methods, pink = Nextflow pipeline. A bold border marks items
-that are Now. The dashed hexagon is the Bioconductor acceptance gate.
+Phase 1 is in progress.
 
-## Items
+| Phase | What it delivers |
+| --- | --- |
+| **1. Formats** | One set of files on disk, read natively by R and Python: the data, and the output of an analysis, both final and stage by stage. The draft is in [`file-format/`](file-format/). |
+| **2a. R package**, **2b. Python package** | Each package made maintainable and extensible, reading and writing the shared files, and working with its ecosystem's standard objects (Bioconductor, scverse). The two packages give the same output as each other, and the same results as today. |
+| **3a. Nextflow pipeline** | The pipeline made maintainable and extensible on top of the stable package interfaces, and scaled to large screens. |
+| **3b. GPU acceleration** | Full-scale analyses on GPU in pysceptre, matching CPU results. |
+| **4. New methods** | A minimal subset of new statistical methods, for example the saddlepoint approximation and pairwise QC. |
 
-| Item | What it delivers | Depends on | Where | Status |
-| --- | --- | --- | --- | --- |
-| **R1 Bug fixes during review** | Fixes found during the internal refactor, plus responses to the Bioconductor reviewer | — | R | Now |
-| **R2 Pin R's behavior** | A frozen behavior suite, built from the tests in #234, that pins what the released package outputs and gates the R restructure. A small subset of its cases is also exported in a language-neutral format as the parity fixtures, with a reference stability test in R ([parity contract](contracts/parity.md)). | — | R | Now |
-| **R3 Internal restructure** | Clear internal modules for cell selection, count access, fitting, QC, inference and results, with results unchanged | R1, R2 | R | Next |
-| **R4 SingleCellExperiment object** | The analysis object built on `SingleCellExperiment`, import from an existing SCE, and migration of objects saved by the released version. Developed on `dev`; merged after Bioconductor acceptance. | R3 | R | Next |
-| **R5 Disk-backed counts and 10x import** | Disk-backed counts through HDF5Array/DelayedArray, and 10x Genomics import | R4 | R | Later |
-| **IR Fast import in R** | Import rebuilt in R's own C++ code using the techniques of the redesigned converter prototyped during development: streamed parsing straight into gene-major output, guide aggregation as a sparse matrix product, an uncompressed or lightly compressed output option, and optionally overlapped decompression. That prototype imported the full Replogle screen in about 5 minutes on two CPU threads, against about 43 minutes for the current importer. A quick measurement of the two cheap changes (output compression and guide aggregation) on the current importer can start now. | R5 | R | Later (measurement Now) |
-| **IP Fast import in pysceptre** | The same converter as a native pysceptre importer writing standard AnnData/MuData storage, with an optional GPU mode (which adds little over CPU at full scale) | P1 | pysceptre | Next |
-| **R6 CPU speedups, results unchanged** | Speedups already implemented on development branches, where together they ran a full Gasperini permutation analysis 4.8× and a CRT analysis 3.6× faster than the released version, with identical output. They include native Poisson fitting, a dispersion cache, a fused scoring kernel, shared permutation prefixes, faster QC and import, and fit reuse. Brought over one at a time, each with unchanged results and a timing. | R3 | R | Next |
-| **R7 Faster fitting methods (results change)** | Prototyped accelerations that change numerical results: an accelerated logistic fitter for CRT, marginal guide-fit initialization, and a native binomial QR fitter. Each needs a decision by the maintainers and validation. | R3, R2, a decision by the maintainers | R | Later |
-| **P1 Organize and land existing GPU code** | Existing GPU, native sampler and execution code reviewed and merged in pieces | — | pysceptre | Now |
-| **P2 Diagnose the full-scale GPU run** | One instrumented full-scale GPU CRT run that shows where the time goes | — | pysceptre | Now |
-| **P3 GPU at full scale** | Full-screen CRT and permutation on GPU, matching CPU results, with a timing table against 32 CPU cores | P1, P2, X2 | pysceptre | Next |
-| **P4 AnnData/MuData entry point** | Analyses run directly on AnnData/MuData, including disk-backed data | P1 | pysceptre | Next |
-| **X2 pysceptre matches R** | pysceptre vendors the R parity fixtures and checks them in CI, within stated tolerances | R2, P1 | pysceptre | Next |
-| **X3 Data-model mapping** | Fixture inputs provided as both SCE and AnnData/MuData, and a short note on how fields correspond | R4, P4 | Both | Later |
-| **G Improved gRNA assignment** | The overhauled assignment method, validated and integrated | R3 | R, then pysceptre | Now (method); integration Next |
-| **S1 SPA in R** | Saddlepoint approximation for resampling p-values, chosen among the existing prototypes and validated | R3, a decision by the maintainers | R | Now (decision); implementation Next |
-| **S2 SPA in pysceptre and on GPU** | The same method in Python, following the R reference | S1, P3 | pysceptre | Later |
-| **W Wilcoxon test** | Wilcoxon as an additional association test. Prototypes exist in both packages. | R4, P4 | Both | Later |
-| **N Nextflow hardening** | Containers, tests, CI, array jobs and nf-core-style documentation, on top of stable package interfaces | R5, X2, X3 | Pipeline | Later |
-| **PW Per-pair power** | Power or minimum detectable effect for each pair, building on [PerturbPlan](https://katsevich-lab.github.io/perturbplan/) | R4 | R first | Later |
-| **C Improved calibration** | Assessing false discovery control under realistic mixtures of null and non-null pairs, empirical calibration with negative controls, principal components as covariates. Research can start any time; software follows R4. | R4 | R first | Later |
+## Priorities
 
-## Notes
+- **Quality over speed.** Development is not planned around external dates.
+- **Foundations before extensions.** New features wait until the formats and
+  both packages are sound.
+- **Among extensions, scalability, maintainability, extensibility and
+  interoperability before new methods.** GPU acceleration and the pipeline
+  come before method development.
 
-- **The Bioconductor gate.** The R package was
-  [submitted](https://github.com/Bioconductor/BiocContributions/issues/176) in
-  August 2026. Until it is accepted, the submitted version receives only R1.
-  R3 onward is developed on a `dev` branch and merged after acceptance.
-- **R is the reference implementation.** Method changes (G, S1, and anything
-  under C or PW) land in R first; pysceptre follows through the parity fixtures.
-- **Why Nextflow comes late.** The pipeline wraps the packages. Hardening it
-  before their data structures and interfaces settle would mean redoing the
-  work.
-- **Method changes need a decision by the maintainers** before implementation: G, S1, R7, PW and
-  C.
+## Waiting until Phase 4 or later
 
-## Not on the roadmap
-
-Considered and set aside for now:
-- Seurat interoperability.
-- Distributed execution inside the R package (the pipeline covers this).
-- Result bundles and resource summaries.
-- glmGamPoi fitting of the gene models. It replaces the Poisson fit plus
-  dispersion estimate with a full negative binomial fit, which is a different
-  estimator rather than a speedup; native Poisson fitting (R6) already speeds up
-  the current method.
-
-Any of these can return by a decision of the maintainers.
-
-## Reviewing this roadmap
-
-The maintainers review the roadmap at least quarterly, and when an item
-finishes.
+Improved gRNA assignment, the Wilcoxon test, per-pair power, improved
+calibration, and improved upstream bioinformatics.
