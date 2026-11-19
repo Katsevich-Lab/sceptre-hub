@@ -24,9 +24,11 @@ language's repository.
 This repository holds:
 
 - [ROADMAP.md](ROADMAP.md): the development phases and priorities.
-- [file-format/](file-format/): drafts of two on-disk formats, the same files
-  in R and Python: a data file format for Perturb-seq, meant for any software,
-  and a format for sceptre's analyses of such a file.
+- [perturb-seq-data-format/](perturb-seq-data-format/): a draft of an on-disk
+  format for Perturb-seq data, the same file in R and Python, meant for any
+  software.
+- [sceptre-analysis-format/](sceptre-analysis-format/): a draft of the format
+  for sceptre's analyses of such a file.
 - [contracts/](contracts/): the few things the implementations must agree on,
   kept executable where possible. The R package is the reference
   implementation; the [parity contract](contracts/parity.md) defines agreement

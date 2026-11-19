@@ -1,0 +1,261 @@
+---
+title: "The sceptre analysis format"
+subtitle: "Draft 0.1: one folder for each analysis of a Perturb-seq data file, the same in R and in Python"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    embed-resources: true
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+---
+
+This page is the way into the format. It shows what an analysis folder holds,
+why it is that way, what review is asked for, and what has been tested. Most
+of it is folded: open what you want to read.
+
+An analysis is an analysis of a data file in the
+[Perturb-seq data file format](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/notebook.html).
+That format is separate, has its own version, and knows nothing about
+analyses. This one builds on it and follows the same
+[eight principles](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/notebook.html#the-principles).
+
+Two reference documents sit behind this page: [`SPEC.md`](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/SPEC.md)
+has the rules, numbered, and [`RATIONALE.md`](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/RATIONALE.md)
+has the full reasons, with evidence, under the same numbers.
+
+::: {.callout-note appearance="simple"}
+**Draft.** Nothing here has been reviewed. The format is version 0.1 until
+sceptre's first release that uses it, which freezes it as 1.0.
+:::
+
+```{r}
+#| include: false
+if (dir.exists("../perturb-seq-data-format/rlib")) .libPaths(c("../perturb-seq-data-format/rlib", .libPaths()))
+library(reticulate)
+options(width = 100)
+```
+
+```{python}
+#| include: false
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, "../perturb-seq-data-format")
+import notebook_tools as nt
+
+nt.ANALYSIS = Path("example/highmoi/analyses/left_sided")
+nt.table_spec = json.loads(Path("spec/tables.json").read_text())
+```
+
+{{< include ../perturb-seq-data-format/_notebook_style.md >}}
+
+## What is on disk
+
+An analysis is **one folder**, kept apart from the data file it analyses. One
+data file can have any number of analyses. There is one subfolder per
+completed stage. Tables are Parquet files, and every row names cells, gRNAs
+and responses by identifier, never by position. The tree below is read from
+the example in `example/highmoi/analyses/left_sided/`. Open a folder to see
+its files, and a file to see what it holds.
+
+```{python}
+#| echo: false
+#| output: asis
+print(nt.analysis_tree())
+```
+
+## Open the tables yourself
+
+Standard libraries read them, in R or Python.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+results <- nanoparquet::read_parquet("example/highmoi/analyses/left_sided/discovery/results.parquet")
+head(results, 3)
+```
+
+## Python
+
+```{python}
+import pandas as pd
+
+results = pd.read_parquet("example/highmoi/analyses/left_sided/discovery/results.parquet")
+print(results.head(3))
+```
+
+:::
+
+## The choices to review
+
+These are the choices that cannot change after the format is frozen without
+breaking existing files. Disagreement is cheap now and costly then. Each opens
+to its reason and the alternative it was chosen over; the label after each
+is the section of `RATIONALE.md` (and of `SPEC.md`) with the detail.
+
+<details class="fold">
+<summary><strong>One folder per stage, with a record written last.</strong> <span class="where">A2</span></summary>
+
+- **The choice.** Each completed stage has a folder holding its tables and `record.json`: the stage's settings, provenance and list of files. The record is written after the tables.
+- **Why.** No file is ever rewritten. The record marks the stage as finished, so a folder without one is a stage that did not finish. Calibration, power and discovery do not depend on one another and could run at once without racing for one file. Rerunning a stage is deleting its folder.
+- **Instead of.** One settings file rewritten by every stage, or tables grouped by kind with stage ownership recorded elsewhere.
+- **The stage names** are `parameters`, `assignment`, `qc`, `calibration`, `power`, `discovery`.
+
+</details>
+
+<details class="fold">
+<summary><strong>Tables name things by identifier and are sorted by key.</strong> <span class="where">T0, T5</span></summary>
+
+- **Why.** Tables then survive subsetting, reordering and being written in pieces by parallel jobs, and there is no question of counting from 0 or from 1.
+- **Consequence.** Results are sorted by target and response, not by p-value.
+
+</details>
+
+<details class="fold">
+<summary><strong>Assignments are a table of (gRNA, cell) rows, not a matrix.</strong> <span class="where">T1</span></summary>
+
+- **Why.** The assignment belongs to an analysis, not to the data. The table is tiny next to the counts, parallel jobs can each write a part, and another tool can hand in a plain two-column table. A table of 10 million rows reads in about 8 seconds in Python and 10 in R.
+- **Instead of.** A 0/1 cells × gRNAs matrix in the data file, which is what the IGVF pipeline, pertpy and public pysceptre use. The two hold the same information.
+
+</details>
+
+<details class="fold">
+<summary><strong>Saved model fits are a cache outside the stages.</strong> <span class="where">T6</span></summary>
+
+- **The choice.** `fits/response/` holds part files. Each part says, inside the file, how its fits were made, and software uses a part only when that matches what it would do itself. Deleting the folder changes no result.
+- **Why.** A fit depends on the data, the formula, the fitting method, the control group and the cells that passed QC, all fixed once QC has run. Which testing stage computes it first is an accident, so a stage's folder is the wrong home: rerunning that stage would delete fits that are still valid.
+
+</details>
+
+<details class="fold">
+<summary><strong>The design matrix is not stored, and formulas are additive only.</strong> <span class="where">T7</span></summary>
+
+- **The choice.** The parameters record holds the formula text and the names of the matrix's columns. Each language rebuilds the matrix and checks those names.
+- **Evidence.** On the example, R and pysceptre build matrices that are equal to the last bit on one machine.
+- **Cost.** Only additive formulas of covariates, `log(x)` and `log(x + 1)` can be saved. An analysis with an interaction or a spline cannot.
+- **No hash of the matrix.** A hash of exact values would fail on a correct matrix, because a logarithm's last bit differs between macOS and Linux (measured). A check that survives this can be added later.
+
+</details>
+
+<details class="fold">
+<summary><strong>Nothing is stored that follows from something else stored.</strong> <span class="where">S6, T5</span></summary>
+
+- **Examples.** Results have no `significant` column, and the cell table has no count of gRNAs per cell.
+- **The exceptions.** Each cell's total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them. `log_2_fold_change` is stored beside `fold_change`, because rebuilding it does not give the same number on every platform.
+
+</details>
+
+<details class="fold">
+<summary><strong>An analysis names its data file by identifier.</strong> <span class="where">A1</span></summary>
+
+- **The choice.** `analysis.json` records the data file's `dataset_id`, its numbers of cells, responses and gRNAs, a hash of each list of identifiers, the data file format's version, and which modality is the response. Software refuses a data file for which the identifier, counts or hashes differ.
+- **Why.** The data file can then be moved, copied or kept on a server, and an analysis still knows whether it is being given the right one.
+- **Not caught.** A value edited in place in a data file whose identifiers are unchanged.
+
+</details>
+
+<details class="fold">
+<summary><strong>Low or high multiplicity of infection is a setting of the analysis.</strong> <span class="where">A3</span></summary>
+
+- **The choice.** The parameters record has `moi`, `high` or `low`. The data file does not.
+- **Why.** It selects an analysis's defaults, such as the control group and what is done with cells that carry several gRNAs. The same data can be analysed either way.
+
+</details>
+
+<details class="fold">
+<summary><strong>A two-part version in every analysis.</strong> <span class="where">A1</span></summary>
+
+- **The choice.** `analysis.json` carries the analysis format's own `MAJOR.MINOR`, separate from the data file's. A minor increase adds something older software can ignore. A major increase is any change after which older software could misread a folder, and software refuses a major version it does not know.
+
+</details>
+
+<details class="fold">
+<summary><strong>The names.</strong> <span class="where">SPEC, sections 3 and 4</span></summary>
+
+Column, table and file names are as hard to change as structure: the stage names, `pass_qc`, `p_value`, `fold_change`, `log_2_fold_change`, and the table names in the tree above. If one reads wrongly to you, now is the time to say so.
+
+</details>
+
+## Questions for reviewers
+
+1. **Is the scope right?** The format fixes the form of results and leaves their meaning (what a p-value tests) to sceptre's method documentation.
+2. **The fitting-method default.** Saved fits are shared between R and Python only when the method matches, and the current default differs from the alternatives on a few responses. This is a scientific choice about which method is the default.
+3. **Additive formulas only.** Is it acceptable that an analysis with an interaction or a spline cannot be saved?
+4. **Resampled statistics.** They take 4 GB per million pairs, and reading one pair is fast only with small row groups (`scale-test/README.md`). Should they be stored as they are, in 32 bits, or with a row-group limit of their own?
+5. **The fit cache.** Reading it takes time in proportion to the number of part files. Should a job write one part for all its fits, and may parts be merged?
+
+<details class="fold">
+<summary>What does not need review now</summary>
+
+These can be added or changed later without breaking any file.
+
+- **Optional columns and tables not yet in the format:** per-cell QC reasons, assignment scores (`RATIONALE.md`, planned additions).
+- **The wording of individual rules.** The sorting into file rules, behaviour rules and guidance is meant to be final; the sentences are not.
+- **Compression settings and Parquet details.** Software reading the files does not depend on them.
+- **The code in `format/`.** It is a prototype that shows the format works in both languages, and is replaced by code in sceptre and pysceptre.
+
+</details>
+
+## What has been tested
+
+`verify/run.sh` runs every check, using neither sceptre nor pysceptre. The
+counts below are from the run this page was rendered after.
+
+```{python}
+#| echo: false
+#| output: asis
+print(nt.status({
+    "conformance": "Both validators report exactly the expected rules on every analysis folder of `conformance/` (folders that conform, and folders that each break a rule), each checked against its data file",
+    "independent-readers": "Tools outside this code read the tables: pandas, polars and duckdb in Python; arrow in R",
+    "derived": "What software computes from the files (cells per gRNA and per target, cells in use, pairs passing QC, significance, control groups) equals what sceptre itself computed",
+    "two-writers": "R and Python each write the same random content, a data file and an analysis of it. The files are compared array by array and column by column, and each language reads the other's files and gets the source back",
+    "writers": "What a writer does beyond producing conforming files: a copy of a data file keeps the dataset's identifier and every modality, a retried stage leaves nothing of its first attempt, and large matrices get 64-bit index arrays",
+}))
+```
+
+- **Once, at real size, with made-up content:** results tables, resampled statistics and the fit cache (`scale-test/README.md`).
+- **Once, with both packages:** each example analysis was rebuilt as a sceptre object and as a pysceptre analysis from the files. Nothing here repeats that; it returns when the packages adopt the format.
+- **On two operating systems:** the suite passes on macOS and on Linux.
+
+**Not tested.**
+
+- A real analysis larger than 1,000 cells.
+- Windows.
+- An implementation by someone else. One author wrote the specification and both prototypes.
+
+`SPEC.md` marks each rule with how it is checked, including the rules nothing tests.
+
+## What is in this folder
+
+<details class="fold">
+<summary>The folders and files of <code>sceptre-analysis-format/</code></summary>
+
+| | |
+|---|---|
+| `notebook.qmd`, `notebook.html` | This page and its source. `./render.sh` renders it |
+| `SPEC.md` | The specification: scope, terms, and numbered statements sorted into file rules, behaviour rules and guidance |
+| `RATIONALE.md` | The reasons: every choice with its alternatives and evidence, the comparison with the IGVF pipeline's outputs, planned additions, and the measurements |
+| `spec/` | The machine-readable parts: `tables.json` (every table's columns, types and key) and JSON Schemas for the JSON records. The descriptions in the tree above are read from `tables.json` |
+| `format/` | The prototype: writers, readers and validators in R and Python, with the same names. It uses the data file format's code and neither sceptre nor pysceptre |
+| `example/` | Analyses in the format, of the data file format's example files: six of the high-MOI dataset and one of the low-MOI dataset. `example/*/expected/` holds values a reader should derive from them |
+| `conformance/` | Analysis folders that conform and folders that each break a rule, with what a validator must report |
+| `verify/` | The verification suite, and how to test another implementation against the same files |
+| `scale-test/` | Recorded measurements of the tables at real size |
+
+</details>
+
+<details class="fold">
+<summary>How the format is defined, and where the code will live</summary>
+
+- **The format is `SPEC.md` and `spec/`.** The validator, `validate_analysis()`, exists in R and in Python and decides whether a folder conforms. Checking a folder fully needs its data file.
+- **Tables are read with standard libraries:** any Parquet reader. The format has no reader of its own.
+- **Writers are custom, and temporary.** The two here move into sceptre and pysceptre, which then write these files themselves.
+
+</details>

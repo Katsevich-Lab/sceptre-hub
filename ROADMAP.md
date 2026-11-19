@@ -26,7 +26,7 @@ Phase 1 is in progress.
 
 | Phase | What it delivers |
 | --- | --- |
-| **1. Formats** | One set of files on disk, read natively by R and Python: the data, and the output of an analysis, both final and stage by stage. These are two formats with separate versions: a Perturb-seq data file format, meant for use beyond sceptre, and a sceptre analysis format. The drafts are in [`file-format/`](file-format/). |
+| **1. Formats** | One set of files on disk, read natively by R and Python: the data, and the output of an analysis, both final and stage by stage. These are two formats with separate versions: a Perturb-seq data file format, meant for use beyond sceptre, and a sceptre analysis format. The drafts are in [`perturb-seq-data-format/`](perturb-seq-data-format/) and [`sceptre-analysis-format/`](sceptre-analysis-format/). |
 | **2a. R package**, **2b. Python package** | Each package made maintainable and extensible, reading and writing the shared files, and working with its ecosystem's standard objects (Bioconductor, scverse). The two packages give the same output as each other, and the same results as today. |
 | **3a. Nextflow pipeline** | The pipeline made maintainable and extensible on top of the stable package interfaces, and scaled to large screens. |
 | **3b. GPU acceleration** | Full-scale analyses on GPU in pysceptre, matching CPU results. |

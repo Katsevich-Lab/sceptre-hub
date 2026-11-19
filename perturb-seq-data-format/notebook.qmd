@@ -1,0 +1,250 @@
+---
+title: "The Perturb-seq data file format"
+subtitle: "Draft 0.1: one file for a Perturb-seq screen, the same in R and in Python, for any software that handles such data"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    embed-resources: true
+    code-overflow: wrap
+execute:
+  warning: false
+  message: false
+---
+
+This page is the way into the format. It gives the principles, shows what a
+data file holds, and says what review is asked for and what has been tested.
+Most of it is folded: open what you want to read.
+
+The format is a set of names and rules on top of a standard MuData file.
+Nothing in it is specific to one analysis tool. One tool that builds on it is
+sceptre, whose analyses of a data file are stored in the
+[sceptre analysis format](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/sceptre-analysis-format/notebook.html).
+
+Two reference documents sit behind this page: [`SPEC.md`](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/SPEC.md)
+has the rules, numbered, and [`RATIONALE.md`](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md)
+has the full reasons, with evidence, under the same numbers.
+
+::: {.callout-note appearance="simple"}
+**Draft.** Nothing here has been reviewed. The format is version 0.1 until it
+is frozen as 1.0.
+:::
+
+```{r}
+#| include: false
+if (dir.exists("rlib")) .libPaths(c("rlib", .libPaths()))
+library(reticulate)
+options(width = 100)
+```
+
+```{python}
+#| include: false
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, ".")
+import notebook_tools as nt
+
+nt.SCREEN = Path("example/highmoi/screen.h5mu")
+nt.screen_spec = json.loads(Path("spec/screen.json").read_text())
+```
+
+{{< include _notebook_style.md >}}
+
+## The principles
+
+Every choice in the format follows from these eight. Where two of them pull
+apart, the earlier one wins. Open one for its reason and what follows from it.
+
+```{python}
+#| echo: false
+#| output: asis
+print(nt.principles("RATIONALE.md", "https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md"))
+```
+
+## What is on disk
+
+A screen is **one file**: a standard MuData `.h5mu` file, written once and
+never modified. It holds raw counts and what is known about the cells and the
+gRNAs, and nothing an analysis computes. The tree below is read from the
+example in `example/highmoi/`. Open a group to see what is in it, and an entry
+to see what it holds.
+
+```{python}
+#| echo: false
+#| output: asis
+print(nt.screen_tree())
+```
+
+## Open the file yourself
+
+Standard libraries read it, in R or Python.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+screen <- MuData::readH5MU("example/highmoi/screen.h5mu")
+screen
+```
+
+## Python
+
+```{python}
+import mudata
+
+screen = mudata.read_h5mu("example/highmoi/screen.h5mu")
+print(screen)
+```
+
+:::
+
+## The choices to review
+
+These are the choices that cannot change after the format is frozen without
+breaking existing files. Disagreement is cheap now and costly then. Each opens
+to its reason and the alternative it was chosen over; the label after each
+is the section of `RATIONALE.md` (and of `SPEC.md`) with the detail.
+
+<details class="fold">
+<summary><strong>Data and analysis are separate.</strong> <span class="where">S12</span></summary>
+
+- **The choice.** The data file holds nothing an analysis produces: no assignments, no kept-or-removed flag, no results. Each analysis is its own folder.
+- **Why.** One dataset has many analyses, and the data file is then written once and never touched again. Keeping a kept-or-removed flag in the data file, as public pysceptre does, means rewriting the whole file to work on the kept cells.
+- **Instead of.** One self-contained file holding data, assignments and results, which is the IGVF pipeline's layout and suits uploading one file to a portal.
+
+</details>
+
+<details class="fold">
+<summary><strong>The data is one MuData <code>.h5mu</code> file.</strong> <span class="where">S1</span></summary>
+
+- **Why.** MuData is the scverse standard for one set of cells measured in several ways. Standard libraries open it in both languages, and one file is easy to move and publish.
+- **Instead of.** A Zarr store, two `.h5ad` files, the `ondisc` format, or a folder of Parquet and matrix files.
+- **Locks in.** HDF5. A Zarr variant could be added later without changing anything else.
+
+</details>
+
+<details class="fold">
+<summary><strong>Counts are stored by feature.</strong> <span class="where">S3</span></summary>
+
+- **The choice.** The count matrix is cells × features, column-compressed, so one gene is one contiguous read.
+- **Why.** Every stage works gene by gene. With counts stored by cell, the IGVF pipeline first splits the whole file into per-gene chunk files.
+- **Cost.** A file from another tool is usually stored by cell and is converted once at import.
+
+</details>
+
+<details class="fold">
+<summary><strong>Modalities are named for what was measured, and the analysis says which one it tests.</strong> <span class="where">S2, A1</span></summary>
+
+- **The choice.** The gRNA modality is always `grna`. Every other modality is named for its measurement (`rna`, `protein`, ...). `analysis.json` names the response modality; nothing finds it by a fixed name.
+- **Why.** A file can then hold a second measured modality, and any modality can become the response of a later analysis.
+- **Instead of.** A fixed role name such as `response`, which is what both packages use in memory today.
+
+</details>
+
+<details class="fold">
+<summary><strong>Covariate names carry the modality's name: <code>rna_n_umis</code>, not <code>response_n_umis</code>.</strong> <span class="where">S5</span></summary>
+
+- **The choice.** Facts about the cell (batch, donor) are in the shared cell table. Measurements of a modality are in that modality's cell table. A model's covariate table prefixes each modality's columns with its name.
+- **Why.** A batch belongs to the cell, not to its RNA. A role prefix cannot name the RNA depth in an analysis whose response is protein.
+- **Cost.** Formulas users write today say `response_n_umis`. The packages can keep accepting that name and translate.
+
+</details>
+
+<details class="fold">
+<summary><strong>The file's own entries are at the top level of <code>uns</code>.</strong> <span class="where">S10</span></summary>
+
+- **The choice.** The format version (`perturb_seq_format`), the dataset's identifier (`dataset_id`) and what is known about the screen (`title`, `organism`, `genome_build`, `perturbation_type`, `source`) are scalar entries at the top level of `uns`.
+- **Why.** They are facts about the dataset, so other tools should be able to read and write them. Under a key named for one tool they would belong to that tool.
+- **The version** is `MAJOR.MINOR`. A minor increase adds something older software can ignore. A major increase is any change after which older software could misread a file, and software refuses a major version it does not know.
+- **Not in the file.** Whether a screen is treated as low or high multiplicity of infection. It selects an analysis's defaults, so it belongs to the analysis.
+
+</details>
+
+<details class="fold">
+<summary><strong>The names.</strong> <span class="where">SPEC, section 2</span></summary>
+
+Names are as hard to change as structure: the modality names `rna` and `grna`, and the columns `grna_target`, `target_chr`, `target_start`, `target_end`, `vector_id`, `n_umis`, `n_nonzero`, `p_mito`. Other formats use other names for the same things, and none is a standard. If one reads wrongly to you, now is the time to say so.
+
+</details>
+
+## Questions for reviewers
+
+1. **Is anything missing that a real screen needs?** For gRNA annotation the format has a target, its position and an optional vector, and no gRNA type or spacer sequence yet. It defines no annotation of genes.
+2. **Coordinates.** Target positions are 1-based with both ends included, as in GTF files, and a file with positions has to say which genome build they are in. Is that the right convention?
+3. **Limits.** A gRNA has one target, and so does a vector carrying several gRNAs; combinatorial screens are refused. DNA-targeting is assumed. Are those limits acceptable for now?
+4. **The matrix layout.** Counts are stored by feature, which suits fitting one gene at a time. Files from mapping pipelines and from scanpy are stored by cell. Should the format allow both and recommend one?
+5. **The required columns.** Every modality's cell table must have `n_umis` and `n_nonzero`. Is that the right minimum for software other than sceptre?
+6. **The names.** Would you use `rna` and `grna`, `grna_target`, and the entry names at the top level of `uns`, or do the names of another format serve better?
+
+<details class="fold">
+<summary>What does not need review now</summary>
+
+These can be added or changed later without breaking any file.
+
+- **Optional columns not yet in the format:** gRNA type, spacer, gene annotation (`RATIONALE.md`, planned additions).
+- **The wording of individual rules.** The sorting into file rules, behaviour rules and guidance is meant to be final; the sentences are not.
+- **Compression settings.** Software reading the files does not depend on them.
+- **The code in `format/`.** The validators show that the rules can be checked in both languages; the writer is temporary.
+- **The comparisons with IGVF and pertpy** in `RATIONALE.md`, unless you know those formats and see an error.
+
+</details>
+
+## What has been tested
+
+`verify/run.sh` runs every check. It uses no analysis tool. The counts below
+are from the run this page was rendered after.
+
+```{python}
+#| echo: false
+#| output: asis
+print(nt.status({
+    "conformance": "Both validators report exactly the expected rules on every data file of `conformance/` (files that conform, and files that each break a rule), and the standard readers read the files that must still be read",
+    "encodings": "Every kind of value, written by each language's standard libraries and read by the other's. The kinds the format allows come back correct; the kinds it forbids still break",
+    "independent-readers": "Tools outside this code read the files: anndata and scanpy in Python, HDF5Array in R",
+    "wide-index": "The 64-bit branch of the count matrix's index type, with the limit lowered because no test file reaches it",
+}))
+```
+
+- **Once, at scale:** on a real screen of 207,324 cells, written by both languages to identical files and read back in memory and from disk (`scale-test/`).
+- **On two operating systems:** the suite passes on macOS and on Linux.
+
+**Not tested.**
+
+- Windows.
+- Real data in a second measured modality.
+- Count matrices past the 32-bit index limit. The 64-bit types are handled; values that large are not exercised.
+- An implementation by someone else. One author wrote the specification and both validators.
+
+`SPEC.md` marks each rule with how it is checked, including the rules nothing tests.
+
+## What is in this folder
+
+<details class="fold">
+<summary>The folders and files of <code>perturb-seq-data-format/</code></summary>
+
+| | |
+|---|---|
+| `notebook.qmd`, `notebook.html` | This page and its source. `./render.sh` renders it |
+| `SPEC.md` | The specification: scope, terms, and numbered statements sorted into file rules, behaviour rules and guidance |
+| `RATIONALE.md` | The reasons: every choice with its alternatives and evidence, comparisons with the IGVF pipeline's format and with pertpy, planned additions, and the measurements |
+| `spec/screen.json` | The machine-readable structure of a data file. The descriptions in the tree above are read from it |
+| `format/` | The validator in R and in Python, with the same names, and a temporary writer |
+| `example/` | Data files in the format: a high-MOI dataset, a low-MOI dataset, and a small synthetic file with every kind of column |
+| `conformance/` | Data files that conform and data files that each break a rule, with what a validator must report |
+| `verify/` | The verification suite |
+| `scale-test/` | Recorded results of the run on 207,324 cells |
+
+</details>
+
+<details class="fold">
+<summary>How the format is defined</summary>
+
+- **The format is `SPEC.md` and `spec/screen.json`.** The validator, `validate_screen()`, exists in R and in Python and decides whether a file conforms. There is no canonical writer.
+- **A data file is read with standard libraries:** `mudata.read_h5mu` in Python, `MuData::readH5MU` in R. The format has no reader of its own.
+- **Writers are custom.** Each is a wrapper around the standard writer that stays inside what both languages read correctly.
+
+</details>

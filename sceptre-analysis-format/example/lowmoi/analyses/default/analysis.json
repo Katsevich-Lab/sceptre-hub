@@ -1,0 +1,15 @@
+{
+  "format": "0.1",
+  "response_modality": "rna",
+  "screen": {
+    "id": "8befbffe888ed70b8c0e6a561f338c90",
+    "format": "0.1",
+    "n_cells": 1000,
+    "n_responses": 100,
+    "n_grnas": 50,
+    "cell_ids_sha256": "69dc62d4422866a078af70f4bc81f22b7d1bef8e1074ed4f2bb1aaae1ac2a8bc",
+    "response_ids_sha256": "f9fd8b2a6fdee930bc09ef958235e5f724a72a2d565541c7851d7c5aff5c6822",
+    "grna_ids_sha256": "d83836252c8012716f65d76679bdaafe69619859baa683e588a37eca2f503ddf",
+    "title": "sceptre low-MOI example data"
+  }
+}

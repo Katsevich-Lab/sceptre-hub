@@ -1,0 +1,47 @@
+# The verification suite of the Perturb-seq data file format
+# (perturb-seq-data-format/verify/run.sh), on Linux and macOS. It installs
+# standard libraries only and uses no analysis tool.
+name: Perturb-seq data file format
+
+# It runs when a push changes the format's folder or this file, and by hand.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "perturb-seq-data-format/**"
+      - ".github/workflows/perturb-seq-data-format.yml"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: data file (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python libraries
+        run: pip install mudata anndata h5py pyarrow pandas scipy numpy jsonschema scanpy polars duckdb
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - name: System libraries for R packages (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev libhdf5-dev libnode-dev
+      - name: R libraries
+        run: |
+          install.packages(c("BiocManager", "jsonlite", "nanoparquet", "jsonvalidate", "arrow", "Matrix"))
+          BiocManager::install(c("MuData", "rhdf5", "HDF5Array", "SingleCellExperiment", "MultiAssayExperiment"), ask = FALSE, update = FALSE)
+        shell: Rscript {0}
+      - name: Verification suite
+        run: perturb-seq-data-format/verify/run.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ matrix.os }}
+          path: perturb-seq-data-format/verify/out/results/

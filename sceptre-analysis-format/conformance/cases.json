@@ -1,0 +1,539 @@
+[
+  {
+    "name": "valid/analyses/left_sided_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/left_sided_written_by_r",
+    "expect": [],
+    "conforms": true,
+    "what": "The `left_sided` example analysis, written by R",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/bonferroni_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/bonferroni_written_by_r",
+    "expect": [],
+    "conforms": true,
+    "what": "The `bonferroni` example analysis, written by R",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/singleton_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/singleton_written_by_r",
+    "expect": [],
+    "conforms": true,
+    "what": "The `singleton` example analysis, written by R",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/stopped_after_qc_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/stopped_after_qc_written_by_r",
+    "expect": [],
+    "conforms": true,
+    "what": "The `stopped_after_qc` example analysis, written by R",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/with_resamples_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/with_resamples_written_by_r",
+    "expect": [],
+    "conforms": true,
+    "what": "The `with_resamples` example analysis, written by R",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/left_sided_written_by_python",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/left_sided_written_by_python",
+    "expect": [],
+    "conforms": true,
+    "what": "The `left_sided` analysis, written by Python",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/left_sided_written_by_python (Python data file)",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/left_sided_written_by_python",
+    "expect": [],
+    "conforms": true,
+    "what": "The same, checked against the Python-written data file",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_python.h5mu"
+  },
+  {
+    "name": "valid/analyses/data_file_at_a_url",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/data_file_at_a_url",
+    "expect": [],
+    "conforms": true,
+    "what": "The hint to the data file is a URL",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/data_file_beside_the_analysis",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/data_file_beside_the_analysis",
+    "expect": [],
+    "conforms": true,
+    "what": "The hint to the data file is a relative path",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/fits_from_two_jobs",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/fits_from_two_jobs",
+    "expect": [],
+    "conforms": true,
+    "what": "The fit cache was filled by two jobs, and one response is in both parts",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/fits_formula_spaced_differently",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/fits_formula_spaced_differently",
+    "expect": [],
+    "conforms": true,
+    "what": "A part of the fit cache records the analysis's formula with other spacing; its fits are used",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu",
+    "fits_used": true
+  },
+  {
+    "name": "valid/analyses/fits_made_with_another_method",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/fits_made_with_another_method",
+    "expect": [],
+    "conforms": true,
+    "what": "The one part of the fit cache was made with a method other than the analysis's: allowed, and a reader takes no fit from it",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu",
+    "fits_used": false
+  },
+  {
+    "name": "valid/analyses/stale_part_beside_a_current_one",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/stale_part_beside_a_current_one",
+    "expect": [],
+    "conforms": true,
+    "what": "Beside the current part is one left by an earlier QC, made for other cells: allowed, and a reader given the current identity reads the current part only",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu",
+    "fits_for": {
+      "identity": {
+        "cells_in_use_sha256": "d6040e7cdff5a1918e3869873f780155e192eab3e824d3e6662defe383852231",
+        "control_group": "complement",
+        "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch",
+        "response_fit_method": "batched",
+        "screen_id": "b907fd1b151fd398b78ff993ae9e86d6"
+      },
+      "rows": 100
+    }
+  },
+  {
+    "name": "valid/analyses/testing_stage_cleared_fits_kept",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/testing_stage_cleared_fits_kept",
+    "expect": [],
+    "conforms": true,
+    "what": "The calibration stage was cleared for a rerun; the fit cache remains",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/stage_written_in_another_language",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/stage_written_in_another_language",
+    "expect": [],
+    "conforms": true,
+    "what": "A stage written by an implementation in a third language",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "valid/analyses/tables_in_parts",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/tables_in_parts",
+    "expect": [],
+    "conforms": true,
+    "what": "A table as a folder of parts, with dictionary-encoded identifiers, an unknown column, and an unknown file beside it",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/no_analysis_json",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/no_analysis_json",
+    "expect": [
+      "A1.1"
+    ],
+    "conforms": false,
+    "what": "`analysis.json` is missing",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/no_response_modality",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/no_response_modality",
+    "expect": [
+      "A1.1"
+    ],
+    "conforms": false,
+    "what": "`analysis.json` does not name a response modality",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/response_modality_grna",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/response_modality_grna",
+    "expect": [
+      "A1.1"
+    ],
+    "conforms": false,
+    "what": "`analysis.json` names `grna` as the response modality",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/response_modality_not_in_file",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/response_modality_not_in_file",
+    "expect": [
+      "A1.2"
+    ],
+    "conforms": false,
+    "what": "The response modality is `protein`, which the data file does not have",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/analysis_format_from_the_future",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/analysis_format_from_the_future",
+    "expect": [
+      "A1.1"
+    ],
+    "conforms": false,
+    "what": "The analysis's format version is 9.0",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/absolute_path_to_the_data",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/absolute_path_to_the_data",
+    "expect": [
+      "A1.4"
+    ],
+    "conforms": false,
+    "what": "The hint to the data file is an absolute local path",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/another_dataset",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/another_dataset",
+    "expect": [
+      "A1.2"
+    ],
+    "conforms": false,
+    "what": "The dataset identifier is that of another data file; the parts of the fit cache are then another dataset's, which is allowed and unused",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/record_of_another_stage",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/record_of_another_stage",
+    "expect": [
+      "A2.1"
+    ],
+    "conforms": false,
+    "what": "The record in `discovery/` says it is the record of the power stage",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu",
+    "reader_refuses": true
+  },
+  {
+    "name": "invalid/analyses/side_up",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/side_up",
+    "expect": [
+      "A2.1"
+    ],
+    "conforms": false,
+    "what": "The parameters record has `side` set to `up`",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/moi_medium",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/moi_medium",
+    "expect": [
+      "A2.1"
+    ],
+    "conforms": false,
+    "what": "The parameters record has `moi` set to `medium`",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/no_seed",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/no_seed",
+    "expect": [
+      "A2.1"
+    ],
+    "conforms": false,
+    "what": "The parameters record has no `seed`",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/stage_without_its_predecessor",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/stage_without_its_predecessor",
+    "expect": [
+      "A2.2",
+      "A4.1"
+    ],
+    "conforms": false,
+    "what": "The assignment record is missing while later stages remain",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/listed_file_missing",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/listed_file_missing",
+    "expect": [
+      "A5.1"
+    ],
+    "conforms": false,
+    "what": "A table that a record lists is not in the folder",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/table_truncated",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/table_truncated",
+    "expect": [
+      "A5.2",
+      "T2.1"
+    ],
+    "conforms": false,
+    "what": "`cells.parquet` has fewer rows than its stage wrote",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/table_listed_outside_the_stage_folder",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/table_listed_outside_the_stage_folder",
+    "expect": [
+      "A2.1"
+    ],
+    "conforms": false,
+    "what": "A record lists a table by a path that leaves the stage's folder",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu",
+    "reader_refuses": true
+  },
+  {
+    "name": "invalid/analyses/required_table_not_listed",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/required_table_not_listed",
+    "expect": [
+      "A4.1",
+      "A5.4"
+    ],
+    "conforms": false,
+    "what": "The QC record does not list `cells.parquet`, which is still in the folder",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/stale_results",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/stale_results",
+    "expect": [
+      "A4.1"
+    ],
+    "conforms": false,
+    "what": "The discovery record is gone and its results table remains",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/column_missing",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/column_missing",
+    "expect": [
+      "T0.1"
+    ],
+    "conforms": false,
+    "what": "`cells.parquet` has no `in_use` column",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/column_of_the_wrong_type",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/column_of_the_wrong_type",
+    "expect": [
+      "T0.1"
+    ],
+    "conforms": false,
+    "what": "`pass_qc` is stored as integers",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/rows_not_sorted",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/rows_not_sorted",
+    "expect": [
+      "T0.2"
+    ],
+    "conforms": false,
+    "what": "The assignment table is in reverse order",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/duplicate_row",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/duplicate_row",
+    "expect": [
+      "T0.4"
+    ],
+    "conforms": false,
+    "what": "The assignment table has the same (gRNA, cell) twice",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/cell_not_in_the_data_file",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/cell_not_in_the_data_file",
+    "expect": [
+      "T0.5"
+    ],
+    "conforms": false,
+    "what": "The assignment table names a cell the data file does not have",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/grna_column_under_the_union_strategy",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/grna_column_under_the_union_strategy",
+    "expect": [
+      "T3.3"
+    ],
+    "conforms": false,
+    "what": "A pair-QC table has a `grna_id` column in an analysis that pools gRNAs by target",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/grna_column_in_bonferroni_discovery",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/grna_column_in_bonferroni_discovery",
+    "expect": [
+      "T5.6"
+    ],
+    "conforms": false,
+    "what": "The discovery results of a bonferroni analysis have a `grna_id` column",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/significant_stored",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/significant_stored",
+    "expect": [
+      "T5.3"
+    ],
+    "conforms": false,
+    "what": "The discovery results store a `significant` column",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/no_log_2_fold_change",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/no_log_2_fold_change",
+    "expect": [
+      "T0.1"
+    ],
+    "conforms": false,
+    "what": "The discovery results have no `log_2_fold_change` (T5.1)",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/effect_sizes_disagree",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/effect_sizes_disagree",
+    "expect": [
+      "T5.2"
+    ],
+    "conforms": false,
+    "what": "A `log_2_fold_change` is not the base-2 logarithm of the row's `fold_change`",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/fit_part_without_identity",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/fit_part_without_identity",
+    "expect": [
+      "T6.1"
+    ],
+    "conforms": false,
+    "what": "A part of the fit cache does not say how its fits were made, as after a tool rewrote it; a reader takes no fit from it",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu",
+    "fits_used": false
+  },
+  {
+    "name": "invalid/analyses/fit_identity_incomplete",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/fit_identity_incomplete",
+    "expect": [
+      "T6.1"
+    ],
+    "conforms": false,
+    "what": "The identity inside a part of the fit cache lacks `cells_in_use_sha256`",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/fit_identity_not_json",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/fit_identity_not_json",
+    "expect": [
+      "T6.1"
+    ],
+    "conforms": false,
+    "what": "The identity inside a part of the fit cache is not JSON",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu",
+    "fits_used": false
+  },
+  {
+    "name": "invalid/analyses/identity_file_in_the_fit_cache",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/identity_file_in_the_fit_cache",
+    "expect": [
+      "T6.1"
+    ],
+    "conforms": false,
+    "what": "The fit cache holds a JSON file beside its parts, which a folder reader would trip on",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/fits_before_qc",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/fits_before_qc",
+    "expect": [
+      "T6.3"
+    ],
+    "conforms": false,
+    "what": "An analysis that stopped after assignment holds a fit cache",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/fit_with_too_few_coefficients",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/fit_with_too_few_coefficients",
+    "expect": [
+      "T6.2"
+    ],
+    "conforms": false,
+    "what": "A saved fit has fewer coefficients than the design has terms",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/formula_with_an_interaction",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/formula_with_an_interaction",
+    "expect": [
+      "T7.1"
+    ],
+    "conforms": false,
+    "what": "The formula has an interaction, outside the additive subset; the fit cache was made for another formula, which is allowed and unused",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  }
+]

@@ -1,0 +1,10 @@
+# generated or local
+rlib/
+verify/out/
+conformance/results-*.json
+*.html
+!notebook.html
+*_files/
+.quarto/
+__pycache__/
+*.tmp
