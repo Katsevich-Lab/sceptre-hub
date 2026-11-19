@@ -1,5 +1,5 @@
 # The verification suite of the sceptre analysis format
-# (sceptre-analysis-format/verify/run.sh), on Linux and macOS, in two parts:
+# (sceptre-analysis-format/verify/run.sh), on Linux, macOS and Windows, in two parts:
 #   format   the validators and standard readers on the committed files; no writer
 #   writers  the checks of the writers. Today these are the two writers in
 #            format/; when sceptre and pysceptre write the formats, this part
@@ -22,8 +22,6 @@ jobs:
   verify:
     name: ${{ matrix.part }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    # Windows is on trial: its result is shown and does not fail the workflow.
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:

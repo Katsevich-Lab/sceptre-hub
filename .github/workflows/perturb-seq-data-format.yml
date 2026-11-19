@@ -1,5 +1,5 @@
 # The verification suite of the Perturb-seq data file format
-# (perturb-seq-data-format/verify/run.sh), on Linux and macOS. It installs
+# (perturb-seq-data-format/verify/run.sh), on Linux, macOS and Windows. It installs
 # standard libraries only and uses no analysis tool.
 name: Perturb-seq data file format
 
@@ -16,8 +16,6 @@ jobs:
   verify:
     name: data file (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    # Windows is on trial: its result is shown and does not fail the workflow.
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:

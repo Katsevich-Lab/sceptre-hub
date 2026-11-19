@@ -210,11 +210,10 @@ print(nt.status({
 ```
 
 - **Once, at scale:** on a real screen of 207,324 cells, written by both languages to identical files and read back in memory and from disk (`scale-test/`).
-- **On two operating systems:** the suite passes on macOS and on Linux.
+- **On three operating systems:** the suite passes on macOS, Linux and Windows.
 
 **Not tested.**
 
-- Windows.
 - Real data in a second measured modality.
 - Count matrices past the 32-bit index limit. The 64-bit types are handled; values that large are not exercised.
 - An implementation by someone else. One author wrote the specification and both validators.

@@ -234,12 +234,11 @@ print(nt.status({
 
 - **Once, at real size, with made-up content:** results tables, resampled statistics and the fit cache (`scale-test/README.md`).
 - **Once, with both packages:** each example analysis was rebuilt as a sceptre object and as a pysceptre analysis from the files. Nothing here repeats that; it returns when the packages adopt the format.
-- **On two operating systems:** the suite passes on macOS and on Linux.
+- **On three operating systems:** the suite passes on macOS, Linux and Windows.
 
 **Not tested.**
 
 - A real analysis larger than 1,000 cells.
-- Windows.
 - An implementation by someone else. One author wrote the specification and both prototypes.
 
 `SPEC.md` marks each rule with how it is checked, including the rules nothing tests.

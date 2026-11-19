@@ -541,7 +541,7 @@ Beyond the points in the data file format's rationale:
 
 **The verification suite** (`verify/run.sh`) loads neither sceptre nor
 pysceptre and runs on the committed files with standard libraries only.
-*(measured, on macOS and on Linux)* Each group of checks runs in R and in
+*(measured, on macOS, Linux and Windows)* Each group of checks runs in R and in
 Python, all passing:
 
 - the validators on the conformance set. Both validators accept all 16

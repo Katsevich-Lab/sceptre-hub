@@ -496,7 +496,7 @@ specification.
 
 **The verification suite** (`verify/run.sh`) needs no package that analyses
 the data and runs on the committed files with standard libraries only.
-*(measured, on macOS and on Linux)* Each group of checks runs in R and in
+*(measured, on macOS, Linux and Windows)* Each group of checks runs in R and in
 Python, all passing:
 
 - the validators and readers on the conformance set. Both validators accept
@@ -524,7 +524,6 @@ suite found when it was rendered. It renders R and Python in one process
 - *Independence of authorship.* The validators and both writers come from one
   author. The readers written elsewhere reduce that weakness and only an
   outside implementer removes it.
-- *Windows.* The suite ran on macOS and on Linux (Ubuntu 24.04), with other versions of the libraries on each.
 
 **The example files are fixed.** Nothing here regenerates them. A format
 change converts them in place, with code kept beside the change, which is

@@ -33,4 +33,5 @@ need what that format needs, and in R also `nanoparquet`, `jsonvalidate` and
 `arrow` (`nanoparquet` and `jsonvalidate` may be in
 `../perturb-seq-data-format/rlib`); in Python also `jsonschema`, `polars` and
 `duckdb`. `verify/README.md` says how another implementation is tested against
-the same files. The suite passes on macOS and on Linux (Ubuntu 24.04).
+the same files. The suite passes on macOS, Linux and
+Windows.
