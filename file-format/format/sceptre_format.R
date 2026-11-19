@@ -268,6 +268,8 @@ fmt_write_screen <- function(sce, file, index_limit = NULL) {
     if (anyDuplicated(features) > 0L) fmt_stop("Feature identifiers must be unique across the modalities of a file.")
     grna_table <- SummarizedExperiment::rowData(grna)
     if (is.null(grna_table$grna_target) || anyNA(grna_table$grna_target)) fmt_stop("Every gRNA needs a `grna_target`.")
+    has_positions <- any(vapply(intersect(GRNA_COORDINATES, names(grna_table)), function(name) any(!is.na(grna_table[[name]])), logical(1)))
+    if (has_positions && is.null(stamp$genome_build)) fmt_stop("The gRNA table has positions: metadata(sce)$sceptre$genome_build must say which genome build they are in.")
     if (!is.null(grna_table$vector_id)) {
         if (anyNA(grna_table$vector_id)) fmt_stop("Every gRNA needs a `vector_id` when the column is present.")
         for (fault in vector_faults(rownames(grna), as.character(grna_table$vector_id), as.character(grna_table$grna_target))) fmt_stop(fault$message)
@@ -998,6 +1000,7 @@ validate_screen <- function(file, index_limit = NULL) {
         if (!is.null(chromosome) && !is.null(start) && !is.null(end)) {
             given <- cbind(!is.na(chromosome), !is.na(start), !is.na(end))
             if (any(rowSums(given) %in% 1:2)) log$add("S8.11", table, "A gRNA has some of `target_chr`, `target_start`, `target_end` and not all three.")
+            if (any(given) && nrow(record) > 0L && nrow(entry("genome_build")) == 0L) log$add("S8.14", table, "The gRNA table has positions and the file has no `genome_build`.")
             both <- !is.na(start) & !is.na(end)
             if (any(start[both] != round(start[both]) | end[both] != round(end[both]) | start[both] < 1 | end[both] < start[both])) {
                 log$add("S8.10", table, "Target positions must be whole numbers, 1-based with both ends included: `target_start` at least 1 and `target_end` not before it.")

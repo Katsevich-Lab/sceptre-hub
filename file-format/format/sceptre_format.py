@@ -297,6 +297,9 @@ def write_screen(mdata, file, index_limit=None) -> None:
     stamp = dict(mdata.uns["sceptre"])
     if stamp.get("moi") not in ("high", "low"):
         raise ValueError("uns['sceptre']['moi'] must be 'high' or 'low'.")
+    grna_table = mdata.mod[GRNA].var
+    if not stamp.get("genome_build") and any(grna_table[c].notna().any() for c in GRNA_COORDINATES.values() if c in grna_table):
+        raise ValueError("The gRNA table has positions: uns['sceptre']['genome_build'] must say which genome build they are in.")
     names = list(mdata.mod)
     if GRNA not in names or len(names) < 2:
         raise ValueError(f"A data file needs the modality '{GRNA}' and at least one other.")
@@ -1146,6 +1149,8 @@ def validate_screen(file, index_limit=None) -> pd.DataFrame:
                 given = np.array([c is not None for c in chromosome]).astype(int) + (~np.isnan(start)).astype(int) + (~np.isnan(end)).astype(int)
                 if np.any((given == 1) | (given == 2)):
                     log.add("S8.11", table, "A gRNA has some of `target_chr`, `target_start`, `target_end` and not all three.")
+                if np.any(given > 0) and where in f and "genome_build" not in f[where]:
+                    log.add("S8.14", table, "The gRNA table has positions and the file has no `genome_build`.")
                 both = ~np.isnan(start) & ~np.isnan(end)
                 a, b = start[both], end[both]
                 if np.any((a != np.round(a)) | (b != np.round(b)) | (a < 1) | (b < a)):

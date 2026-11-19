@@ -289,7 +289,8 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S8.10 | file | Positions are **1-based with both ends included**: `target_start` is the first base of the target and `target_end` the last. Both are whole numbers, `target_start` is at least 1, and `target_end` is not before `target_start`. A single position has the two equal. | V |
 | S8.11 | file | A gRNA has all three of `target_chr`, `target_start` and `target_end`, or none of them. A non-targeting gRNA has none. | V |
 | S8.12 | guidance | This is the convention of GTF and GFF files, Ensembl, and Bioconductor's `GRanges`. An interval from a BED file (0-based, end excluded) is converted at import by adding 1 to its start. The format has one convention and no entry that says which is in use. Any position column added later follows it. | — |
-| S8.13 | guidance | Chromosome names are text, and the format does not choose between `chr1` and `1`. They have to match the naming of whatever positions they are compared with. A writer SHOULD record `genome_build` (S10.5) whenever the gRNA table has positions. | — |
+| S8.13 | guidance | Chromosome names are text, and the format does not choose between `chr1` and `1`. They have to match the naming of whatever positions they are compared with. | — |
+| S8.14 | file | A file in which any gRNA has a position MUST have `genome_build` (S10.5). A position cannot be compared with another without knowing the build of both, and the build cannot be worked out from the file. | V |
 
 ### S9. Identifiers
 
@@ -308,9 +309,9 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S10.2 | file | `moi` MUST be `high` or `low`. | V |
 | S10.3 | file | `format` is the data file's own format version, `0.1` for this document. A reader MUST refuse a major version other than the one it knows. | V |
 | S10.4 | behaviour | `id` identifies the dataset. A writer assigns a new random `id` when it imports data, and keeps the `id` when it copies a data file. | tests (the conformance run: a copied data file keeps its `id`). A new `id` on import: none (testing it needs a package) |
-| S10.5 | file | `uns/sceptre` MAY have these scalar text entries. None identifies the dataset (`id` does), and no reader's behaviour depends on them: `name`, a label for people; `source`, a URL, DOI or accession saying where the data came from; `perturbation_type`; `organism`, as a scientific name such as `Homo sapiens`; `genome_build`, such as `GRCh38`, the build of every coordinate in the file. | V |
+| S10.5 | file | `uns/sceptre` MAY have these scalar text entries; `genome_build` is required where the gRNA table has positions (S8.14). None identifies the dataset (`id` does), and no reader's behaviour depends on them: `name`, a label for people; `source`, a URL, DOI or accession saying where the data came from; `perturbation_type`; `organism`, as a scientific name such as `Homo sapiens`; `genome_build`, such as `GRCh38`, the build of every coordinate in the file. | V |
 | S10.6 | file | `perturbation_type`, if present, MUST be one of `CRISPRko` (knockout), `CRISPRi` (interference), `CRISPRa` (activation), `CRISPRbe` (base editing), `CRISPRkd` (knockdown of RNA). | V |
-| S10.7 | guidance | A writer SHOULD record `perturbation_type`, `organism` and `genome_build` when it knows them. They are known at import, cannot be worked out from the file, and are lost for good if not written down. | — |
+| S10.7 | guidance | A writer SHOULD record `perturbation_type` and `organism` when it knows them, and `genome_build` even in a file without positions. They are known at import, cannot be worked out from the file, and are lost for good if not written down. | — |
 
 ### S11. Compression
 

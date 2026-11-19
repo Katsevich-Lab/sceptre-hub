@@ -399,6 +399,8 @@ def set_positions(start=None, end=None, chromosome=None):
 broken_screen("target_start_zero", ["S8.10"], "A target starts at position 0: a 0-based coordinate, as in a BED file", set_positions(start=0))
 broken_screen("target_end_before_start", ["S8.10"], "A target ends before it starts", set_positions(end=50))
 broken_screen("target_start_without_chromosome", ["S8.11"], "A gRNA has a target start and end and no chromosome", set_positions(chromosome="missing"))
+broken_screen("positions_without_genome_build", ["S8.14"], "The gRNA table has positions and the file has no `genome_build`",
+              lambda f: f["uns/sceptre"].__delitem__("genome_build"))
 broken_screen("target_start_as_text", ["S8.2"], "`target_start` stored as text",
               lambda f: (f["mod/grna/var"].__delitem__("target_start"),
                          add_column(f, "mod/grna/var", "target_start", np.array(["100", "200"], dtype=object), "string-array", text)))

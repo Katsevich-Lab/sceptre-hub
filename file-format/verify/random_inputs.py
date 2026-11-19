@@ -39,7 +39,7 @@ for seed in SEEDS:
     pairs = sorted({(t, g) for t in targets for g in genes if rng.random() < 0.6})
     p_values = [None if rng.random() < 0.1 else float(rng.random()) for _ in pairs]
     inputs = {
-        "seed": seed, "id": f"random-{seed}", "moi": "high", "cells": cells, "genes": genes, "grnas": grnas,
+        "seed": seed, "id": f"random-{seed}", "moi": "high", "genome_build": "GRCh38", "cells": cells, "genes": genes, "grnas": grnas,
         "rna": triplets(n_genes, 0.3, 200), "grna": grna_counts,
         "batch": {"levels": ["b2", "b1"], "values": [["b2", "b1"][int(v)] for v in rng.integers(0, 2, n_cells)]},
         "quality": [None if rng.random() < 0.1 else float(rng.normal()) for _ in cells],

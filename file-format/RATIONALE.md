@@ -281,10 +281,10 @@ one rule, and no rounding between what a package computed and what it reads back
 - **Why.** Principle 5. *(measured)* Both languages write and read a nested record with true scalars; R needs one attribute set on each value to write a scalar. A JSON string needed a low-level HDF5 write in R and is opaque to HDF5 tools.
 - **No list of text columns.** The first draft kept one, to mark text stored as a categorical. Under S7 every covariate that was text *is* a categorical, and the few text columns of the feature tables are named in `SPEC.md`.
 - **The version here is the data file's own.** An analysis has a separate one in `analysis.json`.
-- **What kind of screen it was: `perturbation_type`, `organism`, `genome_build`** *(Decided)*. Three optional text entries. No reader's behaviour depends on them, and a file without them conforms.
+- **What kind of screen it was: `perturbation_type`, `organism`, `genome_build`** *(Decided)*. Three text entries. No reader's behaviour depends on them. The first two are optional; `genome_build` is required in a file whose gRNA table has positions (S8.14), and optional otherwise.
   - *Why they are in now, though nothing reads them.* "Nothing reads it, so it can be added later" is the right test for a value that follows from other stored values (principle 7). It is the wrong test for provenance. What kind of CRISPR perturbation a screen used is known at import, cannot be worked out from anything in the file, and is lost for good if not written down. It is also needed to read a results table at all: a log2 fold change of −1 is the expected result under CRISPRi and a surprising one under CRISPRa. The dividing rule already settles where it goes: the data file holds what is known at import.
   - *The vocabulary* for `perturbation_type` is crisprVerse's five kinds: `CRISPRko`, `CRISPRi`, `CRISPRa`, `CRISPRbe`, `CRISPRkd` *(crisprDesign README, not independently checked; that `CRISPRkd` means knockdown of RNA with an RNA-targeting enzyme should be confirmed)*. CELLxGENE's schema, the EMBL-EBI Perturbation Catalogue and scPerturb record the same concept *(not independently checked)*. A new kind is a minor addition.
-  - *`genome_build`* is the more pressing of the other two: a coordinate without a build is only half-interpretable. It does not settle whether coordinates are 0-based or 1-based, which is still open (S8).
+  - *`genome_build` is required with positions.* Positions are used to pair targets with nearby genes. If the two sets of positions are in different builds the pairs are wrong and nothing fails, and a file without the build gives no way to notice. The value is free text, such as `GRCh38`: the format keeps no list of builds, so software comparing two builds has to know that `GRCh38` and `hg38` name the same one. The cost is that positions of unknown build cannot be stored.
   - *It replaces a separate entry for the target molecule.* The knockdown kind is the RNA-targeting case, so one entry covers both distinctions.
 - **IGVF.** `moi` (`high` or `low`, the same two words) and `capture_method` are in the guide modality's `uns`, each as a one-element string array. There is no format version and no dataset identifier; a file is identified by a SHA-256 of all its bytes in a separate manifest (A1). This format adds the version and the identifier because files outlive the code that wrote them.
 
@@ -827,8 +827,8 @@ pysceptre and runs on the committed files with standard libraries only.
 passing:
 
 - the validators and readers on the conformance set. Both validators accept
-  all 23 conforming files and report exactly the expected rules for all 73
-  broken ones, the same in both languages. 57 rules are exercised by at least
+  all 23 conforming files and report exactly the expected rules for all 74
+  broken ones, the same in both languages. 58 rules are exercised by at least
   one broken file. Two more are checked with no file: S11.1 (no filter other
   than gzip), because R cannot read a file compressed otherwise at all, and
   T0.3 (row groups of at most a million rows), because the file would be large;

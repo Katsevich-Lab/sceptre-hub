@@ -532,6 +532,16 @@
     "what": "A gRNA has a target start and end and no chromosome"
   },
   {
+    "name": "invalid/screens/positions_without_genome_build.h5mu",
+    "kind": "screen",
+    "path": "conformance/invalid/screens/positions_without_genome_build.h5mu",
+    "expect": [
+      "S8.14"
+    ],
+    "conforms": false,
+    "what": "The gRNA table has positions and the file has no `genome_build`"
+  },
+  {
     "name": "invalid/screens/target_start_as_text.h5mu",
     "kind": "screen",
     "path": "conformance/invalid/screens/target_start_as_text.h5mu",

@@ -198,9 +198,11 @@
         "required": false
       },
       "genome_build": {
-        "description": "the genome build of the positions",
+        "description": "the genome build of the positions; required when the gRNA table has positions",
         "kind": "string",
-        "required": false
+        "required": false,
+        "required_with_positions": true,
+        "rule": "S8.14"
       }
     }
   },

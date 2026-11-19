@@ -28,7 +28,7 @@ for (folder in sort(Sys.glob("verify/out/random/seed-*"))) {
         grna_target = unlist(inputs$grna_target), target_chr = missing_to(inputs$target_chr, NA_character_),
         target_start = missing_to(inputs$target_start, NA_integer_), target_end = missing_to(inputs$target_end, NA_integer_), row.names = grnas
     ))
-    metadata(sce) <- list(sceptre = list(moi = inputs$moi, id = inputs$id))
+    metadata(sce) <- list(sceptre = list(moi = inputs$moi, id = inputs$id, genome_build = inputs$genome_build))
     screen <- file.path(folder, "screen-r.h5mu")
     unlink(screen)
     fmt_write_screen(sce, screen)

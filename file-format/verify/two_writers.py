@@ -54,7 +54,7 @@ def write_all(inputs, folder, language):
     })
     mdata.obs["batch"] = pd.Categorical(inputs["batch"]["values"], categories=inputs["batch"]["levels"])
     mdata.obs["quality"] = [np.nan if v is None else v for v in inputs["quality"]]
-    mdata.uns["sceptre"] = {"moi": inputs["moi"], "id": inputs["id"]}
+    mdata.uns["sceptre"] = {"moi": inputs["moi"], "id": inputs["id"], "genome_build": inputs["genome_build"]}
     screen = folder / f"screen-{language}.h5mu"
     sf.write_screen(mdata, screen)
 
