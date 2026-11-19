@@ -24,7 +24,7 @@ for format in perturb-seq-data-format sceptre-analysis-format; do
     (cd "../$format" && tar -cf - --exclude ./rlib --exclude ./overview.html --exclude './*_files' --exclude ./.quarto .) | (cd "_work/$format" && tar -xf -)
     [ -d "../$format/rlib" ] && ln -s "$(cd "../$format/rlib" && pwd)" "_work/$format/rlib"
     # a page of a website takes its layout from the site, not from a standalone page
-    sed -i.bak -e '/^    toc-location: left$/d' -e '/^    embed-resources: true$/d' "_work/$format/overview.qmd"
+    sed -i.bak -e '/^    toc-location: left$/d' -e '/^    toc-depth: 2$/d' -e '/^    embed-resources: true$/d' "_work/$format/overview.qmd"
     rm "_work/$format/overview.qmd.bak"
 done
 quarto render _work

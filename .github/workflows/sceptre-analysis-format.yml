@@ -69,6 +69,8 @@ jobs:
       - name: System libraries for R packages
         run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev libhdf5-dev libnode-dev
       - name: R libraries, and sceptre 0.99.1
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
         run: |
           install.packages(c("BiocManager", "remotes", "jsonlite", "nanoparquet", "jsonvalidate", "Matrix"))
           BiocManager::install(c("MuData", "rhdf5", "HDF5Array", "SingleCellExperiment", "MultiAssayExperiment"), ask = FALSE, update = FALSE)

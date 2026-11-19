@@ -66,12 +66,15 @@ local function fix_link(link)
   return link
 end
 
--- the browser tab and the search results show the page's own first heading
+-- A Markdown page starts with its title as a first-level heading. As the
+-- page's title it leaves the list of contents to the sections under it.
 local function title_from_heading(doc)
   if doc.meta.title then return nil end
-  for _, block in ipairs(doc.blocks) do
+  for i, block in ipairs(doc.blocks) do
     if block.t == "Header" and block.level == 1 then
+      doc.meta.title = pandoc.MetaInlines(block.content)
       doc.meta.pagetitle = pandoc.utils.stringify(block.content)
+      doc.blocks:remove(i)
       return doc
     end
   end
