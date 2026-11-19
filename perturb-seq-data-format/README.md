@@ -30,7 +30,7 @@ verify/run.sh     # the verification suite; SCEPTRE_FORMAT_PYTHON picks the Pyth
 ```
 
 Both use standard libraries only and the committed files in `example/` and
-`conformance/` as they are. They need, in R: `MuData`, `rhdf5`, `HDF5Array`, `SingleCellExperiment`, `MultiAssayExperiment`, `Matrix`, `jsonlite` (and for the notebook
+`conformance/` as they are. They need, in R: `MuData`, `rhdf5`, `HDF5Array`, `SingleCellExperiment`, `MultiAssayExperiment`, `Matrix`, `jsonlite` (and for the overview page
 `reticulate` and quarto). In Python: `mudata`, `anndata`, `h5py`, `pyarrow`,
 `pandas`, `scipy`, `scanpy`. The suite passes on macOS, Linux and
 Windows.
