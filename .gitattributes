@@ -1,0 +1,3 @@
+# Files are checked out as committed, on every platform: the check suites are
+# shell scripts, and the example files are compared byte for byte.
+* -text
