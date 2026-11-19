@@ -6,10 +6,10 @@
 An on-disk format for Perturb-seq data and analyses: the same files in R and
 Python, with one data file and any number of analyses of it.
 
-**Start with `notebook.html`.** It shows what is on disk, the choices to
-review and their reasons, the questions for reviewers, what has been tested,
-and what each folder here holds. GitHub shows an HTML file as source, so
-download it and open it in a browser.
+**Start with [the notebook](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/file-format/notebook.html).**
+It gives the principles, shows what is on disk, the choices to review and
+their reasons, the questions for reviewers, what has been tested, and what
+each folder here holds. Its source is `notebook.qmd`.
 
 Behind it are two reference documents: `SPEC.md` (the rules, numbered) and
 `RATIONALE.md` (the full reasons and evidence, under the same numbers).
