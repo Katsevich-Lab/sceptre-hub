@@ -81,8 +81,8 @@ final; the sorting into kinds is.
 - **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 71 statements, 48 are file rules, 19 behaviour rules and 4
-guidance. The validators check 46 of the file rules (T0.9 in part), a test covers 1 more
+Of the 73 statements, 49 are file rules, 19 behaviour rules and 5
+guidance. The validators check 47 of the file rules (T0.9 in part), a test covers 1 more
 (T4.3), and 1 has no test (A3.2). Tests or the conformance run
 cover 11 of the behaviour rules (A1.8 in part, T7.4 in R only); 8 have no
 test: A1.5, A1.9, A3.5, A6.2, T1.3, T7.3, T7.5, T7.9. Eight of the untested rules
@@ -302,7 +302,6 @@ analysis's strategy and the table's stage; `spec/tables.json` records it as
 | T3.1 | file | `parameters/discovery_pairs.parquet` and `parameters/positive_control_pairs.parquet` hold the pairs to test as the user gave them: `grna_target`, `response_id`. Row order carries no meaning. | V (through T0) |
 | T3.2 | file | `qc/discovery_pair_qc.parquet` and `qc/positive_control_pair_qc.parquet` hold the outcome of pairwise QC: the key columns, `n_nonzero_trt` and `n_nonzero_cntrl` (the number of treated cells and of control cells with a nonzero count of the response), and `pass_qc`. | V (through T0) |
 | T3.3 | file | The pair-QC tables MUST have a `grna_id` column under the `singleton` and `bonferroni` strategies, where each gRNA is tested on its own, and MUST NOT have one under `union`. | V |
-
 | T3.4 | file | In a pair-QC table, `pass_qc` MUST be true exactly when `n_nonzero_trt` is at least the QC record's `n_nonzero_trt_thresh` and `n_nonzero_cntrl` is at least its `n_nonzero_cntrl_thresh`. | V |
 
 ### T4. `calibration/negative_control_groups.parquet`

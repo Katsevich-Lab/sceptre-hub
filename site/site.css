@@ -1,0 +1,7 @@
+/* The specifications are wide tables of rules: give the text column room. */
+.page-columns .content { max-width: 60rem; }
+table { font-size: 0.92rem; }
+td:first-child { white-space: nowrap; }
+a.rule-id { font-weight: 600; text-decoration: none; }
+a.rule-ref { white-space: nowrap; }
+tr:has(a.rule-id:target) { background: #fff6d6; }

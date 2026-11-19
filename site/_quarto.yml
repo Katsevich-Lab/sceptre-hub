@@ -1,0 +1,53 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.md
+    - perturb-seq-data-format/SPEC.md
+    - perturb-seq-data-format/RATIONALE.md
+    - sceptre-analysis-format/SPEC.md
+    - sceptre-analysis-format/RATIONALE.md
+  resources:
+    - perturb-seq-data-format/overview.html
+    - sceptre-analysis-format/overview.html
+
+website:
+  title: "Perturb-seq formats"
+  repo-url: https://github.com/Katsevich-Lab/sceptre-hub
+  page-navigation: true
+  search: true
+  sidebar:
+    style: docked
+    collapse-level: 2
+    contents:
+      - text: Home
+        href: index.md
+      - section: Perturb-seq data file format
+        contents:
+          - text: Overview
+            href: perturb-seq-data-format/overview.html
+          - text: Specification
+            href: perturb-seq-data-format/SPEC.md
+          - text: Rationale
+            href: perturb-seq-data-format/RATIONALE.md
+      - section: sceptre analysis format
+        contents:
+          - text: Overview
+            href: sceptre-analysis-format/overview.html
+          - text: Specification
+            href: sceptre-analysis-format/SPEC.md
+          - text: Rationale
+            href: sceptre-analysis-format/RATIONALE.md
+
+from: markdown+gfm_auto_identifiers
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    toc-title: On this page
+    anchor-sections: true
+    link-external-newwindow: true
+    css: site.css
+    filters:
+      - rules.lua
