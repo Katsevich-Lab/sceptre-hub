@@ -33,7 +33,7 @@ Two limits of this version:
 This document states the rules. It gives no reasons: for each rule, the
 section of [`RATIONALE.md`](RATIONALE.md) with the same letter and number
 (S3, S8, ...) explains the choice, its alternatives and the evidence.
-`notebook.html` is the introduction, and says what review is asked for.
+`overview.html` is the introduction, and says what review is asked for.
 
 ## Versions and changes
 

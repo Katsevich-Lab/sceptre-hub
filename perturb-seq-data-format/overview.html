@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>The sceptre analysis format</title>
+<title>The Perturb-seq data file format</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -2209,7 +2209,7 @@ vertical-align: -.125em;
   <ul class="collapse">
   <li><a href="#the-principles" id="toc-the-principles" class="nav-link active" data-scroll-target="#the-principles">The principles</a></li>
   <li><a href="#what-is-on-disk" id="toc-what-is-on-disk" class="nav-link" data-scroll-target="#what-is-on-disk">What is on disk</a></li>
-  <li><a href="#open-the-tables-yourself" id="toc-open-the-tables-yourself" class="nav-link" data-scroll-target="#open-the-tables-yourself">Open the tables yourself</a></li>
+  <li><a href="#open-the-file-yourself" id="toc-open-the-file-yourself" class="nav-link" data-scroll-target="#open-the-file-yourself">Open the file yourself</a></li>
   <li><a href="#the-choices-to-review" id="toc-the-choices-to-review" class="nav-link" data-scroll-target="#the-choices-to-review">The choices to review</a></li>
   <li><a href="#questions-for-reviewers" id="toc-questions-for-reviewers" class="nav-link" data-scroll-target="#questions-for-reviewers">Questions for reviewers</a></li>
   <li><a href="#what-has-been-tested" id="toc-what-has-been-tested" class="nav-link" data-scroll-target="#what-has-been-tested">What has been tested</a></li>
@@ -2223,8 +2223,8 @@ vertical-align: -.125em;
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">The sceptre analysis format</h1>
-<p class="subtitle lead">Draft 0.1: one folder for each analysis of a Perturb-seq data file, the same in R and in Python</p>
+<h1 class="title">The Perturb-seq data file format</h1>
+<p class="subtitle lead">Draft 0.1: one file for a Perturb-seq screen, the same in R and in Python, for any software that handles such data</p>
 </div>
 
 
@@ -2241,16 +2241,16 @@ vertical-align: -.125em;
 </header>
 
 
-<p>This page is the way into the format. It gives the principles, shows what an analysis folder holds, what review is asked for, and what has been tested. Most of it is folded: open what you want to read.</p>
-<p>An analysis is an analysis of a data file in the <a href="https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/notebook.html">Perturb-seq data file format</a>. That format is separate, has its own version, and knows nothing about analyses. This one builds on it.</p>
-<p>Two reference documents sit behind this page: <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/SPEC.md"><code>SPEC.md</code></a> has the rules, numbered, and <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/RATIONALE.md"><code>RATIONALE.md</code></a> has the full reasons, with evidence, under the same numbers.</p>
+<p>This page is the way into the format. It gives the principles, shows what a data file holds, and says what review is asked for and what has been tested. Most of it is folded: open what you want to read.</p>
+<p>The format is a set of names and rules on top of a standard MuData file. Nothing in it is specific to one analysis tool. One tool that builds on it is sceptre, whose analyses of a data file are stored in the <a href="https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/sceptre-analysis-format/overview.html">sceptre analysis format</a>.</p>
+<p>Two reference documents sit behind this page: <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/SPEC.md"><code>SPEC.md</code></a> has the rules, numbered, and <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md"><code>RATIONALE.md</code></a> has the full reasons, with evidence, under the same numbers.</p>
 <div class="callout callout-style-simple callout-note">
 <div class="callout-body d-flex">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-body-container">
-<p><strong>Draft.</strong> Nothing here has been reviewed. The format is version 0.1 until sceptre’s first release that uses it, which freezes it as 1.0.</p>
+<p><strong>Draft.</strong> Nothing here has been reviewed. The format is version 0.1 until it is frozen as 1.0.</p>
 </div>
 </div>
 </div>
@@ -2300,41 +2300,41 @@ function treeAll(button, open) {
 </script>
 <section id="the-principles" class="level2">
 <h2 class="anchored" data-anchor-id="the-principles">The principles</h2>
-<p>Every choice in the format follows from these eight. Where two of them pull apart, the earlier one wins. Open one for its reason and what follows from it. Several are the principles of the data file format, applied to an analysis folder.</p>
+<p>Every choice in the format follows from these eight. Where two of them pull apart, the earlier one wins. Open one for its reason and what follows from it.</p>
 <details class="fold">
 <summary>
-<strong>1. The same files from R and Python.</strong>
+<strong>1. The same file from R and Python.</strong>
 </summary>
 <ul>
-<li><strong>Why.</strong> An analysis is started in one language and continued or read in the other, and what a file means should not depend on which wrote it.</li>
-<li><strong>What follows.</strong> Tables are Parquet, with the few column types both languages read and write correctly (T0.1). A real number in a record is written with 17 significant digits, so the number read is the number written (A3.4). Nothing depends on arithmetic giving the same bits on two platforms: a stored value is read, never rebuilt (<code>log_2_fold_change</code>, T5), and the design matrix has no hash (T7). Saved fits cross languages only where the fitting method is the same (T6.5).</li>
+<li><strong>Why.</strong> Screens are analysed in both languages, and what a file means should not depend on which language wrote or read it.</li>
+<li><strong>What follows.</strong> Only encodings that both languages read <em>and</em> write correctly today are allowed; that subset was measured, not assumed (Appendix A). Both languages read the file with standard libraries, so the format has no reader of its own.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>2. An analysis is kept apart from its data.</strong>
+<strong>2. Data only: nothing in the file depends on an analysis.</strong>
 </summary>
 <ul>
-<li><strong>Why.</strong> One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone.</li>
-<li><strong>What follows.</strong> An analysis is a folder of its own. It names its data file by identifier and by hashes of the identifier lists (A1), never modifies it, can be stored anywhere, and can be read for its results without it. Every analysis choice lives here: which modality is the response (A1), the low or high MOI preset (A3.6), the assignments (T1), the cells in use (T2) and the grouping of gRNAs (T4).</li>
+<li><strong>Why.</strong> One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. Anything in the file that depended on an analysis choice would fit one analysis only, or force the file to be rewritten.</li>
+<li><strong>What follows.</strong> The file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis. There is no label for low or high multiplicity of infection, which selects an analysis’s defaults (S10). No modality is named for a role such as “response”: which one an analysis tests is that analysis’s choice (S2). The file is written once and no analysis modifies it (S12.2).</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>3. Every file is written once.</strong>
+<strong>3. It belongs to no tool.</strong>
 </summary>
 <ul>
-<li><strong>Why.</strong> A file edited in place can be left half-written, cannot be written safely by parallel jobs, and no longer shows which step produced what.</li>
-<li><strong>What follows.</strong> No stage edits a file an earlier stage wrote: stages add files (A6.2). Rerunning a stage deletes its files and those of later stages (A4.2). Parallel jobs write part files. A stage’s record is written last, so an unfinished stage can be told from a finished one (A2). <code>significant</code> is not stored, because it depends on the whole table (T5.3).</li>
+<li><strong>Why.</strong> A file that many tools read and write cannot carry one tool’s name or assumptions, and data outlives the tool that imported it.</li>
+<li><strong>What follows.</strong> The format is a set of names and rules on a standard MuData file. Its own entries sit at the top level of <code>uns</code>, under no tool’s name (S10). Entries, modalities and columns that other tools add are left alone (S10.2, S2). The validator needs no analysis tool.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>4. Identifiers, never positions.</strong>
+<strong>4. Every cell and feature has an identifier.</strong>
 </summary>
 <ul>
-<li><strong>Why.</strong> A row number means something only for one file in one order, and R counts from 1 where Python counts from 0.</li>
-<li><strong>What follows.</strong> Tables name cells, gRNAs and responses by identifier, and every identifier exists in the data file (T0.5). Tables survive subsetting, reordering and being written in pieces.</li>
+<li><strong>Why.</strong> Other files refer to the cells and features of a data file: analyses, annotations, results. A row number means something only for one file in one order, and R counts from 1 where Python counts from 0.</li>
+<li><strong>What follows.</strong> Cell identifiers are unique, and feature identifiers are unique across the modalities of a file (S9.1, S9.2). Cells without barcodes are given identifiers, which are stored (S9.3). A gRNA names its target and its vector, and does not point at a row.</li>
 </ul>
 </details>
 <details class="fold">
@@ -2343,7 +2343,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> An existing format comes with readers, tools and users. An invented encoding needs code in two languages and has no other reader.</li>
-<li><strong>What follows.</strong> Parquet and JSON are used as specified, and the records are defined by JSON Schemas. How a part of the fit cache was made is stored in Parquet’s own key-value metadata (T6.1). The data is a file of the Perturb-seq data file format, not something redefined here.</li>
+<li><strong>What follows.</strong> AnnData and MuData encodings are used as specified. The format adds names and rules, not encodings. Target positions follow the convention of GTF files (S8.10).</li>
 </ul>
 </details>
 <details class="fold">
@@ -2352,7 +2352,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> The format will grow, and files outlive the code that wrote them. Older software has to keep working on newer files where it can, and fail cleanly where it cannot.</li>
-<li><strong>What follows.</strong> Columns and files the format does not define are ignored, or kept where a table says so (T0.8). They can be added with a minor version. Software refuses an analysis of a major version it does not know (A1.1).</li>
+<li><strong>What follows.</strong> Columns, modalities and entries that do not change the meaning of what is already there can be added with a minor version (S10). Software refuses a file of a major version it does not know (S10.3).</li>
 </ul>
 </details>
 <details class="fold">
@@ -2361,7 +2361,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Two copies of one fact can disagree, and the file then does not say which is right.</li>
-<li><strong>What follows.</strong> There is no <code>significant</code> column (T5.3) and no count of gRNAs per cell (T2). The exception is a value that cannot be rebuilt to the same number on every platform: <code>log_2_fold_change</code> is stored beside <code>fold_change</code>, and the validators check that the two agree (T5.2).</li>
+<li><strong>What follows.</strong> There are no logarithms or percentages of stored columns, and no per-cell top gRNA (S6). The exception is a value that nearly every analysis needs and that takes a full pass over the counts to recompute: <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> are stored (S6).</li>
 </ul>
 </details>
 <details class="fold">
@@ -2370,13 +2370,13 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Code is corrected in the next release. A file already written stays as it is for years.</li>
-<li><strong>What follows.</strong> How today’s code reads data is evidence when the pattern is sound. Where it is not, the format is chosen on its merits and the code change is listed in <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/RATIONALE.md#5-code-changes-this-implies">section 5</a>: the members of a control group are a table, not text inside the group’s name (T4).</li>
+<li><strong>What follows.</strong> Each choice is made on its merits and before the freeze. How existing code reads data is evidence when the pattern is sound, and never the only reason. What does not lock anything in is left open: compression is the writer’s choice, because HDF5 decompresses transparently (S11). <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md#6-fixed-now-free-to-grow">Section 6</a> says which parts would be expensive to change.</li>
 </ul>
 </details>
 </section>
 <section id="what-is-on-disk" class="level2">
 <h2 class="anchored" data-anchor-id="what-is-on-disk">What is on disk</h2>
-<p>An analysis is <strong>one folder</strong>, kept apart from the data file it analyses. One data file can have any number of analyses. There is one subfolder per completed stage. Tables are Parquet files, and every row names cells, gRNAs and responses by identifier, never by position. The tree below is read from the example in <code>example/highmoi/analyses/left_sided/</code>. Open a folder to see its files, and a file to see what it holds.</p>
+<p>A screen is <strong>one file</strong>: a standard MuData <code>.h5mu</code> file, written once and never modified. It holds raw counts and what is known about the cells and the gRNAs, and nothing an analysis computes. The tree below is read from the example in <code>example/highmoi/</code>. Open a group to see what is in it, and an entry to see what it holds.</p>
 <div class="tree">
 <div class="bar">
 <button onclick="treeAll(this, true)">
@@ -2390,351 +2390,47 @@ Close all
 <li>
 <details open>
 <summary class="row folder" style="--d:0">
-<span class="name"><code>left_sided/</code></span><span class="what">one analysis of a data file</span><span class="size">115 KB</span>
+<span class="name"><code>screen.h5mu</code></span><span class="what">one dataset, written once and never modified</span><span class="size">394 KB</span>
 </summary>
 <ul>
 <li>
 <details>
-<summary class="row" style="--d:1">
-<span class="name"><code>analysis.json</code></span><span class="what">which data file this analysis belongs to, and which modality it tests</span><span class="size"></span>
-</summary>
-<div class="body">
-<pre>{
-  &quot;format&quot;: &quot;0.1&quot;,
-  &quot;response_modality&quot;: &quot;rna&quot;,
-  &quot;screen&quot;: {
-    &quot;id&quot;: &quot;b907fd1b151fd398b78ff993ae9e86d6&quot;,
-    &quot;format&quot;: &quot;0.1&quot;,
-    &quot;n_cells&quot;: 500,
-    &quot;n_responses&quot;: 100,
-    &quot;n_grnas&quot;: 60,
-    &quot;cell_ids_sha256&quot;: &quot;46704530fcc3718c02e50135a646f0e9487016020bba4f9313e421aa4377f3fa&quot;,
-    &quot;response_ids_sha256&quot;: &quot;9247821dc1add1886b9ca5a361edb2cd02002dd3fecb7a63551d0dd393026b7e&quot;,
-    &quot;grna_ids_sha256&quot;: &quot;90de70838feca98b70315bd03718d41d86560353f32e3c470db195dd64b05ce2&quot;,
-    &quot;title&quot;: &quot;sceptre high-MOI example data&quot;
-  }
-}</pre>
-</div>
-</details>
-</li>
-<li>
-<details>
 <summary class="row folder" style="--d:1">
-<span class="name"><code>parameters/</code></span><span class="what">what the user asked to test</span><span class="size">3 files</span>
+<span class="name"><code>mod/rna</code></span><span class="what">one kind of measurement on the cells</span><span class="size">500 cells × 100 features</span>
 </summary>
 <ul>
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>discovery_pairs.parquet</code></span><span class="what">the pairs to test, as the user gave them</span><span class="size">1,406 rows × 2 columns</span>
+<span class="name"><code>X</code></span><span class="what">raw counts, cells × features, stored by feature</span><span class="size">24,823 nonzero counts</span>
 </summary>
 <div class="body">
-<table class="dataframe rows table table-sm table-striped small">
-<thead>
-<tr>
-<th>
-grna_target
-</th>
-<th>
-response_id
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-candidate_enh_1
-</td>
-<td>
-ENSG00000040608
-</td>
-</tr>
-<tr>
-<td>
-candidate_enh_1
-</td>
-<td>
-ENSG00000099889
-</td>
-</tr>
-<tr>
-<td>
-candidate_enh_1
-</td>
-<td>
-ENSG00000099917
-</td>
-</tr>
-<tr>
-<td>
-candidate_enh_1
-</td>
-<td>
-ENSG00000099937
-</td>
-</tr>
-<tr>
-<td>
-candidate_enh_1
-</td>
-<td>
-ENSG00000099949
-</td>
-</tr>
-</tbody>
-</table>
 <p class="more">
-… 1,401 more rows
+The first cells and features:
 </p>
-</div>
-</details>
-</li>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>positive_control_pairs.parquet</code></span><span class="what">pairs with a known effect, as the user gave them</span><span class="size">5 rows × 2 columns</span>
-</summary>
-<div class="body">
 <table class="dataframe rows table table-sm table-striped small">
 <thead>
 <tr>
 <th>
-grna_target
+cell
 </th>
 <th>
-response_id
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-ENSG00000224277
-</td>
-<td>
-ENSG00000224277
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000226772
-</td>
-<td>
-ENSG00000226772
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000233521
-</td>
-<td>
-ENSG00000233521
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000234503
-</td>
-<td>
-ENSG00000234503
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000286326
-</td>
-<td>
-ENSG00000286326
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</details>
-</li>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>record.json</code></span><span class="what">the stage&#39;s settings and its list of files; written last, so a folder without one did not finish</span><span class="size"></span>
-</summary>
-<div class="body">
-<pre>{
-  &quot;stage&quot;: &quot;parameters&quot;,
-  &quot;settings&quot;: {
-    &quot;moi&quot;: &quot;high&quot;,
-    &quot;formula&quot;: &quot;~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch&quot;,
-    &quot;side&quot;: &quot;left&quot;,
-    &quot;resampling_mechanism&quot;: &quot;crt&quot;,
-    &quot;resampling_approximation&quot;: &quot;spa&quot;,
-    &quot;control_group&quot;: &quot;complement&quot;,
-    &quot;grna_integration_strategy&quot;: &quot;union&quot;,
-    &quot;B1&quot;: 499,
-    &quot;B2&quot;: 4999,
-    &quot;B3&quot;: 0,
-    &quot;multiple_testing_method&quot;: &quot;BH&quot;,
-    &quot;multiple_testing_alpha&quot;: 0.1,
-    &quot;seed&quot;: 4,
-    &quot;response_fit_method&quot;: &quot;batched&quot;,
-    &quot;grna_fit_method&quot;: &quot;pysceptre&quot;
-  },
-  &quot;design&quot;: {
-    &quot;terms&quot;: [
-      &quot;(Intercept)&quot;,
-      &quot;log(rna_n_nonzero)&quot;,
-      &quot;log(rna_n_umis)&quot;,
-      &quot;log(grna_n_nonzero)&quot;,
-      &quot;log(grna_n_umis)&quot;,
-      &quot;batchbatch_2&quot;
-    ]
-  },
-  &quot;provenance&quot;: {
-    &quot;package&quot;: &quot;sceptre&quot;,
-    &quot;version&quot;: &quot;0.99.1&quot;,
-    &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
-  },
-  &quot;files&quot;: [
-    {
-      &quot;path&quot;: &quot;discovery_pairs.parquet&quot;,
-      &quot;rows&quot;: 1406
-    },
-    {
-      &quot;path&quot;: &quot;positive_control_pairs.parquet&quot;,
-      &quot;rows&quot;: 5
-    }
-  ]
-}</pre>
-</div>
-</details>
-</li>
-</ul>
-</details>
-</li>
-<li>
-<details>
-<summary class="row folder" style="--d:1">
-<span class="name"><code>assignment/</code></span><span class="what">which cells received which gRNA</span><span class="size">2 files</span>
-</summary>
-<ul>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>assignments.parquet</code></span><span class="what">which gRNA is in which cell: one row per gRNA assigned to a cell</span><span class="size">4,829 rows × 2 columns</span>
-</summary>
-<div class="body">
-<table class="dataframe rows table table-sm table-striped small">
-<thead>
-<tr>
-<th>
-grna_id
+ENSG00000100218
 </th>
 <th>
-cell_id
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-ENSG00000224277_grna1
-</td>
-<td>
-Cell_101
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000224277_grna1
-</td>
-<td>
-Cell_103
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000224277_grna1
-</td>
-<td>
-Cell_117
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000224277_grna1
-</td>
-<td>
-Cell_133
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000224277_grna1
-</td>
-<td>
-Cell_138
-</td>
-</tr>
-</tbody>
-</table>
-<p class="more">
-… 4,824 more rows
-</p>
-</div>
-</details>
-</li>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>record.json</code></span><span class="what">the stage&#39;s settings and its list of files; written last, so a folder without one did not finish</span><span class="size"></span>
-</summary>
-<div class="body">
-<pre>{
-  &quot;stage&quot;: &quot;assignment&quot;,
-  &quot;settings&quot;: {
-    &quot;method&quot;: &quot;thresholding&quot;,
-    &quot;hyperparameters&quot;: {
-      &quot;threshold&quot;: 5
-    }
-  },
-  &quot;provenance&quot;: {
-    &quot;package&quot;: &quot;sceptre&quot;,
-    &quot;version&quot;: &quot;0.99.1&quot;,
-    &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
-  },
-  &quot;files&quot;: [
-    {
-      &quot;path&quot;: &quot;assignments.parquet&quot;,
-      &quot;rows&quot;: 4829
-    }
-  ]
-}</pre>
-</div>
-</details>
-</li>
-</ul>
-</details>
-</li>
-<li>
-<details>
-<summary class="row folder" style="--d:1">
-<span class="name"><code>qc/</code></span><span class="what">which cells and pairs passed quality control</span><span class="size">4 files</span>
-</summary>
-<ul>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>cells.parquet</code></span><span class="what">every cell, and whether it passed quality control</span><span class="size">500 rows × 2 columns</span>
-</summary>
-<div class="body">
-<table class="dataframe rows table table-sm table-striped small">
-<thead>
-<tr>
-<th>
-cell_id
+ENSG00000253546
 </th>
 <th>
-in_use
+ENSG00000185340
+</th>
+<th>
+ENSG00000223726
+</th>
+<th>
+ENSG00000099958
+</th>
+<th>
+ENSG00000234208
 </th>
 </tr>
 </thead>
@@ -2744,39 +2440,206 @@ in_use
 Cell_1
 </td>
 <td>
-True
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+4
+</td>
+<td>
+0
 </td>
 </tr>
 <tr>
 <td>
-Cell_10
+Cell_2
 </td>
 <td>
-True
+0
+</td>
+<td>
+0
+</td>
+<td>
+3
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
 </td>
 </tr>
 <tr>
 <td>
-Cell_100
+Cell_3
 </td>
 <td>
-True
+0
+</td>
+<td>
+2
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
 </td>
 </tr>
 <tr>
 <td>
-Cell_101
+Cell_4
 </td>
 <td>
-True
+0
+</td>
+<td>
+4
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+2
+</td>
+<td>
+0
 </td>
 </tr>
 <tr>
 <td>
-Cell_102
+Cell_5
 </td>
 <td>
-True
+0
+</td>
+<td>
+1
+</td>
+<td>
+1
+</td>
+<td>
+0
+</td>
+<td>
+1
+</td>
+<td>
+0
+</td>
+</tr>
+</tbody>
+</table>
+<p class="more">
+…
+</p>
+</div>
+</details>
+</li>
+<li>
+<details>
+<summary class="row" style="--d:2">
+<span class="name"><code>obs</code></span><span class="what">one row per cell: measurements of this modality</span><span class="size">500 rows × 2 columns</span>
+</summary>
+<div class="body">
+<ul class="columns">
+<li>
+<code>n_nonzero</code>: the cell&#39;s number of features with a nonzero count
+</li>
+<li>
+<code>n_umis</code>: the cell&#39;s total count
+</li>
+</ul>
+<table class="dataframe rows table table-sm table-striped small">
+<thead>
+<tr>
+<th>
+cell
+</th>
+<th>
+n_nonzero
+</th>
+<th>
+n_umis
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Cell_1
+</td>
+<td>
+54
+</td>
+<td>
+221
+</td>
+</tr>
+<tr>
+<td>
+Cell_2
+</td>
+<td>
+49
+</td>
+<td>
+169
+</td>
+</tr>
+<tr>
+<td>
+Cell_3
+</td>
+<td>
+49
+</td>
+<td>
+190
+</td>
+</tr>
+<tr>
+<td>
+Cell_4
+</td>
+<td>
+48
+</td>
+<td>
+229
+</td>
+</tr>
+<tr>
+<td>
+Cell_5
+</td>
+<td>
+52
+</td>
+<td>
+189
 </td>
 </tr>
 </tbody>
@@ -2790,959 +2653,59 @@ True
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>discovery_pair_qc.parquet</code></span><span class="what">every discovery pair, and whether it passed quality control</span><span class="size">1,406 rows × 3 columns</span>
+<span class="name"><code>var</code></span><span class="what">one row per feature</span><span class="size">100 rows × 1 column</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
 <thead>
 <tr>
 <th>
-grna_target
+feature
 </th>
 <th>
-response_id
-</th>
-<th>
-pass_qc
+response_name
 </th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>
-candidate_enh_1
+ENSG00000100218
 </td>
 <td>
-ENSG00000040608
-</td>
-<td>
-True
+RSPH14
 </td>
 </tr>
 <tr>
 <td>
-candidate_enh_1
+ENSG00000253546
 </td>
 <td>
-ENSG00000099889
-</td>
-<td>
-True
+IGLVVI-22-1
 </td>
 </tr>
 <tr>
 <td>
-candidate_enh_1
+ENSG00000185340
 </td>
 <td>
-ENSG00000099917
-</td>
-<td>
-True
+GAS2L1
 </td>
 </tr>
 <tr>
 <td>
-candidate_enh_1
+ENSG00000223726
 </td>
 <td>
-ENSG00000099937
-</td>
-<td>
-True
+AL020994.1
 </td>
 </tr>
 <tr>
 <td>
-candidate_enh_1
+ENSG00000099958
 </td>
 <td>
-ENSG00000099949
-</td>
-<td>
-True
-</td>
-</tr>
-</tbody>
-</table>
-<p class="more">
-… 1,401 more rows
-</p>
-</div>
-</details>
-</li>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>positive_control_pair_qc.parquet</code></span><span class="what">every positive-control pair, and whether it passed quality control</span><span class="size">5 rows × 3 columns</span>
-</summary>
-<div class="body">
-<table class="dataframe rows table table-sm table-striped small">
-<thead>
-<tr>
-<th>
-grna_target
-</th>
-<th>
-response_id
-</th>
-<th>
-pass_qc
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-ENSG00000224277
-</td>
-<td>
-ENSG00000224277
-</td>
-<td>
-True
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000226772
-</td>
-<td>
-ENSG00000226772
-</td>
-<td>
-True
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000233521
-</td>
-<td>
-ENSG00000233521
-</td>
-<td>
-True
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000234503
-</td>
-<td>
-ENSG00000234503
-</td>
-<td>
-True
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000286326
-</td>
-<td>
-ENSG00000286326
-</td>
-<td>
-True
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</details>
-</li>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>record.json</code></span><span class="what">the stage&#39;s settings and its list of files; written last, so a folder without one did not finish</span><span class="size"></span>
-</summary>
-<div class="body">
-<pre>{
-  &quot;stage&quot;: &quot;qc&quot;,
-  &quot;settings&quot;: {
-    &quot;response_n_umis_range&quot;: [
-      0.01,
-      0.99
-    ],
-    &quot;response_n_nonzero_range&quot;: [
-      0.01,
-      0.99
-    ],
-    &quot;p_mito_threshold&quot;: 0.2,
-    &quot;pairwise_qc&quot;: true,
-    &quot;B3&quot;: 0
-  },
-  &quot;summaries&quot;: {
-    &quot;cells_removed&quot;: {
-      &quot;n_umis&quot;: 10,
-      &quot;n_responses&quot;: 7,
-      &quot;p_mito&quot;: 0,
-      &quot;zero_twoplus_grnas&quot;: 0,
-      &quot;user_specified&quot;: 0,
-      &quot;total&quot;: 17
-    }
-  },
-  &quot;provenance&quot;: {
-    &quot;package&quot;: &quot;sceptre&quot;,
-    &quot;version&quot;: &quot;0.99.1&quot;,
-    &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
-  },
-  &quot;files&quot;: [
-    {
-      &quot;path&quot;: &quot;cells.parquet&quot;,
-      &quot;rows&quot;: 500
-    },
-    {
-      &quot;path&quot;: &quot;discovery_pair_qc.parquet&quot;,
-      &quot;rows&quot;: 1406
-    },
-    {
-      &quot;path&quot;: &quot;positive_control_pair_qc.parquet&quot;,
-      &quot;rows&quot;: 5
-    }
-  ]
-}</pre>
-</div>
-</details>
-</li>
-</ul>
-</details>
-</li>
-<li>
-<details>
-<summary class="row folder" style="--d:1">
-<span class="name"><code>calibration/</code></span><span class="what">tests of negative-control pairs, which should find nothing</span><span class="size">3 files</span>
-</summary>
-<ul>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>negative_control_groups.parquet</code></span><span class="what">the groups of non-targeting gRNAs tested as if they were targets</span><span class="size">90 rows × 2 columns</span>
-</summary>
-<div class="body">
-<table class="dataframe rows table table-sm table-striped small">
-<thead>
-<tr>
-<th>
-grna_group
-</th>
-<th>
-grna_id
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-non-targeting_grna1&amp;non-targeting_grna10
-</td>
-<td>
-non-targeting_grna1
-</td>
-</tr>
-<tr>
-<td>
-non-targeting_grna1&amp;non-targeting_grna10
-</td>
-<td>
-non-targeting_grna10
-</td>
-</tr>
-<tr>
-<td>
-non-targeting_grna1&amp;non-targeting_grna2
-</td>
-<td>
-non-targeting_grna1
-</td>
-</tr>
-<tr>
-<td>
-non-targeting_grna1&amp;non-targeting_grna2
-</td>
-<td>
-non-targeting_grna2
-</td>
-</tr>
-<tr>
-<td>
-non-targeting_grna1&amp;non-targeting_grna3
-</td>
-<td>
-non-targeting_grna1
-</td>
-</tr>
-</tbody>
-</table>
-<p class="more">
-… 85 more rows
-</p>
-</div>
-</details>
-</li>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>results.parquet</code></span><span class="what">test results for the negative-control pairs</span><span class="size">1,406 rows × 7 columns</span>
-</summary>
-<div class="body">
-<table class="dataframe rows table table-sm table-striped small">
-<thead>
-<tr>
-<th>
-response_id
-</th>
-<th>
-grna_target
-</th>
-<th>
-pass_qc
-</th>
-<th>
-p_value
-</th>
-<th>
-fold_change
-</th>
-<th>
-se_fold_change
-</th>
-<th>
-log_2_fold_change
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-ENSG00000099889
-</td>
-<td>
-non-targeting_grna1&amp;non-targeting_grna10
-</td>
-<td>
-True
-</td>
-<td>
-0.402
-</td>
-<td>
-0.95
-</td>
-<td>
-0.09509
-</td>
-<td>
--0.07394
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099937
-</td>
-<td>
-non-targeting_grna1&amp;non-targeting_grna10
-</td>
-<td>
-True
-</td>
-<td>
-0.988
-</td>
-<td>
-1.166
-</td>
-<td>
-0.1071
-</td>
-<td>
-0.2212
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099949
-</td>
-<td>
-non-targeting_grna1&amp;non-targeting_grna10
-</td>
-<td>
-True
-</td>
-<td>
-0.376
-</td>
-<td>
-0.9865
-</td>
-<td>
-0.09583
-</td>
-<td>
--0.01956
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099956
-</td>
-<td>
-non-targeting_grna1&amp;non-targeting_grna10
-</td>
-<td>
-True
-</td>
-<td>
-0.774
-</td>
-<td>
-1.046
-</td>
-<td>
-0.09964
-</td>
-<td>
-0.0655
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099957
-</td>
-<td>
-non-targeting_grna1&amp;non-targeting_grna10
-</td>
-<td>
-True
-</td>
-<td>
-0.508
-</td>
-<td>
-0.9779
-</td>
-<td>
-0.2012
-</td>
-<td>
--0.03228
-</td>
-</tr>
-</tbody>
-</table>
-<p class="more">
-… 1,401 more rows
-</p>
-</div>
-</details>
-</li>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>record.json</code></span><span class="what">the stage&#39;s settings and its list of files; written last, so a folder without one did not finish</span><span class="size"></span>
-</summary>
-<div class="body">
-<pre>{
-  &quot;stage&quot;: &quot;calibration&quot;,
-  &quot;settings&quot;: {
-    &quot;calibration_group_size&quot;: 2,
-    &quot;n_calibration_pairs&quot;: 1406,
-    &quot;B3&quot;: 0
-  },
-  &quot;significance_threshold&quot;: null,
-  &quot;provenance&quot;: {
-    &quot;package&quot;: &quot;sceptre&quot;,
-    &quot;version&quot;: &quot;0.99.1&quot;,
-    &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
-  },
-  &quot;files&quot;: [
-    {
-      &quot;path&quot;: &quot;negative_control_groups.parquet&quot;,
-      &quot;rows&quot;: 90
-    },
-    {
-      &quot;path&quot;: &quot;results.parquet&quot;,
-      &quot;rows&quot;: 1406
-    }
-  ]
-}</pre>
-</div>
-</details>
-</li>
-</ul>
-</details>
-</li>
-<li>
-<details>
-<summary class="row folder" style="--d:1">
-<span class="name"><code>power/</code></span><span class="what">tests of positive-control pairs, which should find their known effects</span><span class="size">2 files</span>
-</summary>
-<ul>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>results.parquet</code></span><span class="what">test results for the positive-control pairs</span><span class="size">5 rows × 7 columns</span>
-</summary>
-<div class="body">
-<table class="dataframe rows table table-sm table-striped small">
-<thead>
-<tr>
-<th>
-response_id
-</th>
-<th>
-grna_target
-</th>
-<th>
-pass_qc
-</th>
-<th>
-p_value
-</th>
-<th>
-fold_change
-</th>
-<th>
-se_fold_change
-</th>
-<th>
-log_2_fold_change
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-ENSG00000224277
-</td>
-<td>
-ENSG00000224277
-</td>
-<td>
-True
-</td>
-<td>
-4.659e-14
-</td>
-<td>
-0.3759
-</td>
-<td>
-0.04851
-</td>
-<td>
--1.412
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000226772
-</td>
-<td>
-ENSG00000226772
-</td>
-<td>
-True
-</td>
-<td>
-4.402e-22
-</td>
-<td>
-0.3188
-</td>
-<td>
-0.03462
-</td>
-<td>
--1.649
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000233521
-</td>
-<td>
-ENSG00000233521
-</td>
-<td>
-True
-</td>
-<td>
-4.266e-17
-</td>
-<td>
-0.4002
-</td>
-<td>
-0.0481
-</td>
-<td>
--1.321
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000234503
-</td>
-<td>
-ENSG00000234503
-</td>
-<td>
-True
-</td>
-<td>
-1.062e-22
-</td>
-<td>
-0.3206
-</td>
-<td>
-0.03653
-</td>
-<td>
--1.641
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000286326
-</td>
-<td>
-ENSG00000286326
-</td>
-<td>
-True
-</td>
-<td>
-1.473e-21
-</td>
-<td>
-0.3146
-</td>
-<td>
-0.03739
-</td>
-<td>
--1.669
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</details>
-</li>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>record.json</code></span><span class="what">the stage&#39;s settings and its list of files; written last, so a folder without one did not finish</span><span class="size"></span>
-</summary>
-<div class="body">
-<pre>{
-  &quot;stage&quot;: &quot;power&quot;,
-  &quot;settings&quot;: {},
-  &quot;provenance&quot;: {
-    &quot;package&quot;: &quot;sceptre&quot;,
-    &quot;version&quot;: &quot;0.99.1&quot;,
-    &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
-  },
-  &quot;files&quot;: [
-    {
-      &quot;path&quot;: &quot;results.parquet&quot;,
-      &quot;rows&quot;: 5
-    }
-  ]
-}</pre>
-</div>
-</details>
-</li>
-</ul>
-</details>
-</li>
-<li>
-<details>
-<summary class="row folder" style="--d:1">
-<span class="name"><code>discovery/</code></span><span class="what">tests of the discovery pairs</span><span class="size">2 files</span>
-</summary>
-<ul>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>results.parquet</code></span><span class="what">test results for the discovery pairs</span><span class="size">1,406 rows × 7 columns</span>
-</summary>
-<div class="body">
-<table class="dataframe rows table table-sm table-striped small">
-<thead>
-<tr>
-<th>
-response_id
-</th>
-<th>
-grna_target
-</th>
-<th>
-pass_qc
-</th>
-<th>
-p_value
-</th>
-<th>
-fold_change
-</th>
-<th>
-se_fold_change
-</th>
-<th>
-log_2_fold_change
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-ENSG00000040608
-</td>
-<td>
-candidate_enh_1
-</td>
-<td>
-True
-</td>
-<td>
-0.006888
-</td>
-<td>
-0.6716
-</td>
-<td>
-0.1606
-</td>
-<td>
--0.5744
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099889
-</td>
-<td>
-candidate_enh_1
-</td>
-<td>
-True
-</td>
-<td>
-0.858
-</td>
-<td>
-1.116
-</td>
-<td>
-0.1238
-</td>
-<td>
-0.1578
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099917
-</td>
-<td>
-candidate_enh_1
-</td>
-<td>
-True
-</td>
-<td>
-0.426
-</td>
-<td>
-0.9444
-</td>
-<td>
-0.2854
-</td>
-<td>
--0.08256
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099937
-</td>
-<td>
-candidate_enh_1
-</td>
-<td>
-True
-</td>
-<td>
-0.134
-</td>
-<td>
-0.9332
-</td>
-<td>
-0.08148
-</td>
-<td>
--0.09968
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099949
-</td>
-<td>
-candidate_enh_1
-</td>
-<td>
-True
-</td>
-<td>
-0.58
-</td>
-<td>
-1.01
-</td>
-<td>
-0.09379
-</td>
-<td>
-0.01375
-</td>
-</tr>
-</tbody>
-</table>
-<p class="more">
-… 1,401 more rows
-</p>
-</div>
-</details>
-</li>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>record.json</code></span><span class="what">the stage&#39;s settings and its list of files; written last, so a folder without one did not finish</span><span class="size"></span>
-</summary>
-<div class="body">
-<pre>{
-  &quot;stage&quot;: &quot;discovery&quot;,
-  &quot;settings&quot;: {},
-  &quot;significance_threshold&quot;: 0.00043745806418632634,
-  &quot;provenance&quot;: {
-    &quot;package&quot;: &quot;sceptre&quot;,
-    &quot;version&quot;: &quot;0.99.1&quot;,
-    &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
-  },
-  &quot;files&quot;: [
-    {
-      &quot;path&quot;: &quot;results.parquet&quot;,
-      &quot;rows&quot;: 1406
-    }
-  ]
-}</pre>
-</div>
-</details>
-</li>
-</ul>
-</details>
-</li>
-<li>
-<details>
-<summary class="row folder" style="--d:1">
-<span class="name"><code>fits/response/</code></span><span class="what">a cache of regression fits shared by the testing stages; not a stage, and deleting it changes no result</span><span class="size">1 file</span>
-</summary>
-<ul>
-<li>
-<details>
-<summary class="row" style="--d:2">
-<span class="name"><code>part-5ebcbd4c5826.parquet</code></span><span class="what">the fits one job added; the file says inside how they were made</span><span class="size">100 rows × 3 columns</span>
-</summary>
-<div class="body">
-<p class="more">
-How these fits were made, stored inside the file:
-</p>
-<pre>{
-  &quot;cells_in_use_sha256&quot;: &quot;d6040e7cdff5a1918e3869873f780155e192eab3e824d3e6662defe383852231&quot;,
-  &quot;control_group&quot;: &quot;complement&quot;,
-  &quot;formula&quot;: &quot;~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch&quot;,
-  &quot;response_fit_method&quot;: &quot;batched&quot;,
-  &quot;screen_id&quot;: &quot;b907fd1b151fd398b78ff993ae9e86d6&quot;
-}</pre>
-<table class="dataframe rows table table-sm table-striped small">
-<thead>
-<tr>
-<th>
-response_id
-</th>
-<th>
-coefficients
-</th>
-<th>
-theta
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-ENSG00000040608
-</td>
-<td>
-[3.51, 0.3, -0.51, 0.542, …]
-</td>
-<td>
-0.5819
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099889
-</td>
-<td>
-[-5.11, 0.174, 0.902, 0.142, …]
-</td>
-<td>
-1.011
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099917
-</td>
-<td>
-[-7.69, 0.245, 1.35, 1.69, …]
-</td>
-<td>
-3.07
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099937
-</td>
-<td>
-[-3.66, -0.581, 1.33, -0.232, …]
-</td>
-<td>
-1.091
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099949
-</td>
-<td>
-[0.0448, -0.5, 0.476, 0.214, …]
-</td>
-<td>
-1.098
+DERL3
 </td>
 </tr>
 </tbody>
@@ -3756,41 +2719,610 @@ ENSG00000099949
 </ul>
 </details>
 </li>
+<li>
+<details>
+<summary class="row folder" style="--d:1">
+<span class="name"><code>mod/grna</code></span><span class="what">the gRNAs</span><span class="size">500 cells × 60 gRNAs</span>
+</summary>
+<ul>
+<li>
+<details>
+<summary class="row" style="--d:2">
+<span class="name"><code>X</code></span><span class="what">raw counts, cells × features, stored by feature</span><span class="size">6,111 nonzero counts</span>
+</summary>
+<div class="body">
+<p class="more">
+The first cells and features:
+</p>
+<table class="dataframe rows table table-sm table-striped small">
+<thead>
+<tr>
+<th>
+cell
+</th>
+<th>
+ENSG00000224277_grna1
+</th>
+<th>
+ENSG00000224277_grna2
+</th>
+<th>
+ENSG00000233521_grna1
+</th>
+<th>
+ENSG00000233521_grna2
+</th>
+<th>
+ENSG00000226772_grna1
+</th>
+<th>
+ENSG00000226772_grna2
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Cell_1
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+10
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+</tr>
+<tr>
+<td>
+Cell_2
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+</tr>
+<tr>
+<td>
+Cell_3
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+1
+</td>
+</tr>
+<tr>
+<td>
+Cell_4
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+30
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+</tr>
+<tr>
+<td>
+Cell_5
+</td>
+<td>
+14
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+<td>
+0
+</td>
+</tr>
+</tbody>
+</table>
+<p class="more">
+…
+</p>
+</div>
+</details>
+</li>
+<li>
+<details>
+<summary class="row" style="--d:2">
+<span class="name"><code>obs</code></span><span class="what">one row per cell: measurements of this modality</span><span class="size">500 rows × 2 columns</span>
+</summary>
+<div class="body">
+<ul class="columns">
+<li>
+<code>n_nonzero</code>: the cell&#39;s number of features with a nonzero count
+</li>
+<li>
+<code>n_umis</code>: the cell&#39;s total count
+</li>
+</ul>
+<table class="dataframe rows table table-sm table-striped small">
+<thead>
+<tr>
+<th>
+cell
+</th>
+<th>
+n_nonzero
+</th>
+<th>
+n_umis
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Cell_1
+</td>
+<td>
+8
+</td>
+<td>
+145
+</td>
+</tr>
+<tr>
+<td>
+Cell_2
+</td>
+<td>
+8
+</td>
+<td>
+179
+</td>
+</tr>
+<tr>
+<td>
+Cell_3
+</td>
+<td>
+14
+</td>
+<td>
+241
+</td>
+</tr>
+<tr>
+<td>
+Cell_4
+</td>
+<td>
+10
+</td>
+<td>
+248
+</td>
+</tr>
+<tr>
+<td>
+Cell_5
+</td>
+<td>
+12
+</td>
+<td>
+318
+</td>
+</tr>
+</tbody>
+</table>
+<p class="more">
+… 495 more rows
+</p>
+</div>
+</details>
+</li>
+<li>
+<details>
+<summary class="row" style="--d:2">
+<span class="name"><code>var</code></span><span class="what">one row per gRNA: what it targets</span><span class="size">60 rows × 4 columns</span>
+</summary>
+<div class="body">
+<ul class="columns">
+<li>
+<code>grna_target</code>: what the gRNA is aimed at; <code>non-targeting</code> for a negative control
+</li>
+<li>
+<code>target_chr</code>: chromosome of the target
+</li>
+<li>
+<code>target_start</code>: first base of the target, 1-based
+</li>
+<li>
+<code>target_end</code>: last base of the target, included
+</li>
+</ul>
+<table class="dataframe rows table table-sm table-striped small">
+<thead>
+<tr>
+<th>
+gRNA
+</th>
+<th>
+grna_target
+</th>
+<th>
+target_chr
+</th>
+<th>
+target_start
+</th>
+<th>
+target_end
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+ENSG00000224277_grna1
+</td>
+<td>
+ENSG00000224277
+</td>
+<td>
+chr22
+</td>
+<td>
+2.357e+07
+</td>
+<td>
+2.357e+07
+</td>
+</tr>
+<tr>
+<td>
+ENSG00000224277_grna2
+</td>
+<td>
+ENSG00000224277
+</td>
+<td>
+chr22
+</td>
+<td>
+2.357e+07
+</td>
+<td>
+2.357e+07
+</td>
+</tr>
+<tr>
+<td>
+ENSG00000233521_grna1
+</td>
+<td>
+ENSG00000233521
+</td>
+<td>
+chr22
+</td>
+<td>
+2.723e+07
+</td>
+<td>
+2.723e+07
+</td>
+</tr>
+<tr>
+<td>
+ENSG00000233521_grna2
+</td>
+<td>
+ENSG00000233521
+</td>
+<td>
+chr22
+</td>
+<td>
+2.723e+07
+</td>
+<td>
+2.723e+07
+</td>
+</tr>
+<tr>
+<td>
+ENSG00000226772_grna1
+</td>
+<td>
+ENSG00000226772
+</td>
+<td>
+chr22
+</td>
+<td>
+2.911e+07
+</td>
+<td>
+2.911e+07
+</td>
+</tr>
+</tbody>
+</table>
+<p class="more">
+… 55 more rows
+</p>
+</div>
+</details>
+</li>
+</ul>
+</details>
+</li>
+<li>
+<details>
+<summary class="row" style="--d:1">
+<span class="name"><code>obs</code></span><span class="what">one row per cell: facts about the cell, whatever was measured</span><span class="size">500 rows × 1 column</span>
+</summary>
+<div class="body">
+<table class="dataframe rows table table-sm table-striped small">
+<thead>
+<tr>
+<th>
+cell
+</th>
+<th>
+batch
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Cell_1
+</td>
+<td>
+batch_1
+</td>
+</tr>
+<tr>
+<td>
+Cell_2
+</td>
+<td>
+batch_2
+</td>
+</tr>
+<tr>
+<td>
+Cell_3
+</td>
+<td>
+batch_1
+</td>
+</tr>
+<tr>
+<td>
+Cell_4
+</td>
+<td>
+batch_1
+</td>
+</tr>
+<tr>
+<td>
+Cell_5
+</td>
+<td>
+batch_1
+</td>
+</tr>
+</tbody>
+</table>
+<p class="more">
+… 495 more rows
+</p>
+</div>
+</details>
+</li>
+<li>
+<details>
+<summary class="row" style="--d:1">
+<span class="name"><code>uns</code></span><span class="what">what the file says about itself: the format version, which dataset this is, and what kind of screen it was</span><span class="size">6 entries</span>
+</summary>
+<div class="body">
+<table class="dataframe rows table table-sm table-striped small">
+<thead>
+<tr>
+<th>
+entry
+</th>
+<th>
+value
+</th>
+<th>
+meaning
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+perturb_seq_format
+</td>
+<td>
+0.1
+</td>
+<td>
+the version of the Perturb-seq data file format this file follows
+</td>
+</tr>
+<tr>
+<td>
+dataset_id
+</td>
+<td>
+b907fd1b151fd398b78ff993ae9e86d6
+</td>
+<td>
+identifies the dataset; random, assigned at import
+</td>
+</tr>
+<tr>
+<td>
+title
+</td>
+<td>
+sceptre high-MOI example data
+</td>
+<td>
+a title for people
+</td>
+</tr>
+<tr>
+<td>
+perturbation_type
+</td>
+<td>
+CRISPRi
+</td>
+<td>
+the kind of perturbation
+</td>
+</tr>
+<tr>
+<td>
+organism
+</td>
+<td>
+Homo sapiens
+</td>
+<td>
+the organism, as a scientific name
+</td>
+</tr>
+<tr>
+<td>
+genome_build
+</td>
+<td>
+GRCh38
+</td>
+<td>
+the genome build of the positions; required when the gRNA table has positions
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+</li>
 </ul>
 </details>
 </li>
 </ul>
 </div>
 </section>
-<section id="open-the-tables-yourself" class="level2">
-<h2 class="anchored" data-anchor-id="open-the-tables-yourself">Open the tables yourself</h2>
-<p>Standard libraries read them, in R or Python.</p>
+<section id="open-the-file-yourself" class="level2">
+<h2 class="anchored" data-anchor-id="open-the-file-yourself">Open the file yourself</h2>
+<p>Standard libraries read it, in R or Python.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="language">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href>R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href>Python</a></li></ul>
 <div class="tab-content" data-group="language">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> nanoparquet<span class="sc">::</span><span class="fu">read_parquet</span>(<span class="st">&quot;example/highmoi/analyses/left_sided/discovery/results.parquet&quot;</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(results, <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>screen <span class="ot">&lt;-</span> MuData<span class="sc">::</span><span class="fu">readH5MU</span>(<span class="st">&quot;example/highmoi/screen.h5mu&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>screen</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>      response_id     grna_target pass_qc     p_value fold_change se_fold_change log_2_fold_change
-1 ENSG00000040608 candidate_enh_1    TRUE 0.006887567   0.6715545      0.1606408       -0.57442358
-2 ENSG00000099889 candidate_enh_1    TRUE 0.858000000   1.1156013      0.1237707        0.15782154
-3 ENSG00000099917 candidate_enh_1    TRUE 0.426000000   0.9443800      0.2854157       -0.08256057</code></pre>
+<pre><code>A MultiAssayExperiment object of 2 listed
+ experiments with user-defined names and respective classes.
+ Containing an ExperimentList class object of length 2:
+ [1] rna: SingleCellExperiment with 100 rows and 500 columns
+ [2] grna: SingleCellExperiment with 60 rows and 500 columns
+Functionality:
+ experiments() - obtain the ExperimentList instance
+ colData() - the primary/phenotype DataFrame
+ sampleMap() - the sample coordination DataFrame
+ `$`, `[`, `[[` - extract colData columns, subset, or experiment
+ *Format() - convert into a long or wide DataFrame
+ assays() - convert ExperimentList to a SimpleList of matrices
+ exportClass() - save data to flat files</code></pre>
 </div>
 </div>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> mudata</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> pd.read_parquet(<span class="st">&quot;example/highmoi/analyses/left_sided/discovery/results.parquet&quot;</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(results.head(<span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>screen <span class="op">=</span> mudata.read_h5mu(<span class="st">&quot;example/highmoi/screen.h5mu&quot;</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(screen)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>       response_id      grna_target  pass_qc   p_value  fold_change  se_fold_change  log_2_fold_change
-0  ENSG00000040608  candidate_enh_1     True  0.006888     0.671555        0.160641          -0.574424
-1  ENSG00000099889  candidate_enh_1     True  0.858000     1.115601        0.123771           0.157822
-2  ENSG00000099917  candidate_enh_1     True  0.426000     0.944380        0.285416          -0.082561</code></pre>
+<pre><code>MuData object with n_obs × n_vars = 500 × 160
+  obs:  &#39;batch&#39;
+  uns:  &#39;dataset_id&#39;, &#39;genome_build&#39;, &#39;organism&#39;, &#39;perturb_seq_format&#39;, &#39;perturbation_type&#39;, &#39;title&#39;
+  2 modalities
+    grna:   500 × 60
+      obs:  &#39;n_nonzero&#39;, &#39;n_umis&#39;
+      var:  &#39;grna_target&#39;, &#39;target_chr&#39;, &#39;target_start&#39;, &#39;target_end&#39;
+      layers:   None
+    rna:    500 × 100
+      obs:  &#39;n_nonzero&#39;, &#39;n_umis&#39;
+      var:  &#39;response_name&#39;
+      layers:   None</code></pre>
 </div>
 </div>
 </div>
@@ -3802,104 +3334,81 @@ ENSG00000099949
 <p>These are the choices that cannot change after the format is frozen without breaking existing files. Disagreement is cheap now and costly then. Each opens to its reason and the alternative it was chosen over; the label after each is the section of <code>RATIONALE.md</code> (and of <code>SPEC.md</code>) with the detail.</p>
 <details class="fold">
 <summary>
-<strong>One folder per stage, with a record written last.</strong> <span class="where">A2</span>
+<strong>Data and analysis are separate.</strong> <span class="where">S12</span>
 </summary>
 <ul>
-<li><strong>The choice.</strong> Each completed stage has a folder holding its tables and <code>record.json</code>: the stage’s settings, provenance and list of files. The record is written after the tables.</li>
-<li><strong>Why.</strong> No file is ever rewritten. The record marks the stage as finished, so a folder without one is a stage that did not finish. Calibration, power and discovery do not depend on one another and could run at once without racing for one file. Rerunning a stage is deleting its folder.</li>
-<li><strong>Instead of.</strong> One settings file rewritten by every stage, or tables grouped by kind with stage ownership recorded elsewhere.</li>
-<li><strong>The stage names</strong> are <code>parameters</code>, <code>assignment</code>, <code>qc</code>, <code>calibration</code>, <code>power</code>, <code>discovery</code>.</li>
+<li><strong>The choice.</strong> The data file holds nothing an analysis produces: no assignments, no kept-or-removed flag, no results. Each analysis is its own folder.</li>
+<li><strong>Why.</strong> One dataset has many analyses, and the data file is then written once and never touched again. Keeping a kept-or-removed flag in the data file, as public pysceptre does, means rewriting the whole file to work on the kept cells.</li>
+<li><strong>Instead of.</strong> One self-contained file holding data, assignments and results, which is the IGVF pipeline’s layout and suits uploading one file to a portal.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>Tables name things by identifier and are sorted by key.</strong> <span class="where">T0, T5</span>
+<strong>The data is one MuData <code>.h5mu</code> file.</strong> <span class="where">S1</span>
 </summary>
 <ul>
-<li><strong>Why.</strong> Tables then survive subsetting, reordering and being written in pieces by parallel jobs, and there is no question of counting from 0 or from 1.</li>
-<li><strong>Consequence.</strong> Results are sorted by target and response, not by p-value.</li>
+<li><strong>Why.</strong> MuData is the scverse standard for one set of cells measured in several ways. Standard libraries open it in both languages, and one file is easy to move and publish.</li>
+<li><strong>Instead of.</strong> A Zarr store, two <code>.h5ad</code> files, the <code>ondisc</code> format, or a folder of Parquet and matrix files.</li>
+<li><strong>Locks in.</strong> HDF5. A Zarr variant could be added later without changing anything else.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>Assignments are a table of (gRNA, cell) rows, not a matrix.</strong> <span class="where">T1</span>
+<strong>Counts are stored by feature.</strong> <span class="where">S3</span>
 </summary>
 <ul>
-<li><strong>Why.</strong> The assignment belongs to an analysis, not to the data. The table is tiny next to the counts, parallel jobs can each write a part, and another tool can hand in a plain two-column table. A table of 10 million rows reads in about 8 seconds in Python and 10 in R.</li>
-<li><strong>Instead of.</strong> A 0/1 cells × gRNAs matrix in the data file, which is what the IGVF pipeline, pertpy and public pysceptre use. The two hold the same information.</li>
+<li><strong>The choice.</strong> The count matrix is cells × features, column-compressed, so one gene is one contiguous read.</li>
+<li><strong>Why.</strong> Every stage works gene by gene. With counts stored by cell, the IGVF pipeline first splits the whole file into per-gene chunk files.</li>
+<li><strong>Cost.</strong> A file from another tool is usually stored by cell and is converted once at import.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>Saved model fits are a cache outside the stages.</strong> <span class="where">T6</span>
+<strong>Modalities are named for what was measured, and the analysis says which one it tests.</strong> <span class="where">S2, A1</span>
 </summary>
 <ul>
-<li><strong>The choice.</strong> <code>fits/response/</code> holds part files. Each part says, inside the file, how its fits were made, and software uses a part only when that matches what it would do itself. Deleting the folder changes no result.</li>
-<li><strong>Why.</strong> A fit depends on the data, the formula, the fitting method, the control group and the cells that passed QC, all fixed once QC has run. Which testing stage computes it first is an accident, so a stage’s folder is the wrong home: rerunning that stage would delete fits that are still valid.</li>
+<li><strong>The choice.</strong> The gRNA modality is always <code>grna</code>. Every other modality is named for its measurement (<code>rna</code>, <code>protein</code>, …). <code>analysis.json</code> names the response modality; nothing finds it by a fixed name.</li>
+<li><strong>Why.</strong> A file can then hold a second measured modality, and any modality can become the response of a later analysis.</li>
+<li><strong>Instead of.</strong> A fixed role name such as <code>response</code>, which is what both packages use in memory today.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>The design matrix is not stored, and formulas are additive only.</strong> <span class="where">T7</span>
+<strong>Covariate names carry the modality’s name: <code>rna_n_umis</code>, not <code>response_n_umis</code>.</strong> <span class="where">S5</span>
 </summary>
 <ul>
-<li><strong>The choice.</strong> The parameters record holds the formula text and the names of the matrix’s columns. Each language rebuilds the matrix and checks those names.</li>
-<li><strong>Evidence.</strong> On the example, R and pysceptre build matrices that are equal to the last bit on one machine.</li>
-<li><strong>Cost.</strong> Only additive formulas of covariates, <code>log(x)</code> and <code>log(x + 1)</code> can be saved. An analysis with an interaction or a spline cannot.</li>
-<li><strong>No hash of the matrix.</strong> A hash of exact values would fail on a correct matrix, because a logarithm’s last bit differs between macOS and Linux (measured). A check that survives this can be added later.</li>
+<li><strong>The choice.</strong> Facts about the cell (batch, donor) are in the shared cell table. Measurements of a modality are in that modality’s cell table. A model’s covariate table prefixes each modality’s columns with its name.</li>
+<li><strong>Why.</strong> A batch belongs to the cell, not to its RNA. A role prefix cannot name the RNA depth in an analysis whose response is protein.</li>
+<li><strong>Cost.</strong> Formulas users write today say <code>response_n_umis</code>. The packages can keep accepting that name and translate.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>Nothing is stored that follows from something else stored.</strong> <span class="where">S6, T5</span>
+<strong>The file’s own entries are at the top level of <code>uns</code>.</strong> <span class="where">S10</span>
 </summary>
 <ul>
-<li><strong>Examples.</strong> Results have no <code>significant</code> column, and the cell table has no count of gRNAs per cell.</li>
-<li><strong>The exceptions.</strong> Each cell’s total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them. <code>log_2_fold_change</code> is stored beside <code>fold_change</code>, because rebuilding it does not give the same number on every platform.</li>
+<li><strong>The choice.</strong> The format version (<code>perturb_seq_format</code>), the dataset’s identifier (<code>dataset_id</code>) and what is known about the screen (<code>title</code>, <code>organism</code>, <code>genome_build</code>, <code>perturbation_type</code>, <code>source</code>) are scalar entries at the top level of <code>uns</code>.</li>
+<li><strong>Why.</strong> They are facts about the dataset, so other tools should be able to read and write them. Under a key named for one tool they would belong to that tool.</li>
+<li><strong>The version</strong> is <code>MAJOR.MINOR</code>. A minor increase adds something older software can ignore. A major increase is any change after which older software could misread a file, and software refuses a major version it does not know.</li>
+<li><strong>Not in the file.</strong> Whether a screen is treated as low or high multiplicity of infection. It selects an analysis’s defaults, so it belongs to the analysis.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>An analysis names its data file by identifier.</strong> <span class="where">A1</span>
+<strong>The names.</strong> <span class="where">SPEC, section 2</span>
 </summary>
-<ul>
-<li><strong>The choice.</strong> <code>analysis.json</code> records the data file’s <code>dataset_id</code>, its numbers of cells, responses and gRNAs, a hash of each list of identifiers, the data file format’s version, and which modality is the response. Software refuses a data file for which the identifier, counts or hashes differ.</li>
-<li><strong>Why.</strong> The data file can then be moved, copied or kept on a server, and an analysis still knows whether it is being given the right one.</li>
-<li><strong>Not caught.</strong> A value edited in place in a data file whose identifiers are unchanged.</li>
-</ul>
-</details>
-<details class="fold">
-<summary>
-<strong>Low or high multiplicity of infection is a setting of the analysis.</strong> <span class="where">A3</span>
-</summary>
-<ul>
-<li><strong>The choice.</strong> The parameters record has <code>moi</code>, <code>high</code> or <code>low</code>. The data file does not.</li>
-<li><strong>Why.</strong> It selects an analysis’s defaults, such as the control group and what is done with cells that carry several gRNAs. The same data can be analysed either way.</li>
-</ul>
-</details>
-<details class="fold">
-<summary>
-<strong>A two-part version in every analysis.</strong> <span class="where">A1</span>
-</summary>
-<ul>
-<li><strong>The choice.</strong> <code>analysis.json</code> carries the analysis format’s own <code>MAJOR.MINOR</code>, separate from the data file’s. A minor increase adds something older software can ignore. A major increase is any change after which older software could misread a folder, and software refuses a major version it does not know.</li>
-</ul>
-</details>
-<details class="fold">
-<summary>
-<strong>The names.</strong> <span class="where">SPEC, sections 3 and 4</span>
-</summary>
-<p>Column, table and file names are as hard to change as structure: the stage names, <code>pass_qc</code>, <code>p_value</code>, <code>fold_change</code>, <code>log_2_fold_change</code>, and the table names in the tree above. If one reads wrongly to you, now is the time to say so.</p>
+<p>Names are as hard to change as structure: the modality names <code>rna</code> and <code>grna</code>, and the columns <code>grna_target</code>, <code>target_chr</code>, <code>target_start</code>, <code>target_end</code>, <code>vector_id</code>, <code>n_umis</code>, <code>n_nonzero</code>, <code>p_mito</code>. Other formats use other names for the same things, and none is a standard. If one reads wrongly to you, now is the time to say so.</p>
 </details>
 </section>
 <section id="questions-for-reviewers" class="level2">
 <h2 class="anchored" data-anchor-id="questions-for-reviewers">Questions for reviewers</h2>
 <ol type="1">
-<li><strong>Is the scope right?</strong> The format fixes the form of results and leaves their meaning (what a p-value tests) to sceptre’s method documentation.</li>
-<li><strong>The fitting-method default.</strong> Saved fits are shared between R and Python only when the method matches, and the current default differs from the alternatives on a few responses. This is a scientific choice about which method is the default.</li>
-<li><strong>Additive formulas only.</strong> Is it acceptable that an analysis with an interaction or a spline cannot be saved?</li>
-<li><strong>Resampled statistics.</strong> They take 4 GB per million pairs, and reading one pair is fast only with small row groups (<code>scale-test/README.md</code>). Should they be stored as they are, in 32 bits, or with a row-group limit of their own?</li>
-<li><strong>The fit cache.</strong> Reading it takes time in proportion to the number of part files. Should a job write one part for all its fits, and may parts be merged?</li>
+<li><strong>Is anything missing that a real screen needs?</strong> For gRNA annotation the format has a target, its position and an optional vector, and no gRNA type or spacer sequence yet. It defines no annotation of genes.</li>
+<li><strong>Coordinates.</strong> Target positions are 1-based with both ends included, as in GTF files, and a file with positions has to say which genome build they are in. Is that the right convention?</li>
+<li><strong>Limits.</strong> A gRNA has one target, and so does a vector carrying several gRNAs; combinatorial screens are refused. DNA-targeting is assumed. Are those limits acceptable for now?</li>
+<li><strong>The matrix layout.</strong> Counts are stored by feature, which suits fitting one gene at a time. Files from mapping pipelines and from scanpy are stored by cell. Should the format allow both and recommend one?</li>
+<li><strong>The required columns.</strong> Every modality’s cell table must have <code>n_umis</code> and <code>n_nonzero</code>. Is that the right minimum for software other than sceptre?</li>
+<li><strong>The names.</strong> Would you use <code>rna</code> and <code>grna</code>, <code>grna_target</code>, and the entry names at the top level of <code>uns</code>, or do the names of another format serve better?</li>
 </ol>
 <details class="fold">
 <summary>
@@ -3907,16 +3416,17 @@ What does not need review now
 </summary>
 <p>These can be added or changed later without breaking any file.</p>
 <ul>
-<li><strong>Optional columns and tables not yet in the format:</strong> per-cell QC reasons, assignment scores (<code>RATIONALE.md</code>, planned additions).</li>
+<li><strong>Optional columns not yet in the format:</strong> gRNA type, spacer, gene annotation (<code>RATIONALE.md</code>, planned additions).</li>
 <li><strong>The wording of individual rules.</strong> The sorting into file rules, behaviour rules and guidance is meant to be final; the sentences are not.</li>
-<li><strong>Compression settings and Parquet details.</strong> Software reading the files does not depend on them.</li>
-<li><strong>The code in <code>format/</code>.</strong> It is a prototype that shows the format works in both languages, and is replaced by code in sceptre and pysceptre.</li>
+<li><strong>Compression settings.</strong> Software reading the files does not depend on them.</li>
+<li><strong>The code in <code>format/</code>.</strong> The validators show that the rules can be checked in both languages; the writer is temporary.</li>
+<li><strong>The comparisons with IGVF and pertpy</strong> in <code>RATIONALE.md</code>, unless you know those formats and see an error.</li>
 </ul>
 </details>
 </section>
 <section id="what-has-been-tested" class="level2">
 <h2 class="anchored" data-anchor-id="what-has-been-tested">What has been tested</h2>
-<p><code>verify/run.sh</code> runs every check, using neither sceptre nor pysceptre. The counts below are from the run this page was rendered after.</p>
+<p><code>verify/run.sh</code> runs every check. It uses no analysis tool. The counts below are from the run this page was rendered after.</p>
 <table class="status">
 <thead>
 <tr>
@@ -3940,13 +3450,27 @@ Passed in Python
 <code>conformance</code>
 </td>
 <td>
-Both validators report exactly the expected rules on every analysis folder of <code>conformance/</code> (folders that conform, and folders that each break a rule), each checked against its data file
+Both validators report exactly the expected rules on every data file of <code>conformance/</code> (files that conform, and files that each break a rule), and the standard readers read the files that must still be read
 </td>
 <td>
-50 of 50
+49 of 49
 </td>
 <td>
-50 of 50
+49 of 49
+</td>
+</tr>
+<tr>
+<td>
+<code>encodings</code>
+</td>
+<td>
+Every kind of value, written by each language&#39;s standard libraries and read by the other&#39;s. The kinds the format allows come back correct; the kinds it forbids still break
+</td>
+<td>
+26 of 26
+</td>
+<td>
+28 of 28
 </td>
 </tr>
 <tr>
@@ -3954,68 +3478,40 @@ Both validators report exactly the expected rules on every analysis folder of <c
 <code>independent-readers</code>
 </td>
 <td>
-Tools outside this code read the tables: pandas, polars and duckdb in Python; arrow in R
+Tools outside this code read the files: anndata and scanpy in Python, HDF5Array in R
 </td>
 <td>
-51 of 51
+19 of 19
 </td>
 <td>
-110 of 110
-</td>
-</tr>
-<tr>
-<td>
-<code>derived</code>
-</td>
-<td>
-What software computes from the files (cells per gRNA and per target, cells in use, pairs passing QC, significance, control groups) equals what sceptre itself computed
-</td>
-<td>
-118 of 118
-</td>
-<td>
-118 of 118
+25 of 25
 </td>
 </tr>
 <tr>
 <td>
-<code>two-writers</code>
+<code>wide-index</code>
 </td>
 <td>
-R and Python each write the same random content, a data file and an analysis of it. The files are compared array by array and column by column, and each language reads the other&#39;s files and gets the source back
+The 64-bit branch of the count matrix&#39;s index type, with the limit lowered because no test file reaches it
 </td>
 <td>
-37 of 37
+13 of 13
 </td>
 <td>
-100 of 100
-</td>
-</tr>
-<tr>
-<td>
-<code>writers</code>
-</td>
-<td>
-What a writer does beyond producing conforming files: a copy of a data file keeps the dataset&#39;s identifier and every modality, a retried stage leaves nothing of its first attempt, and large matrices get 64-bit index arrays
-</td>
-<td>
-9 of 9
-</td>
-<td>
-9 of 9
+12 of 12
 </td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li><strong>Once, at real size, with made-up content:</strong> results tables, resampled statistics and the fit cache (<code>scale-test/README.md</code>).</li>
-<li><strong>Once, with both packages:</strong> each example analysis was rebuilt as a sceptre object and as a pysceptre analysis from the files. Nothing here repeats that; it returns when the packages adopt the format.</li>
+<li><strong>Once, at scale:</strong> on a real screen of 207,324 cells, written by both languages to identical files and read back in memory and from disk (<code>scale-test/</code>).</li>
 <li><strong>On three operating systems:</strong> the suite passes on macOS, Linux and Windows.</li>
 </ul>
 <p><strong>Not tested.</strong></p>
 <ul>
-<li>A real analysis larger than 1,000 cells.</li>
-<li>An implementation by someone else. One author wrote the specification and both prototypes.</li>
+<li>Real data in a second measured modality.</li>
+<li>Count matrices past the 32-bit index limit. The 64-bit types are handled; values that large are not exercised.</li>
+<li>An implementation by someone else. One author wrote the specification and both validators.</li>
 </ul>
 <p><code>SPEC.md</code> marks each rule with how it is checked, including the rules nothing tests.</p>
 </section>
@@ -4023,7 +3519,7 @@ What a writer does beyond producing conforming files: a copy of a data file keep
 <h2 class="anchored" data-anchor-id="what-is-in-this-folder">What is in this folder</h2>
 <details class="fold">
 <summary>
-The folders and files of <code>sceptre-analysis-format/</code>
+The folders and files of <code>perturb-seq-data-format/</code>
 </summary>
 <table class="caption-top table">
 <colgroup>
@@ -4032,7 +3528,7 @@ The folders and files of <code>sceptre-analysis-format/</code>
 </colgroup>
 <tbody>
 <tr class="odd">
-<td><code>notebook.qmd</code>, <code>notebook.html</code></td>
+<td><code>overview.qmd</code>, <code>overview.html</code></td>
 <td>This page and its source. <code>./render.sh</code> renders it</td>
 </tr>
 <tr class="even">
@@ -4041,43 +3537,43 @@ The folders and files of <code>sceptre-analysis-format/</code>
 </tr>
 <tr class="odd">
 <td><code>RATIONALE.md</code></td>
-<td>The reasons: every choice with its alternatives and evidence, the comparison with the IGVF pipeline’s outputs, planned additions, and the measurements</td>
+<td>The reasons: every choice with its alternatives and evidence, comparisons with the IGVF pipeline’s format and with pertpy, planned additions, and the measurements</td>
 </tr>
 <tr class="even">
-<td><code>spec/</code></td>
-<td>The machine-readable parts: <code>tables.json</code> (every table’s columns, types and key) and JSON Schemas for the JSON records. The descriptions in the tree above are read from <code>tables.json</code></td>
+<td><code>spec/screen.json</code></td>
+<td>The machine-readable structure of a data file. The descriptions in the tree above are read from it</td>
 </tr>
 <tr class="odd">
 <td><code>format/</code></td>
-<td>The prototype: writers, readers and validators in R and Python, with the same names. It uses the data file format’s code and neither sceptre nor pysceptre</td>
+<td>The validator in R and in Python, with the same names, and a temporary writer</td>
 </tr>
 <tr class="even">
 <td><code>example/</code></td>
-<td>Analyses in the format, of the data file format’s example files: six of the high-MOI dataset and one of the low-MOI dataset. <code>example/*/expected/</code> holds values a reader should derive from them</td>
+<td>Data files in the format: a high-MOI dataset, a low-MOI dataset, and a small synthetic file with every kind of column</td>
 </tr>
 <tr class="odd">
 <td><code>conformance/</code></td>
-<td>Analysis folders that conform and folders that each break a rule, with what a validator must report</td>
+<td>Data files that conform and data files that each break a rule, with what a validator must report</td>
 </tr>
 <tr class="even">
 <td><code>verify/</code></td>
-<td>The verification suite, and how to test another implementation against the same files</td>
+<td>The verification suite</td>
 </tr>
 <tr class="odd">
 <td><code>scale-test/</code></td>
-<td>Recorded measurements of the tables at real size</td>
+<td>Recorded results of the run on 207,324 cells</td>
 </tr>
 </tbody>
 </table>
 </details>
 <details class="fold">
 <summary>
-How the format is defined, and where the code will live
+How the format is defined
 </summary>
 <ul>
-<li><strong>The format is <code>SPEC.md</code> and <code>spec/</code>.</strong> The validator, <code>validate_analysis()</code>, exists in R and in Python and decides whether a folder conforms. Checking a folder fully needs its data file.</li>
-<li><strong>Tables are read with standard libraries:</strong> any Parquet reader. The format has no reader of its own.</li>
-<li><strong>Writers are custom, and temporary.</strong> The two here move into sceptre and pysceptre, which then write these files themselves.</li>
+<li><strong>The format is <code>SPEC.md</code> and <code>spec/screen.json</code>.</strong> The validator, <code>validate_screen()</code>, exists in R and in Python and decides whether a file conforms. There is no canonical writer.</li>
+<li><strong>A data file is read with standard libraries:</strong> <code>mudata.read_h5mu</code> in Python, <code>MuData::readH5MU</code> in R. The format has no reader of its own.</li>
+<li><strong>Writers are custom.</strong> Each is a wrapper around the standard writer that stays inside what both languages read correctly.</li>
 </ul>
 </details>
 </section>

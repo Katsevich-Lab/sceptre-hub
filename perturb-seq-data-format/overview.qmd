@@ -20,7 +20,7 @@ Most of it is folded: open what you want to read.
 The format is a set of names and rules on top of a standard MuData file.
 Nothing in it is specific to one analysis tool. One tool that builds on it is
 sceptre, whose analyses of a data file are stored in the
-[sceptre analysis format](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/sceptre-analysis-format/notebook.html).
+[sceptre analysis format](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/sceptre-analysis-format/overview.html).
 
 Two reference documents sit behind this page: [`SPEC.md`](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/SPEC.md)
 has the rules, numbered, and [`RATIONALE.md`](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md)
@@ -45,13 +45,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, ".")
-import notebook_tools as nt
+import overview_tools as nt
 
 nt.SCREEN = Path("example/highmoi/screen.h5mu")
 nt.screen_spec = json.loads(Path("spec/screen.json").read_text())
 ```
 
-{{< include _notebook_style.md >}}
+{{< include _overview_style.md >}}
 
 ## The principles
 
@@ -227,7 +227,7 @@ print(nt.status({
 
 | | |
 |---|---|
-| `notebook.qmd`, `notebook.html` | This page and its source. `./render.sh` renders it |
+| `overview.qmd`, `overview.html` | This page and its source. `./render.sh` renders it |
 | `SPEC.md` | The specification: scope, terms, and numbered statements sorted into file rules, behaviour rules and guidance |
 | `RATIONALE.md` | The reasons: every choice with its alternatives and evidence, comparisons with the IGVF pipeline's format and with pertpy, planned additions, and the measurements |
 | `spec/screen.json` | The machine-readable structure of a data file. The descriptions in the tree above are read from it |

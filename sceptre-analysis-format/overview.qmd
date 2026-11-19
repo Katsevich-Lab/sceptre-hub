@@ -18,7 +18,7 @@ analysis folder holds, what review is asked for, and what has been tested. Most
 of it is folded: open what you want to read.
 
 An analysis is an analysis of a data file in the
-[Perturb-seq data file format](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/notebook.html).
+[Perturb-seq data file format](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/overview.html).
 That format is separate, has its own version, and knows nothing about
 analyses. This one builds on it.
 
@@ -45,13 +45,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, "../perturb-seq-data-format")
-import notebook_tools as nt
+import overview_tools as nt
 
 nt.ANALYSIS = Path("example/highmoi/analyses/left_sided")
 nt.table_spec = json.loads(Path("spec/tables.json").read_text())
 ```
 
-{{< include ../perturb-seq-data-format/_notebook_style.md >}}
+{{< include ../perturb-seq-data-format/_overview_style.md >}}
 
 ## The principles
 
@@ -250,7 +250,7 @@ print(nt.status({
 
 | | |
 |---|---|
-| `notebook.qmd`, `notebook.html` | This page and its source. `./render.sh` renders it |
+| `overview.qmd`, `overview.html` | This page and its source. `./render.sh` renders it |
 | `SPEC.md` | The specification: scope, terms, and numbered statements sorted into file rules, behaviour rules and guidance |
 | `RATIONALE.md` | The reasons: every choice with its alternatives and evidence, the comparison with the IGVF pipeline's outputs, planned additions, and the measurements |
 | `spec/` | The machine-readable parts: `tables.json` (every table's columns, types and key) and JSON Schemas for the JSON records. The descriptions in the tree above are read from `tables.json` |

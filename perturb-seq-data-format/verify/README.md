@@ -1,7 +1,7 @@
 # The verification suite
 
 Every check of the Perturb-seq data file format. It needs no analysis tool.
-`verify/run.sh` runs all of it and prints a summary. `../notebook.html` says
+`verify/run.sh` runs all of it and prints a summary. `../overview.html` says
 what each check shows, and `../README.md` which libraries it needs.
 
 ## Testing another implementation

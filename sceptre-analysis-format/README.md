@@ -10,10 +10,10 @@ each stage, the same files in R and in Python. It builds on the
 [Perturb-seq data file format](../perturb-seq-data-format/), which is separate,
 has its own version, and knows nothing about analyses.
 
-**Start with [the notebook](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/sceptre-analysis-format/notebook.html).**
+**Start with [the overview](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/sceptre-analysis-format/overview.html).**
 It gives the principles, shows what an analysis folder holds, the choices to
 review and their reasons, the questions for reviewers, what has been tested, and what each
-folder here holds. Its source is `notebook.qmd`.
+folder here holds. Its source is `overview.qmd`.
 
 Behind it are two reference documents: `SPEC.md` (the rules, numbered) and
 `RATIONALE.md` (the full reasons and evidence, under the same numbers).
@@ -23,7 +23,7 @@ Behind it are two reference documents: `SPEC.md` (the rules, numbered) and
 ```sh
 verify/run.sh     # the verification suite; SCEPTRE_FORMAT_PYTHON picks the Python to use
                   # `verify/run.sh format` runs the part that uses no writer, `verify/run.sh writers` the rest
-./render.sh       # notebook.html, which reports the suite's results
+./render.sh       # overview.html, which reports the suite's results
 ```
 
 Both use standard libraries only, the committed files in `example/` and

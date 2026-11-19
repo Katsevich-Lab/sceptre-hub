@@ -3,7 +3,7 @@ rlib/
 verify/out/
 conformance/results-*.json
 *.html
-!notebook.html
+!overview.html
 *_files/
 .quarto/
 __pycache__/

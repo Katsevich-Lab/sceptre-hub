@@ -17,7 +17,7 @@ and T.
 
 **Status:** draft (format 0.1), November 2026. Every choice below is
 implemented in the prototype beside this file. None has been reviewed;
-`notebook.html` is the introduction, and says what review is asked for. Until
+`overview.html` is the introduction, and says what review is asked for. Until
 the format is frozen as 1.0 it may change and no migration code is promised
 (S10). [Section 6](#6-fixed-now-free-to-grow) says which parts would be
 expensive to change after that and which can grow.
@@ -388,7 +388,7 @@ table of planned additions below says which additions are not safe to ignore.
 
 ### To settle before the freeze
 
-- **Review** (`notebook.html` says where to look).
+- **Review** (`overview.html` says where to look).
 
 ### Planned additions to the format
 
@@ -435,7 +435,7 @@ format's rationale](../sceptre-analysis-format/RATIONALE.md#suggested-changes-to
 | Piece | Where | What it is for |
 |---|---|---|
 | The rules | `SPEC.md` | Numbered statements, each a file rule, a behaviour rule or guidance, with a scope, a glossary and the library versions it is defined against. A validator's report cites them (`S4.1`) |
-| The introduction | `notebook.html` | One page: the principles, what is in a file, the choices that are expensive to change with their reasons in short, the questions that need a view, and what has been tested |
+| The introduction | `overview.html` | One page: the principles, what is in a file, the choices that are expensive to change with their reasons in short, the questions that need a view, and what has been tested |
 | The reasons | this document | Why each rule is what it is |
 | Data-file definition | `spec/screen.json` | The structure of a data file as data: required groups, number types, encodings, allowed column kinds, required columns and metadata. Both validators read it |
 | Conformance files | `conformance/`, built by `verify/make_conformance.py` | 8 conforming files, written by R and by Python, and 41 that each break a rule, with the rules a validator must report. Five of the 41 store counts or index arrays in another number type, which a reader must still read (S4.4) |
@@ -513,7 +513,7 @@ The two temporary writers are compared with each other, on seeded random
 content, in the sceptre analysis format's folder, because that check writes
 an analysis as well.
 
-**The notebook** (`notebook.qmd`, rendered to `notebook.html`) is the
+**The overview** (`overview.qmd`, rendered to `overview.html`) is the
 introduction, not a check: it shows the example data file as an annotated
 tree, with descriptions read from `spec/`, and reports what the verification
 suite found when it was rendered. It renders R and Python in one process

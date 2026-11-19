@@ -16,7 +16,7 @@ and checked](../perturb-seq-data-format/RATIONALE.md#7-how-the-format-is-defined
 
 **Status:** draft (format 0.1), November 2026. Every choice below is
 implemented in the prototype beside this file. None has been reviewed;
-`notebook.html` is the introduction, and says what review is asked for. Until
+`overview.html` is the introduction, and says what review is asked for. Until
 sceptre's first release that reads and writes these files, the format may
 change and no migration code is promised. At that release it is frozen as
 format 1.0. [Section 7](#7-fixed-now-free-to-grow) says which parts would be
@@ -449,7 +449,7 @@ table of planned additions below says which additions are not safe to ignore.
 
 ### To settle before the freeze
 
-- **Review** (`notebook.html` says where to look).
+- **Review** (`overview.html` says where to look).
 - **An analysis at scale.** The tables of an analysis have been written and read at real size with made-up content (`scale-test/README.md`): results tables are no problem at 100 million pairs; resampled statistics take 4 GB per million pairs, and a row group of a million rows (the limit of T0.3) makes reading one pair cost 7 seconds and 11 GB where groups of 10,000 rows cost 0.1 seconds; reading the fit cache costs about 9 milliseconds a part file, so 10,000 parts take a minute and a half. What to change in T0.3, T5.5 and T6.4 because of this is open. No real analysis larger than the 1,000-cell examples has been written or read in this format.
 
 ### Planned additions to the format
@@ -510,7 +510,7 @@ the code lives. This section gives what is particular to analyses.
 | Piece | Where | What it is for |
 |---|---|---|
 | The rules | `SPEC.md` | Numbered statements, each a file rule, a behaviour rule or guidance, with a scope, a glossary and the library versions it is defined against. A validator's report cites them (`S4.1`) |
-| The introduction | `notebook.html` | One page: what is in an analysis folder, the choices that are expensive to change with their reasons in short, the questions that need a view, and what has been tested |
+| The introduction | `overview.html` | One page: what is in an analysis folder, the choices that are expensive to change with their reasons in short, the questions that need a view, and what has been tested |
 | The reasons | this document | Why each rule is what it is |
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
 | Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json`, `spec/fits.schema.json` | JSON Schemas (draft 7) for `analysis.json`, the six stage records, and the identity each part of the fit cache carries |
@@ -558,7 +558,7 @@ Python, all passing:
 - what a reader derives from the files, against values sceptre computed,
   stored beside the examples.
 
-**The notebook** (`notebook.qmd`, rendered to `notebook.html`) is the
+**The overview** (`overview.qmd`, rendered to `overview.html`) is the
 introduction, not a check: it shows one analysis as an annotated tree, with
 descriptions read from `spec/`, and reports what the verification suite found
 when it was rendered. It renders R and Python in one process *(measured,

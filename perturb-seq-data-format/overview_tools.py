@@ -1,4 +1,4 @@
-"""What the two notebooks share: the trees of files, the table of check results
+"""What the two overview pages share: the trees of files, the table of check results
 and the list of principles. Each page sets SCREEN, ANALYSIS, screen_spec and
 table_spec before calling these."""
 import html
