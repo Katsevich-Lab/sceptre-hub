@@ -28,7 +28,7 @@ ok <- !is.character(a) && identical(SingleCellExperiment::counts(a), SingleCellE
     identical(SingleCellExperiment::counts(SingleCellExperiment::altExp(a, "gRNA")), SingleCellExperiment::counts(SingleCellExperiment::altExp(b, "gRNA")))
 check("MuData's reader returns the same counts as from the 32-bit file", ok, if (is.character(a)) a else "")
 
-# 2. MuData's backed reader: one response at a time, and a block
+# 2. MuData's backed reader: one feature at a time, and a block
 for (modality in c("rna", "grna")) {
     result <- outcome({
         x <- SummarizedExperiment::assay(MuData::readH5MU(wide, backed = TRUE)[[modality]], 1L)

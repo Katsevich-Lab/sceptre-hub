@@ -34,15 +34,12 @@ VALID, INVALID = ROOT / "valid", ROOT / "invalid"
 cases = []
 
 
-def case(kind, path, expect, what, screen=None, reads_as=None):
-    """`expect` is the rules a validator must report; a file conforms when there are
-    none. `reads_as` names a conforming file that a reader must get the same counts
-    from, although this one does not conform (S4.4)."""
+def case(kind, path, expect, what, screen=None):
+    """`expect` is the rules a validator must report; an analysis conforms when there
+    are none. `screen` is the data file the analysis is checked against."""
     entry = {"name": str(Path(path).relative_to(ROOT)), "kind": kind, "path": str(path), "expect": sorted(expect), "conforms": not expect, "what": what}
     if screen is not None:
         entry["screen"] = str(screen)
-    if reads_as is not None:
-        entry["reads_as"] = str(reads_as)
     cases.append(entry)
 
 
@@ -278,6 +275,5 @@ broken_analysis("formula_with_an_interaction", ["T7.1"], "The formula has an int
 
 (ROOT / "cases.json").write_text(json.dumps(cases, indent=2) + "\n")
 conforming = sum(1 for c in cases if c["conforms"])
-still_read = sum(1 for c in cases if "reads_as" in c)
-print(f"{len(cases)} cases: {conforming} conform, {len(cases) - conforming} do not ({still_read} of those a reader still reads); "
+print(f"{len(cases)} cases: {conforming} conform, {len(cases) - conforming} do not; "
       f"rules covered: {len({r for c in cases for r in c['expect']})}")

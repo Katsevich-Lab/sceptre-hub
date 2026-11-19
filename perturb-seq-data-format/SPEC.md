@@ -61,7 +61,8 @@ section of [`RATIONALE.md`](RATIONALE.md) with the same letter and number
 | 0.1 | Everything in this document |
 
 There is no dataset version. A dataset that is imported again gets a new `dataset_id`
-(S10.4), and that is the protection an analysis needs.
+(S10.4), so anything that refers to a dataset by its identifier can tell the
+two apart.
 
 ## How to read this
 
@@ -86,9 +87,10 @@ final; the sorting into kinds is.
 - **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 61 statements, 40 are file rules, 14 behaviour rules and 7
+Of the 59 statements, 40 are file rules, 12 behaviour rules and 7
 guidance. The validators check all 40 file rules. Tests or the conformance
-run cover 9 of the behaviour rules; 5 have no test: S6.4, S8.4, S9.3, S12.1, S12.2.
+run cover 6 of the behaviour rules; 6 have no test: S6.4, S8.3, S8.4, S9.3,
+S12.1, S12.2.
 
 **The machine-readable part** is [`spec/screen.json`](spec/screen.json): the
 structure of a data file as data: required groups, number types, encodings,
@@ -114,7 +116,6 @@ that do not conform, where a behaviour rule says so (S4.4).
 | **Feature** | One column of a modality's count matrix: a gene, a gRNA, a peak, a protein. Features have identifiers |
 | **gRNA** | A feature of the `grna` modality |
 | **Target** | What a gRNA is aimed at, named by `grna_target`. Several gRNAs may share a target. A gRNA whose target is `non-targeting` is a negative control |
-| **Response** | A feature of the modality an analysis tests. Which modality that is, is the analysis's choice |
 | **Writer** | Software that produces a data file |
 | **Reader** | Any software that uses the contents of a data file: a package, a script, a person's own code. A data file is a standard `.h5mu` and is opened with the standard libraries; the rules for readers bind whatever software then uses it |
 | **Conforming** | Of a file: breaking no file rule. Of a reader or writer: following every behaviour rule |
@@ -174,10 +175,9 @@ are stored apart from it, and any number of them may refer to one file.
 | S2.1 | file | The file MUST have a modality named `grna` and at least one other modality. | V |
 | S2.2 | file | A modality name MUST start with a letter and contain only letters, digits and underscores. | V |
 | S2.3 | file | Every modality, and the shared cell table, MUST hold the same cells in the same order. | V |
-| S2.4 | guidance | A modality other than `grna` SHOULD be named for what was measured. `rna` is the name for RNA. | — |
-| S2.5 | behaviour | Which modality an analysis tests is recorded with the analysis (in the sceptre analysis format, in `analysis.json`). A reader MUST find it there, never by a fixed name. A package MAY choose it for the user when the file has exactly one modality besides `grna`. | tests (the conformance file with an extra modality, copied by both libraries) |
-| S2.6 | behaviour | A reader MUST ignore modalities that the analysis does not name. A tool that reads a data file and writes it again MUST keep them. | V (a conformance file is copied and keeps its modalities) |
-| S2.7 | file | Every modality of a file follows the rules of S3 to S7, whether or not an analysis uses it, so that a file is conforming or not on its own and any modality can be a response later. | V (a valid conformance case) |
+| S2.4 | guidance | A modality other than `grna` SHOULD be named for what was measured. `rna` is the name for RNA. No modality is named or marked for the part it plays in an analysis. | — |
+| S2.5 | behaviour | A tool that reads a data file and writes it again MUST keep every modality. | tests (`verify/writers`: a conformance file with a third modality is copied by both libraries and keeps it) |
+| S2.6 | file | Every modality of a file follows the rules of S3 to S7, whichever of them a piece of software uses, so that a file is conforming or not on its own. | V (a valid conformance case) |
 
 ### S3. Counts
 
@@ -213,8 +213,7 @@ from each other, does not conform; a reader still reads it (S4.4).
 |---|---|---|---|
 | S5.1 | file | A column of the shared cell table MUST NOT be named with a modality's name followed by an underscore. | V |
 | S5.2 | guidance | Facts about the cell (batch, donor, anything the user supplies) MUST be in the shared cell table. Measurements of one modality MUST be in that modality's cell table, without a prefix. | — |
-| S5.3 | behaviour | The covariate table of a model is the shared columns together with the columns of `grna` and of the response modality, each modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. | tests in R (the R writer splits the table and the checks join it again: every R copy in the two `verify/` folders). In Python: none (testing it needs a package) |
-| S5.4 | file | The name of a column of a cell table MUST start with a letter and contain only letters, digits, underscores and dots. | V |
+| S5.3 | file | The name of a column of a cell table MUST start with a letter and contain only letters, digits, underscores and dots. | V |
 
 ### S6. Computed columns
 
@@ -237,7 +236,7 @@ tables" are each modality's `var`.
 | S7.3 | file | A categorical MUST have unique text categories and codes from −1 (missing) to the number of categories minus one. | V |
 | S7.4 | file | An integer column MUST NOT hold a missing value. A writer stores an integer column that has missing values as 64-bit floats. | V |
 | S7.5 | behaviour | A writer MUST store a text or true/false covariate as a categorical; true/false has the categories `FALSE`, `TRUE`, in that order. | tests (the encoding matrix; the types files) |
-| S7.6 | behaviour | A categorical's stored category order is its level order, and the first category is the baseline of a model. | tests (the encoding matrix; the types files: levels not alphabetical) |
+| S7.6 | behaviour | A categorical's stored category order is its level order. | tests (the encoding matrix; the types files: levels not alphabetical) |
 | S7.7 | file | Missing values are NaN in a float column and code −1 in a categorical. A text column of a feature table that has missing values is stored as a categorical. | V (through S7.3, S7.4) |
 | S7.8 | file | Identifiers and text use `string-array`, never `nullable-string-array`. | V (through S7.1, S7.2) |
 
@@ -249,9 +248,9 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 |---|---|---|---|
 | S8.1 | file | It MUST have a column `grna_target`, text, with no missing or empty values. | V |
 | S8.2 | file | It MAY have `target_chr` (text) and `target_start`, `target_end` (numbers): the position of the gRNA's target. | V |
-| S8.3 | behaviour | A non-targeting gRNA has `grna_target` equal to `non-targeting`. | tests (control groups) |
+| S8.3 | behaviour | A non-targeting gRNA has `grna_target` equal to `non-targeting`. | none |
 | S8.4 | behaviour | A gRNA has one target. A writer MUST refuse a gRNA listed under two targets. | none |
-| S8.5 | file | `grna_group` MUST NOT be stored. It follows from `grna_target` and the analysis's integration strategy. | V |
+| S8.5 | file | `grna_group` MUST NOT be stored. How gRNAs are grouped beyond their targets is a choice of an analysis (S12.1). | V |
 | S8.6 | file | The gRNA table MAY have a text column `vector_id`, naming the vector that delivers each gRNA. If present it has no missing values: every gRNA is on exactly one vector, and a vector with one gRNA is one row. | V |
 | S8.7 | file | All gRNAs with the same `vector_id` MUST have the same `grna_target`: a vector has one target. | V |
 | S8.8 | file | A `vector_id` MUST NOT equal the identifier of a gRNA on another vector. A vector with one gRNA may be named after it. | V |
@@ -278,7 +277,7 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S10.1 | file | `uns` MUST have the scalar text entries `perturb_seq_format` (a version, `MAJOR.MINOR`) and `dataset_id` (not empty). | V |
 | S10.2 | file | The entries this section names are the format's. `uns` MAY hold other entries, of other tools; they are not the format's and a reader ignores them. | V (a valid conformance case) |
 | S10.3 | file | `perturb_seq_format` is the version of the data file format, `0.1` for this document. A reader MUST refuse a major version other than the one it knows. | V |
-| S10.4 | behaviour | `dataset_id` identifies the dataset. A writer assigns a new random `dataset_id` when it imports data, and keeps it when it copies a data file. | tests (`verify/writers` of the sceptre analysis format's folder: a copied data file keeps its `dataset_id`). A new one on import: none (testing it needs a package) |
+| S10.4 | behaviour | `dataset_id` identifies the dataset. A writer assigns a new random `dataset_id` when it imports data, and keeps it when it copies a data file. | tests (`verify/writers`: a copied data file keeps its `dataset_id`). A new one on import: none (testing it needs an importer) |
 | S10.5 | file | `uns` MAY have these scalar text entries; `genome_build` is required where the gRNA table has positions (S8.14). None identifies the dataset (`dataset_id` does), and no reader's behaviour depends on them: `title`, a title for people; `source`, a URL, DOI or accession saying where the data came from; `perturbation_type`; `organism`, as a scientific name such as `Homo sapiens`; `genome_build`, such as `GRCh38`, the build of every coordinate in the file. | V |
 | S10.6 | file | `perturbation_type`, if present, MUST be one of `CRISPRko` (knockout), `CRISPRi` (interference), `CRISPRa` (activation), `CRISPRbe` (base editing), `CRISPRkd` (knockdown of RNA). | V |
 | S10.7 | guidance | A writer SHOULD record `perturbation_type` and `organism` when it knows them, and `genome_build` even in a file without positions. They are known at import, cannot be worked out from the file, and are lost for good if not written down. | — |
@@ -294,7 +293,7 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | Rule | Kind | | Check |
 |---|---|---|---|
 | S12.1 | behaviour | The data file MUST NOT hold anything an analysis produces: assignments, which cells were kept, gRNA groups, pairs, or results. | none |
-| S12.2 | behaviour | A data file is written once. An analysis MUST NOT modify it. | none |
+| S12.2 | behaviour | A data file is written once. Software that analyses it MUST NOT modify it. | none |
 
 ---
 
@@ -351,7 +350,7 @@ reported in `RATIONALE.md`, Appendix A.
 |---|---|---|
 | Write and read a data file | tested, and at scale | tested, and at scale |
 | A file written by the other language | tested | tested |
-| A response modality with another name; modalities no analysis uses | tested | tested |
+| A file with a third modality, validated and copied | tested | tested |
 | Validators, on all conformance cases | tested | tested |
 | Read counts and index arrays stored in another number type (S4.4) | tested | tested |
 | gzip-compressed counts | validated, and read in a measurement (`RATIONALE.md`, Appendix A) | validated; read not tested |

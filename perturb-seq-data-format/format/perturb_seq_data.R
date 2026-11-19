@@ -37,16 +37,16 @@ OPTIONAL_METADATA <- names(Filter(function(entry) !isTRUE(entry$required), SCREE
 
 GRNA <- "grna"
 
-DEFAULT_RESPONSE_MODALITY <- "rna"
+# the name fmt_write_screen() gives the main experiment's modality when the
+# object does not name it
+DEFAULT_MAIN_MODALITY <- "rna"
 
-# the gRNA table's target coordinates: name in the package = name in the file (S8)
+# the columns of the gRNA table that hold a target's position (S8.2)
 GRNA_COORDINATES <- c(chr = "target_chr", start = "target_start", end = "target_end")
 
 fmt_stop <- function(...) stop(..., call. = FALSE)
 
 # ---------------------------------------------------------------- small helpers
-
-sha256_ids <- function(ids) unname(tools::sha256sum(bytes = charToRaw(paste(enc2utf8(ids), collapse = "\n"))))
 
 new_id <- function() unname(tools::md5sum(bytes = charToRaw(paste(Sys.time(), Sys.getpid(), tempfile(), stats::runif(1)))))
 
@@ -72,9 +72,10 @@ as_file_frame <- function(frame, covariates) {
     frame
 }
 
-# The model's covariate table is split in the file (S5): facts about the cell
-# are in the shared cell table, measurements of a modality in that modality's,
-# without the prefix `<modality>_`.
+# The writer's input has one table of cell covariates, a modality's columns
+# prefixed with `<modality>_`. It is split in the file (S5): facts about the
+# cell are in the shared cell table, measurements of a modality in that
+# modality's, without the prefix.
 split_covariates <- function(covariates, modalities) {
     covariates <- as.data.frame(covariates, optional = TRUE, stringsAsFactors = FALSE)
     of <- function(modality) startsWith(names(covariates), paste0(modality, "_"))
@@ -141,36 +142,23 @@ vector_faults <- function(grna_ids, vectors, targets) {
     faults
 }
 
-# The modality an analysis tests, among those of a data file: the one asked for,
-# or the only one besides `grna` (S2).
-response_modality_of <- function(modalities, requested = NULL, what = "The data file") {
-    if (!GRNA %in% modalities) fmt_stop(what, " has no modality named '", GRNA, "'.")
-    candidates <- setdiff(modalities, GRNA)
-    if (is.null(requested)) {
-        if (length(candidates) == 1L) return(candidates)
-        fmt_stop(what, " has the modalities ", paste(candidates, collapse = ", "), " besides '", GRNA, "'; say which one is the response.")
-    }
-    if (!requested %in% candidates) fmt_stop(what, " has no modality named '", requested, "'.")
-    requested
-}
-
 # Write a SingleCellExperiment as a data file.
 #   assay "counts"          counts of the measured modality, features x cells
-#   colData                 the model's covariate table, a modality's columns
+#   colData                 the cell covariates in one table, a modality's columns
 #                           prefixed with its name (`rna_n_umis`, `grna_n_umis`)
 #   rowData                 feature metadata
 #   altExp "gRNA"           gRNA counts; its rowData is the gRNA table (grna_target, ...)
 #   other altExps           further modalities over the same cells, written under
-#                           their names; analyses that do not name them ignore them
+#                           their names
 #   metadata(sce)           the entries of S10 that are known; `dataset_id` is kept
-#                           if present; `response_modality` names the main
+#                           if present; `main_modality` names the main
 #                           experiment's modality ("rna" if absent); `title`
 #                           and `source` (a URL, DOI or accession) are optional
 fmt_write_screen <- function(sce, file, index_limit = NULL) {
     if (file.exists(file)) fmt_stop(file, " exists; a data file is written once.")
     dir.create(dirname(file), recursive = TRUE, showWarnings = FALSE)
     stamp <- S4Vectors::metadata(sce)
-    main <- if (is.null(stamp$response_modality)) DEFAULT_RESPONSE_MODALITY else stamp$response_modality
+    main <- if (is.null(stamp$main_modality)) DEFAULT_MAIN_MODALITY else stamp$main_modality
     others <- setdiff(SingleCellExperiment::altExpNames(sce), "gRNA")
     names_used <- c(main, GRNA, others)
     if (anyDuplicated(names_used) > 0L || !all(grepl("^[A-Za-z][A-Za-z0-9_]*$", names_used))) {
@@ -280,11 +268,11 @@ count_types <- function(file) {
 
 # ---------------------------------------------------------------- validation
 
-# validate_screen() and validate_analysis() check files against the numbered
-# rules of SPEC.md. They read the files directly, build no object, and report
-# every problem they find: a data frame with one row per problem (`rule`,
-# `where`, `message`), with no rows when the files conform. The Python library
-# has the same two functions and reports the same rules.
+# validate_screen() checks a data file against the numbered rules of SPEC.md.
+# It reads the file directly, builds no object, and reports every problem it
+# finds: a data frame with one row per problem (`rule`, `where`, `message`),
+# with no rows when the file conforms. The Python library has the same function
+# and reports the same rules.
 
 problem_log <- function() {
     found <- list()
@@ -467,7 +455,7 @@ validate_screen <- function(file, index_limit = NULL) {
                 if (anyNA(suppressMessages(read(path)))) log$add("S7.4", path, "An integer column holds a missing value; it must be stored as doubles.")
             }
             if (cell_table && !grepl(SCREEN_SPEC$cell_tables$column_name_pattern, entries$name[i])) {
-                log$add("S5.4", path, "is not a valid covariate name (letters, digits, underscores and dots, starting with a letter).")
+                log$add("S5.3", path, "is not a valid column name (letters, digits, underscores and dots, starting with a letter).")
             }
         }
         kinds

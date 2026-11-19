@@ -112,7 +112,7 @@ is the section of `RATIONALE.md` (and of `SPEC.md`) with the detail.
 <details class="fold">
 <summary><strong>Data and analysis are separate.</strong> <span class="where">S12</span></summary>
 
-- **The choice.** The data file holds nothing an analysis produces: no assignments, no kept-or-removed flag, no results. Each analysis is its own folder.
+- **The choice.** The data file holds nothing an analysis produces: no assignments, no kept-or-removed flag, no results. Analyses are stored apart from it.
 - **Why.** One dataset has many analyses, and the data file is then written once and never touched again. Keeping a kept-or-removed flag in the data file, as public pysceptre does, means rewriting the whole file to work on the kept cells.
 - **Instead of.** One self-contained file holding data, assignments and results, which is the IGVF pipeline's layout and suits uploading one file to a portal.
 
@@ -131,26 +131,34 @@ is the section of `RATIONALE.md` (and of `SPEC.md`) with the detail.
 <summary><strong>Counts are stored by feature.</strong> <span class="where">S3</span></summary>
 
 - **The choice.** The count matrix is cells × features, column-compressed, so one gene is one contiguous read.
-- **Why.** Every stage works gene by gene. With counts stored by cell, the IGVF pipeline first splits the whole file into per-gene chunk files.
+- **Why.** Fitting a model goes gene by gene. With counts stored by cell, the IGVF pipeline first splits the whole file into per-gene chunk files.
 - **Cost.** A file from another tool is usually stored by cell and is converted once at import.
 
 </details>
 
 <details class="fold">
-<summary><strong>Modalities are named for what was measured, and the analysis says which one it tests.</strong> <span class="where">S2, A1</span></summary>
+<summary><strong>Modalities are named for what was measured.</strong> <span class="where">S2</span></summary>
 
-- **The choice.** The gRNA modality is always `grna`. Every other modality is named for its measurement (`rna`, `protein`, ...). `analysis.json` names the response modality; nothing finds it by a fixed name.
-- **Why.** A file can then hold a second measured modality, and any modality can become the response of a later analysis.
-- **Instead of.** A fixed role name such as `response`, which is what both packages use in memory today.
+- **The choice.** The gRNA modality is always `grna`. Every other modality is named for its measurement (`rna`, `protein`, ...). The file marks none as the one to analyse.
+- **Why.** A file can then hold a second measured modality, and any of them can be analysed later.
+- **Instead of.** A name for the part a modality plays in an analysis, such as `response`.
 
 </details>
 
 <details class="fold">
-<summary><strong>Covariate names carry the modality's name: <code>rna_n_umis</code>, not <code>response_n_umis</code>.</strong> <span class="where">S5</span></summary>
+<summary><strong>Facts about the cell are in the shared cell table, measurements in each modality's own.</strong> <span class="where">S5</span></summary>
 
-- **The choice.** Facts about the cell (batch, donor) are in the shared cell table. Measurements of a modality are in that modality's cell table. A model's covariate table prefixes each modality's columns with its name.
-- **Why.** A batch belongs to the cell, not to its RNA. A role prefix cannot name the RNA depth in an analysis whose response is protein.
-- **Cost.** Formulas users write today say `response_n_umis`. The packages can keep accepting that name and translate.
+- **The choice.** Facts about the cell (batch, donor) are in the shared cell table. Measurements of a modality (`n_umis`) are in that modality's cell table, under their plain names. No shared column starts with a modality's name and an underscore, so software that sets the tables side by side under prefixed names (`rna_n_umis`) gets distinct names.
+- **Why.** A batch belongs to the cell, not to its RNA.
+- **Instead of.** Everything in one modality's cell table, or everything in the shared table.
+
+</details>
+
+<details class="fold">
+<summary><strong>Nothing is stored that follows from something else stored.</strong> <span class="where">S6</span></summary>
+
+- **Examples.** There are no logarithms or percentages of stored columns, and no per-cell top gRNA.
+- **The exception.** Each cell's total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them.
 
 </details>
 
@@ -160,7 +168,7 @@ is the section of `RATIONALE.md` (and of `SPEC.md`) with the detail.
 - **The choice.** The format version (`perturb_seq_format`), the dataset's identifier (`dataset_id`) and what is known about the screen (`title`, `organism`, `genome_build`, `perturbation_type`, `source`) are scalar entries at the top level of `uns`.
 - **Why.** They are facts about the dataset, so other tools should be able to read and write them. Under a key named for one tool they would belong to that tool.
 - **The version** is `MAJOR.MINOR`. A minor increase adds something older software can ignore. A major increase is any change after which older software could misread a file, and software refuses a major version it does not know.
-- **Not in the file.** Whether a screen is treated as low or high multiplicity of infection. It selects an analysis's defaults, so it belongs to the analysis.
+- **Not in the file.** Whether a screen is treated as low or high multiplicity of infection. It is a choice about how to analyse a screen, so it belongs with the analysis.
 
 </details>
 
@@ -203,9 +211,10 @@ are from the run this page was rendered after.
 #| output: asis
 print(nt.status({
     "conformance": "Both validators report exactly the expected rules on every data file of `conformance/` (files that conform, and files that each break a rule), and the standard readers read the files that must still be read",
-    "encodings": "Every kind of value, written by each language's standard libraries and read by the other's. The kinds the format allows come back correct; the kinds it forbids still break",
+    "encodings": "Every kind of column, written by each language's standard libraries and read by the other's. The kinds the format allows come back correct; the kinds it forbids still break",
     "independent-readers": "Tools outside this code read the files: anndata and scanpy in Python, HDF5Array in R",
     "wide-index": "The 64-bit branch of the count matrix's index type, with the limit lowered because no test file reaches it",
+    "writers": "What a writer does beyond producing a conforming file: a copy of a data file keeps the dataset's identifier and every modality, and past the index limit (lowered) both index arrays are 64-bit",
 }))
 ```
 

@@ -1,6 +1,5 @@
-# Libraries for the data file format's code: nothing but standard packages.
-# `nanoparquet` and `jsonvalidate` are taken from ./rlib if they are there (see
-# README.md). Run from this folder's parent (the one that holds format/ and
+# Libraries for the data file format's code: nothing but standard packages,
+# taken from ./rlib where that folder holds them. Run from this folder's parent (the one that holds format/ and
 # spec/), or name it in PERTURB_SEQ_DATA_FORMAT_DIR.
 data_format_dir <- Sys.getenv("PERTURB_SEQ_DATA_FORMAT_DIR", getwd())
 Sys.setenv(PERTURB_SEQ_DATA_FORMAT_DIR = data_format_dir)

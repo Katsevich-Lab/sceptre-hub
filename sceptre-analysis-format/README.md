@@ -31,7 +31,7 @@ Both use standard libraries only, the committed files in `example/` and
 `../perturb-seq-data-format` (its code, examples and conformance files). They
 need what that format needs, and in R also `nanoparquet`, `jsonvalidate` and
 `arrow` (`nanoparquet` and `jsonvalidate` may be in
-`../perturb-seq-data-format/rlib`); in Python also `jsonschema`, `polars` and
+`../perturb-seq-data-format/rlib`); in Python also `pyarrow`, `jsonschema`, `polars` and
 `duckdb`. `verify/README.md` says how another implementation is tested against
 the same files. The suite passes on macOS, Linux and
 Windows.

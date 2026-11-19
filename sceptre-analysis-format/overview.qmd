@@ -44,11 +44,12 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, "../perturb-seq-data-format")
-import overview_tools as nt
+sys.path.insert(0, ".")
+import analysis_overview as at
+from analysis_overview import nt   # the data file format's overview_tools
 
-nt.ANALYSIS = Path("example/highmoi/analyses/left_sided")
-nt.table_spec = json.loads(Path("spec/tables.json").read_text())
+at.ANALYSIS = Path("example/highmoi/analyses/left_sided")
+at.table_spec = json.loads(Path("spec/tables.json").read_text())
 ```
 
 {{< include ../perturb-seq-data-format/_overview_style.md >}}
@@ -78,7 +79,7 @@ its files, and a file to see what it holds.
 ```{python}
 #| echo: false
 #| output: asis
-print(nt.analysis_tree())
+print(at.analysis_tree())
 ```
 
 ## Open the tables yourself
@@ -157,10 +158,19 @@ is the section of `RATIONALE.md` (and of `SPEC.md`) with the detail.
 </details>
 
 <details class="fold">
-<summary><strong>Nothing is stored that follows from something else stored.</strong> <span class="where">S6, T5</span></summary>
+<summary><strong>Covariate names carry the modality's name: <code>rna_n_umis</code>, not <code>response_n_umis</code>.</strong> <span class="where">T7</span></summary>
+
+- **The choice.** A model's covariate table is the data file's shared cell table together with the cell tables of `grna` and of the response modality, each modality's columns prefixed with its name. Formulas use these names.
+- **Why.** A role prefix cannot name the RNA depth in an analysis whose response is protein.
+- **Cost.** Formulas users write today say `response_n_umis`. The packages can keep accepting that name and translate.
+
+</details>
+
+<details class="fold">
+<summary><strong>Nothing is stored that follows from something else stored.</strong> <span class="where">T2, T5</span></summary>
 
 - **Examples.** Results have no `significant` column, and the cell table has no count of gRNAs per cell.
-- **The exceptions.** Each cell's total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them. `log_2_fold_change` is stored beside `fold_change`, because rebuilding it does not give the same number on every platform.
+- **The exception.** `log_2_fold_change` is stored beside `fold_change`, because rebuilding it does not give the same number on every platform.
 
 </details>
 
@@ -170,6 +180,15 @@ is the section of `RATIONALE.md` (and of `SPEC.md`) with the detail.
 - **The choice.** `analysis.json` records the data file's `dataset_id`, its numbers of cells, responses and gRNAs, a hash of each list of identifiers, the data file format's version, and which modality is the response. Software refuses a data file for which the identifier, counts or hashes differ.
 - **Why.** The data file can then be moved, copied or kept on a server, and an analysis still knows whether it is being given the right one.
 - **Not caught.** A value edited in place in a data file whose identifiers are unchanged.
+
+</details>
+
+<details class="fold">
+<summary><strong>The analysis says which modality it tests.</strong> <span class="where">A1</span></summary>
+
+- **The choice.** `analysis.json` names the response modality. Nothing finds it by a fixed name, and the data file marks none.
+- **Why.** Any measured modality of a data file can be the response of an analysis: RNA in one, protein in another.
+- **Instead of.** A fixed role name such as `response`, which is what both packages use in memory today.
 
 </details>
 
@@ -226,9 +245,10 @@ counts below are from the run this page was rendered after.
 print(nt.status({
     "conformance": "Both validators report exactly the expected rules on every analysis folder of `conformance/` (folders that conform, and folders that each break a rule), each checked against its data file",
     "independent-readers": "Tools outside this code read the tables: pandas, polars and duckdb in Python; arrow in R",
+    "encodings": "Every kind of table column, written by each language's standard Parquet library and read by the other's. The kinds the format allows come back correct",
     "derived": "What software computes from the files (cells per gRNA and per target, cells in use, pairs passing QC, significance, control groups) equals what sceptre itself computed",
     "two-writers": "R and Python each write the same random content, a data file and an analysis of it. The files are compared array by array and column by column, and each language reads the other's files and gets the source back",
-    "writers": "What a writer does beyond producing conforming files: a copy of a data file keeps the dataset's identifier and every modality, a retried stage leaves nothing of its first attempt, and large matrices get 64-bit index arrays",
+    "writers": "What a writer does beyond producing a conforming analysis: a retried stage leaves nothing of its first attempt",
 }))
 ```
 

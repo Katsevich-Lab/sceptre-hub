@@ -1,5 +1,5 @@
 {
-  "$comment": "The structure of a sceptre data file, format 0, as data. Both validators read this file. SPEC.md section 2 states the rules; rules that need computing (order of cells within a feature, uniqueness, the same cells in every modality) are code in each language.",
+  "$comment": "The structure of a Perturb-seq data file, format 0, as data. Both validators read this file. SPEC.md section 2 states the rules; rules that need computing (order of cells within a feature, uniqueness, the same cells in every modality) are code in each language.",
   "format": "0.1",
   "descriptions": {
     "file": "one dataset, written once and never modified",

@@ -15,9 +15,12 @@ is tested by running it over the same list and comparing with the same
 expectations.
 
 **A writer.** There is no canonical writer. A writer conforms when its files
-pass the validators and read back correctly in the standard libraries. The
-sceptre analysis format's suite compares two writers on the same random
-content (`../../sceptre-analysis-format/verify/`).
+pass the validators and read back correctly in the standard libraries.
+`verify/writers.py` and `verify/writers.R` check what the two writers in
+`format/` do beyond that: a copy keeps the dataset's identifier and every
+modality, and past the index limit both index arrays are 64-bit. The two
+writers are compared with each other on the same random content in the
+sceptre analysis format's suite, which writes an analysis as well.
 
 ## To do
 

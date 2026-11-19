@@ -53,7 +53,7 @@
     "path": "conformance/valid/types_extra_modality_and_columns.h5mu",
     "expect": [],
     "conforms": true,
-    "what": "A modality no analysis uses, and a gRNA column the format does not define",
+    "what": "A third modality, and a gRNA column the format does not define",
     "copy_keeps_modalities": "rna"
   },
   {
@@ -216,7 +216,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/covariate_name_with_a_dash.h5mu",
     "expect": [
-      "S5.4"
+      "S5.3"
     ],
     "conforms": false,
     "what": "A cell column named `donor-age`, which no formula can use"
@@ -319,7 +319,7 @@
       "S8.5"
     ],
     "conforms": false,
-    "what": "The gRNA table stores `grna_group`, which depends on the analysis"
+    "what": "The gRNA table stores `grna_group`, which is an analysis's choice"
   },
   {
     "name": "invalid/screens/vector_with_two_targets.h5mu",

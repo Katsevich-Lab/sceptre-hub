@@ -61,6 +61,33 @@ TABLE_SPEC = json.loads((SPEC_DIR / "tables.json").read_text())
 DEFAULT_RESPONSE_MODALITY = "rna"
 
 
+def sha256_ids(ids) -> str:
+    """The hash of a list of identifiers (A1.3)."""
+    return hashlib.sha256("\n".join(map(str, ids)).encode()).hexdigest()
+
+
+def response_modality_of(modalities, requested=None, what="The data file") -> str:
+    """The modality an analysis tests, among those of a data file: the one asked
+    for, or the only one besides ``grna`` (A1.8)."""
+    modalities = list(modalities)
+    if GRNA not in modalities:
+        raise ValueError(f"{what} has no modality named '{GRNA}'.")
+    candidates = [m for m in modalities if m != GRNA]
+    if requested is None:
+        if len(candidates) == 1:
+            return candidates[0]
+        raise ValueError(f"{what} has the modalities {', '.join(candidates)} besides '{GRNA}'; say which one is the response.")
+    if requested not in candidates:
+        raise ValueError(f"{what} has no modality named '{requested}'.")
+    return requested
+
+
+def response_of(mdata) -> str:
+    """The modality an analysis of this MuData tests: `uns["response_modality"]`
+    if the caller set it, else the only modality besides ``grna``."""
+    return response_modality_of(mdata.mod, mdata.uns.get("response_modality"))
+
+
 STAGES = tuple(TABLE_SPEC["stages"])
 
 

@@ -18,4 +18,6 @@ Rscript verify/encodings.R
 Rscript verify/independent_readers.R
 "$PY" verify/wide_index.py
 Rscript verify/wide_index.R
+"$PY" verify/writers.py
+Rscript verify/writers.R
 "$PY" verify/summary.py

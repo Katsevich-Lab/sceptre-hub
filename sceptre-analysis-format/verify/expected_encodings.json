@@ -1,0 +1,4 @@
+{
+ "table, integer_64: Python (pyarrow) writes, nanoparquet reads": "correct (read as numeric)",
+ "table, integer_64: Python (pyarrow) writes, arrow reads": "correct (read as integer64)"
+}

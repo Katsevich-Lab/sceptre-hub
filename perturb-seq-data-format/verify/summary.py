@@ -1,10 +1,7 @@
 """Prints what every check of the verification suite found, and exits with an
 error if any failed.
 
-    python verify/summary.py [writers]
-
-With `writers`, the conformance results are left out: that part of the suite
-does not produce them.
+    python verify/summary.py
 """
 import json
 import sys
@@ -16,7 +13,7 @@ for path in sorted(Path("verify/out/results").glob("*.json")):
     name, language = path.stem.rsplit("-", 1)
     rows[name][language] = json.loads(path.read_text())
 cases = {c["name"]: c for c in json.loads(Path("conformance/cases.json").read_text())}
-for language in () if sys.argv[1:] == ["writers"] else ("python", "r"):
+for language in ("python", "r"):
     results = json.loads(Path(f"conformance/results-{language}.json").read_text())
     rows["conformance"][language] = [
         {"check": name, "result": "pass" if sorted(r["rules"]) == cases[name]["expect"] and r["conforms"] == cases[name]["conforms"]

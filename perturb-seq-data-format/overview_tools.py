@@ -1,6 +1,6 @@
-"""What the two overview pages share: the trees of files, the table of check results
-and the list of principles. Each page sets SCREEN, ANALYSIS, screen_spec and
-table_spec before calling these."""
+"""What an overview page is built from: the tree of a data file, the table of check
+results and the list of principles. The page sets SCREEN and screen_spec before
+calling these."""
 import html
 import json
 import re
@@ -9,11 +9,10 @@ from pathlib import Path
 import anndata as ad
 import h5py
 import pandas as pd
-import pyarrow.parquet as pq
 
-# Set by the page that uses this module: the example files it shows, and the
-# specification's own files, from which every description on the page is read.
-SCREEN = ANALYSIS = screen_spec = table_spec = None
+# Set by the page that uses this module: the example file it shows, and the
+# specification's own file, from which every description on the page is read.
+SCREEN = screen_spec = None
 ROWS = 5
 pd.set_option("display.width", 120)
 pd.set_option("display.max_columns", 12)
@@ -111,35 +110,6 @@ def screen_tree() -> str:
         values["meaning"] = values["meaning"].str.replace("`", "")
         children.append(leaf(screen_spec["metadata"]["path"], says["metadata"], f"{len(values)} entries", values.to_html(index=False, border=0, classes="rows", escape=True), 1))
     return as_tree(branch(SCREEN.name, says["file"], kilobytes(SCREEN), children, 0))
-
-
-def table_leaf(path, what, depth) -> str:
-    file = pq.ParquetFile(path)
-    frame = file.read().to_pandas()
-    body = rows(frame)
-    identity = (file.metadata.metadata or {}).get(table_spec["fits"]["identity_key"].encode())
-    if identity is not None:
-        body = "<p class='more'>How these fits were made, stored inside the file:</p>" + as_json(json.loads(identity)) + body
-    return leaf(path.name, what, f"{n(len(frame), 'row')} × {n(frame.shape[1], 'column')}", body, depth)
-
-
-def analysis_tree() -> str:
-    says = table_spec["descriptions"]
-    of_table = {t["name"]: t["description"] for t in table_spec["tables"]}
-    children = [leaf("analysis.json", says["analysis.json"], "", as_json(json.loads((ANALYSIS / "analysis.json").read_text())), 1)]
-    for stage in table_spec["stages"]:
-        folder = ANALYSIS / stage
-        if not folder.is_dir():
-            continue
-        inside = [table_leaf(folder / f"{name.split('/')[1]}.parquet", what, 2)
-                  for name, what in of_table.items() if name.startswith(f"{stage}/") and (folder / f"{name.split('/')[1]}.parquet").exists()]
-        inside.append(leaf("record.json", says["record.json"], "", as_json(json.loads((folder / "record.json").read_text())), 2))
-        children.append(branch(f"{stage}/", says["stages"][stage], n(len(inside), "file"), inside, 1))
-    fits = ANALYSIS / table_spec["fits"]["folder"]
-    if fits.is_dir():
-        parts = [table_leaf(p, says["part"], 2) for p in sorted(fits.glob("*.parquet"))]
-        children.append(branch(f"{table_spec['fits']['folder']}/", says["fits"], n(len(parts), "file"), parts, 1))
-    return as_tree(branch(f"{ANALYSIS.name}/", says["analysis"], kilobytes(ANALYSIS), children, 0))
 
 
 def status(shows: dict) -> str:

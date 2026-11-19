@@ -1,7 +1,7 @@
-"""Encoding matrix, Python side. `write`: each kind of value, written with the
-standard Python libraries (not the prototype's writer), one small data file and
-one Parquet file per kind. `read`: the files R wrote with its standard
-libraries, read here and compared with what was put in.
+"""Encoding matrix, Python side. `write`: each kind of column, written with the
+standard Python libraries (not the prototype's writer), one small data file per
+kind. `read`: the files R wrote with its standard libraries, read here and
+compared with what was put in.
 
 Kinds the format allows must come back correct. Kinds it forbids are recorded as
 observed and compared with verify/expected_encodings.json: they show why the
@@ -19,8 +19,6 @@ import anndata as ad
 import mudata as md
 import numpy as np
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 from scipy import sparse
 
 sys.path.insert(0, "verify")
@@ -126,13 +124,6 @@ if sys.argv[1] == "write":
     for kind, (allowed, values) in KINDS.items():
         data_file(kind, values, FOLDER / "python" / f"{kind}.h5mu")
     data_file("double", KINDS["double"][1], FOLDER / "python" / "default_string_settings.h5mu", default_strings=True)
-    table = pa.table({
-        "text": pa.array(["a", "b", "c"]), "text_dictionary": pa.array(["a", "b", "a"]).dictionary_encode(),
-        "boolean_with_missing": pa.array([True, None, False]), "integer_32": pa.array([1, 2, 3], type=pa.int32()),
-        "integer_64": pa.array([1, 2, 2**40], type=pa.int64()), "double": pa.array([0.5, None, INF]),
-        "list_of_doubles": pa.array([[1.5, 2.5], [], [3.5]], type=pa.list_(pa.float64())),
-    })
-    pq.write_table(table, FOLDER / "python" / "table.parquet")
     print("Python wrote", len(list((FOLDER / "python").iterdir())), "files")
     sys.exit(0)
 
@@ -149,26 +140,6 @@ for kind, (allowed, values) in KINDS.items():
         outcome = f"cannot open ({type(error).__name__})"
     record(f"data file, {kind}: R writes, Python reads", allowed, outcome)
 
-put = {"text": ["a", "b", "c"], "text_dictionary": ["a", "b", "a"], "boolean_with_missing": [True, None, False], "integer_32": [1, 2, 3],
-       "double": [0.5, None, INF], "list_of_doubles": [[1.5, 2.5], [], [3.5]]}
-readers = {
-    "pyarrow": lambda p: pq.read_table(p).to_pandas(),
-    "polars": lambda p: __import__("polars").read_parquet(p).to_pandas(),
-    "duckdb": lambda p: __import__("duckdb").sql(f"select * from read_parquet('{p}')").df(),
-}
-for reader, read in readers.items():
-    try:
-        frame = read(FOLDER / "r" / "table.parquet")
-    except Exception as error:
-        results.add(f"table: R (nanoparquet) writes, {reader} reads", False, f"{type(error).__name__}: {error}")
-        continue
-    for name, values in put.items():
-        got = frame[name]
-        if name == "list_of_doubles":
-            ok = [list(map(float, v)) for v in got] == values
-        else:
-            ok = same([None if pd.isna(v) else (v.item() if isinstance(v, np.generic) else v) for v in got.astype(object)], values)
-        results.add(f"table, {name}: R (nanoparquet) writes, {reader} reads", bool(ok), f"read as {got.dtype}")
 if not expected:
     Path(OUT / "encodings" / "observed-python.json").write_text(json.dumps(observed, indent=1) + "\n")
 results.save()

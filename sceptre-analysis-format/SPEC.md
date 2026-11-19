@@ -11,7 +11,7 @@ is.
 
 **What it builds on.** An analysis is an analysis of one data file in the
 [Perturb-seq data file format](../perturb-seq-data-format/SPEC.md). This document does not repeat that
-format: rules numbered S (S5.3, S10.4, ...) are rules of [its
+format: rules numbered S (S7.6, S10.4, ...) are rules of [its
 specification](../perturb-seq-data-format/SPEC.md), and the terms cell, modality, feature, gRNA and target
 are defined there. The dependency runs one way. A data file knows nothing
 about analyses; an analysis names its data file by identifier (A1).
@@ -80,12 +80,13 @@ final; the sorting into kinds is.
 - **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 62 statements, 44 are file rules, 14 behaviour rules and 4
+Of the 66 statements, 44 are file rules, 18 behaviour rules and 4
 guidance. The validators check 42 of the file rules (T0.9 in part), a test covers 1 more
 (T4.3), and 1 has no test (A3.2). Tests or the conformance run
-cover 9 of the behaviour rules; 5 have no test: A1.5, A3.5, A6.2, T1.3, T7.3.
-Five of the untested rules (A1.5, A3.2, A3.5, T1.3, T7.3) can only be
-tested with a package that fits models or builds its own object.
+cover 11 of the behaviour rules (A1.8 in part, T7.4 in R only); 7 have no
+test: A1.5, A1.9, A3.5, A6.2, T1.3, T7.3, T7.5. Seven of the untested rules
+(A1.5, A1.9, A3.2, A3.5, T1.3, T7.3, T7.5) can only be tested with a package
+that fits models or builds its own object.
 
 **The machine-readable parts** are in [`spec/`](spec/), and both validators and
 both prototype libraries read them:
@@ -199,6 +200,8 @@ and an analysis may be stored anywhere.
 | A1.5 | behaviour | `screen.path` is a hint. A reader takes the data file's location from its caller and MUST NOT depend on the hint. A writer records a relative path only when the data file is in the analysis folder's parent or grandparent folder or below one of them, and otherwise records nothing. | none (testing it needs a package) |
 | A1.6 | file | `screen.title` is optional: the data file's `title` (S10.5), copied so that a person can tell which dataset an analysis belongs to. It is not part of the identity a reader checks. | V (through A1.1) |
 | A1.7 | guidance | Where a dataset lives is for each package and each user's own configuration to resolve, for instance by a search path or a table from dataset `id` to location. Nothing specific to one machine belongs in `analysis.json`. A package that follows the hint by itself SHOULD do so only for locations the user has configured, since a folder from elsewhere could point a reader at any file or URL. | — |
+| A1.8 | behaviour | Which modality an analysis tests is recorded in `analysis.json` (A1.1); the data file does not mark one. A reader MUST find it there, never by a fixed name. A package MAY choose it for the user when the data file has exactly one modality besides `grna`. | tests (the validators take the name from `analysis.json`: the conformance folder that names a modality its data file lacks). The package's choice: none |
+| A1.9 | behaviour | A reader MUST ignore every modality of the data file other than `grna` and the one the analysis names. | none (testing it needs a package) |
 
 ### A2. Stage records
 
@@ -217,7 +220,7 @@ and `discovery`. The last three do not depend on one another.
 | Rule | Kind | | Check |
 |---|---|---|---|
 | A3.1 | file | The settings of each stage, their names and their allowed values are those of `spec/stage.schema.json`. | V (through A2.1) |
-| A3.2 | file | A formula names covariates as S5.3 does (`rna_n_umis`). Setting names keep role words (`response_n_umis_range`, `response_fit_method`). | none (testing it needs a package) |
+| A3.2 | file | A formula names covariates as T7.4 does (`rna_n_umis`). Setting names keep role words (`response_n_umis_range`, `response_fit_method`). | none (testing it needs a package) |
 | A3.3 | file | JSON files are UTF-8. A missing value is `null`. NaN and infinity MUST NOT appear. | V (a record that is not valid JSON fails A1.1 or A2.1) |
 | A3.4 | behaviour | A writer MUST write a real number with 17 significant digits, so that the number read is the number written. | tests (the threshold reproduces every call) |
 | A3.5 | behaviour | The resampling budget `B3` in force is that of the latest stage record that carries one. | none (testing it needs a package) |
@@ -342,9 +345,11 @@ and QC stages have run.
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T7.1 | file | The formula in the parameters record MUST be additive, each term one of: a covariate name (S5.4), `log(x)`, `log(x + 1)`, or `0` or `1` for the intercept. | V |
-| T7.2 | file | The design matrix is not stored. The parameters record has `design.terms` (the names of the matrix's columns, with covariates named as in S5.3). | V (through A2.1) |
+| T7.1 | file | The formula in the parameters record MUST be additive, each term one of: a covariate name (T7.4), `log(x)`, `log(x + 1)`, or `0` or `1` for the intercept. | V |
+| T7.2 | file | The design matrix is not stored. The parameters record has `design.terms` (the names of the matrix's columns, with covariates named as in T7.4). | V (through A2.1) |
 | T7.3 | behaviour | A reader that fits models MUST rebuild the matrix from the formula and the covariates and refuse the analysis if the term names differ. | none (testing it needs a package) |
+| T7.4 | behaviour | The covariate table of a model is the columns of the data file's shared cell table together with the columns of the cell tables of `grna` and of the response modality, each modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. The data file's column names (S5.1, S5.3) keep these names distinct and usable in a formula. | tests in R (the data file format's R writer splits such a table and the checks join it again: every R copy in `verify/` here and in that format's `verify/`). In Python: none (testing it needs a package) |
+| T7.5 | behaviour | The baseline of a categorical covariate in the design matrix is its first stored category (S7.6). | none (testing it needs a package) |
 
 ---
 

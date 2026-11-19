@@ -3851,11 +3851,21 @@ ENSG00000099949
 </details>
 <details class="fold">
 <summary>
-<strong>Nothing is stored that follows from something else stored.</strong> <span class="where">S6, T5</span>
+<strong>Covariate names carry the modality’s name: <code>rna_n_umis</code>, not <code>response_n_umis</code>.</strong> <span class="where">T7</span>
+</summary>
+<ul>
+<li><strong>The choice.</strong> A model’s covariate table is the data file’s shared cell table together with the cell tables of <code>grna</code> and of the response modality, each modality’s columns prefixed with its name. Formulas use these names.</li>
+<li><strong>Why.</strong> A role prefix cannot name the RNA depth in an analysis whose response is protein.</li>
+<li><strong>Cost.</strong> Formulas users write today say <code>response_n_umis</code>. The packages can keep accepting that name and translate.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>Nothing is stored that follows from something else stored.</strong> <span class="where">T2, T5</span>
 </summary>
 <ul>
 <li><strong>Examples.</strong> Results have no <code>significant</code> column, and the cell table has no count of gRNAs per cell.</li>
-<li><strong>The exceptions.</strong> Each cell’s total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them. <code>log_2_fold_change</code> is stored beside <code>fold_change</code>, because rebuilding it does not give the same number on every platform.</li>
+<li><strong>The exception.</strong> <code>log_2_fold_change</code> is stored beside <code>fold_change</code>, because rebuilding it does not give the same number on every platform.</li>
 </ul>
 </details>
 <details class="fold">
@@ -3866,6 +3876,16 @@ ENSG00000099949
 <li><strong>The choice.</strong> <code>analysis.json</code> records the data file’s <code>dataset_id</code>, its numbers of cells, responses and gRNAs, a hash of each list of identifiers, the data file format’s version, and which modality is the response. Software refuses a data file for which the identifier, counts or hashes differ.</li>
 <li><strong>Why.</strong> The data file can then be moved, copied or kept on a server, and an analysis still knows whether it is being given the right one.</li>
 <li><strong>Not caught.</strong> A value edited in place in a data file whose identifiers are unchanged.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>The analysis says which modality it tests.</strong> <span class="where">A1</span>
+</summary>
+<ul>
+<li><strong>The choice.</strong> <code>analysis.json</code> names the response modality. Nothing finds it by a fixed name, and the data file marks none.</li>
+<li><strong>Why.</strong> Any measured modality of a data file can be the response of an analysis: RNA in one, protein in another.</li>
+<li><strong>Instead of.</strong> A fixed role name such as <code>response</code>, which is what both packages use in memory today.</li>
 </ul>
 </details>
 <details class="fold">
@@ -3965,6 +3985,20 @@ Tools outside this code read the tables: pandas, polars and duckdb in Python; ar
 </tr>
 <tr>
 <td>
+<code>encodings</code>
+</td>
+<td>
+Every kind of table column, written by each language&#39;s standard Parquet library and read by the other&#39;s. The kinds the format allows come back correct
+</td>
+<td>
+15 of 15
+</td>
+<td>
+19 of 19
+</td>
+</tr>
+<tr>
+<td>
 <code>derived</code>
 </td>
 <td>
@@ -3996,13 +4030,13 @@ R and Python each write the same random content, a data file and an analysis of 
 <code>writers</code>
 </td>
 <td>
-What a writer does beyond producing conforming files: a copy of a data file keeps the dataset&#39;s identifier and every modality, a retried stage leaves nothing of its first attempt, and large matrices get 64-bit index arrays
+What a writer does beyond producing a conforming analysis: a retried stage leaves nothing of its first attempt
 </td>
 <td>
-9 of 9
+3 of 3
 </td>
 <td>
-9 of 9
+3 of 3
 </td>
 </tr>
 </tbody>

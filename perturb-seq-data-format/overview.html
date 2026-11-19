@@ -2316,7 +2316,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. Anything in the file that depended on an analysis choice would fit one analysis only, or force the file to be rewritten.</li>
-<li><strong>What follows.</strong> The file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis. There is no label for low or high multiplicity of infection, which selects an analysis’s defaults (S10). No modality is named for a role such as “response”: which one an analysis tests is that analysis’s choice (S2). The file is written once and no analysis modifies it (S12.2).</li>
+<li><strong>What follows.</strong> The file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis. There is no label for low or high multiplicity of infection, which is a choice about how to analyse a screen (S10). No modality is named for a role such as “response”: which one an analysis tests is that analysis’s choice (S2). The file is written once and software that analyses it does not modify it (S12.2).</li>
 </ul>
 </details>
 <details class="fold">
@@ -3337,7 +3337,7 @@ Functionality:
 <strong>Data and analysis are separate.</strong> <span class="where">S12</span>
 </summary>
 <ul>
-<li><strong>The choice.</strong> The data file holds nothing an analysis produces: no assignments, no kept-or-removed flag, no results. Each analysis is its own folder.</li>
+<li><strong>The choice.</strong> The data file holds nothing an analysis produces: no assignments, no kept-or-removed flag, no results. Analyses are stored apart from it.</li>
 <li><strong>Why.</strong> One dataset has many analyses, and the data file is then written once and never touched again. Keeping a kept-or-removed flag in the data file, as public pysceptre does, means rewriting the whole file to work on the kept cells.</li>
 <li><strong>Instead of.</strong> One self-contained file holding data, assignments and results, which is the IGVF pipeline’s layout and suits uploading one file to a portal.</li>
 </ul>
@@ -3358,28 +3358,37 @@ Functionality:
 </summary>
 <ul>
 <li><strong>The choice.</strong> The count matrix is cells × features, column-compressed, so one gene is one contiguous read.</li>
-<li><strong>Why.</strong> Every stage works gene by gene. With counts stored by cell, the IGVF pipeline first splits the whole file into per-gene chunk files.</li>
+<li><strong>Why.</strong> Fitting a model goes gene by gene. With counts stored by cell, the IGVF pipeline first splits the whole file into per-gene chunk files.</li>
 <li><strong>Cost.</strong> A file from another tool is usually stored by cell and is converted once at import.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>Modalities are named for what was measured, and the analysis says which one it tests.</strong> <span class="where">S2, A1</span>
+<strong>Modalities are named for what was measured.</strong> <span class="where">S2</span>
 </summary>
 <ul>
-<li><strong>The choice.</strong> The gRNA modality is always <code>grna</code>. Every other modality is named for its measurement (<code>rna</code>, <code>protein</code>, …). <code>analysis.json</code> names the response modality; nothing finds it by a fixed name.</li>
-<li><strong>Why.</strong> A file can then hold a second measured modality, and any modality can become the response of a later analysis.</li>
-<li><strong>Instead of.</strong> A fixed role name such as <code>response</code>, which is what both packages use in memory today.</li>
+<li><strong>The choice.</strong> The gRNA modality is always <code>grna</code>. Every other modality is named for its measurement (<code>rna</code>, <code>protein</code>, …). The file marks none as the one to analyse.</li>
+<li><strong>Why.</strong> A file can then hold a second measured modality, and any of them can be analysed later.</li>
+<li><strong>Instead of.</strong> A name for the part a modality plays in an analysis, such as <code>response</code>.</li>
 </ul>
 </details>
 <details class="fold">
 <summary>
-<strong>Covariate names carry the modality’s name: <code>rna_n_umis</code>, not <code>response_n_umis</code>.</strong> <span class="where">S5</span>
+<strong>Facts about the cell are in the shared cell table, measurements in each modality’s own.</strong> <span class="where">S5</span>
 </summary>
 <ul>
-<li><strong>The choice.</strong> Facts about the cell (batch, donor) are in the shared cell table. Measurements of a modality are in that modality’s cell table. A model’s covariate table prefixes each modality’s columns with its name.</li>
-<li><strong>Why.</strong> A batch belongs to the cell, not to its RNA. A role prefix cannot name the RNA depth in an analysis whose response is protein.</li>
-<li><strong>Cost.</strong> Formulas users write today say <code>response_n_umis</code>. The packages can keep accepting that name and translate.</li>
+<li><strong>The choice.</strong> Facts about the cell (batch, donor) are in the shared cell table. Measurements of a modality (<code>n_umis</code>) are in that modality’s cell table, under their plain names. No shared column starts with a modality’s name and an underscore, so software that sets the tables side by side under prefixed names (<code>rna_n_umis</code>) gets distinct names.</li>
+<li><strong>Why.</strong> A batch belongs to the cell, not to its RNA.</li>
+<li><strong>Instead of.</strong> Everything in one modality’s cell table, or everything in the shared table.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>Nothing is stored that follows from something else stored.</strong> <span class="where">S6</span>
+</summary>
+<ul>
+<li><strong>Examples.</strong> There are no logarithms or percentages of stored columns, and no per-cell top gRNA.</li>
+<li><strong>The exception.</strong> Each cell’s total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them.</li>
 </ul>
 </details>
 <details class="fold">
@@ -3390,7 +3399,7 @@ Functionality:
 <li><strong>The choice.</strong> The format version (<code>perturb_seq_format</code>), the dataset’s identifier (<code>dataset_id</code>) and what is known about the screen (<code>title</code>, <code>organism</code>, <code>genome_build</code>, <code>perturbation_type</code>, <code>source</code>) are scalar entries at the top level of <code>uns</code>.</li>
 <li><strong>Why.</strong> They are facts about the dataset, so other tools should be able to read and write them. Under a key named for one tool they would belong to that tool.</li>
 <li><strong>The version</strong> is <code>MAJOR.MINOR</code>. A minor increase adds something older software can ignore. A major increase is any change after which older software could misread a file, and software refuses a major version it does not know.</li>
-<li><strong>Not in the file.</strong> Whether a screen is treated as low or high multiplicity of infection. It selects an analysis’s defaults, so it belongs to the analysis.</li>
+<li><strong>Not in the file.</strong> Whether a screen is treated as low or high multiplicity of infection. It is a choice about how to analyse a screen, so it belongs with the analysis.</li>
 </ul>
 </details>
 <details class="fold">
@@ -3464,13 +3473,13 @@ Both validators report exactly the expected rules on every data file of <code>co
 <code>encodings</code>
 </td>
 <td>
-Every kind of value, written by each language&#39;s standard libraries and read by the other&#39;s. The kinds the format allows come back correct; the kinds it forbids still break
+Every kind of column, written by each language&#39;s standard libraries and read by the other&#39;s. The kinds the format allows come back correct; the kinds it forbids still break
 </td>
 <td>
-26 of 26
+12 of 12
 </td>
 <td>
-28 of 28
+10 of 10
 </td>
 </tr>
 <tr>
@@ -3499,6 +3508,20 @@ The 64-bit branch of the count matrix&#39;s index type, with the limit lowered b
 </td>
 <td>
 12 of 12
+</td>
+</tr>
+<tr>
+<td>
+<code>writers</code>
+</td>
+<td>
+What a writer does beyond producing a conforming file: a copy of a data file keeps the dataset&#39;s identifier and every modality, and past the index limit (lowered) both index arrays are 64-bit
+</td>
+<td>
+7 of 7
+</td>
+<td>
+7 of 7
 </td>
 </tr>
 </tbody>

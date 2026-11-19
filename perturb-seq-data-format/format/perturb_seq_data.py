@@ -17,7 +17,6 @@ modality is always ``grna`` (S2).
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -54,15 +53,8 @@ VERSION_ENTRY, ID_ENTRY = "perturb_seq_format", "dataset_id"
 GRNA = "grna"
 
 
-# the gRNA table's target coordinates: name in the package -> name in the file (S8)
+# the columns of the gRNA table that hold a target's position (S8.2)
 GRNA_COORDINATES = {"chr": "target_chr", "start": "target_start", "end": "target_end"}
-
-
-# ---------------------------------------------------------------- small helpers
-
-
-def sha256_ids(ids) -> str:
-    return hashlib.sha256("\n".join(map(str, ids)).encode()).hexdigest()
 
 
 # ---------------------------------------------------------------- the data file
@@ -109,28 +101,6 @@ def vector_faults(grna_ids, vectors, targets) -> list[tuple[str, str]]:
     if any(v in vector_of and vector_of[v] != v for v in vectors):
         faults.append(("S8.8", "A vector is named like a gRNA on another vector."))
     return faults
-
-
-def response_modality_of(modalities, requested=None, what="The data file") -> str:
-    """The modality an analysis tests, among those of a data file: the one asked
-    for, or the only one besides ``grna`` (S2)."""
-    modalities = list(modalities)
-    if GRNA not in modalities:
-        raise ValueError(f"{what} has no modality named '{GRNA}'.")
-    candidates = [m for m in modalities if m != GRNA]
-    if requested is None:
-        if len(candidates) == 1:
-            return candidates[0]
-        raise ValueError(f"{what} has the modalities {', '.join(candidates)} besides '{GRNA}'; say which one is the response.")
-    if requested not in candidates:
-        raise ValueError(f"{what} has no modality named '{requested}'.")
-    return requested
-
-
-def response_of(mdata) -> str:
-    """The modality an analysis of this MuData tests: `uns["response_modality"]`
-    if the caller set it, else the only modality besides ``grna``."""
-    return response_modality_of(mdata.mod, mdata.uns.get("response_modality"))
 
 
 def index_type(n_stored, n_cells, n_features, index_limit=None) -> str:
@@ -285,11 +255,11 @@ def check_screen(mdata) -> None:
 
 # ---------------------------------------------------------------- validation
 
-# validate_screen() and validate_analysis() check files against the numbered rules
-# of SPEC.md. They read the files directly, build no object, and report every
-# problem they find: a DataFrame with one row per problem (`rule`, `where`,
-# `message`), with no rows when the files conform. The R library has the same two
-# functions and reports the same rules.
+# validate_screen() checks a data file against the numbered rules of SPEC.md. It
+# reads the file directly, builds no object, and reports every problem it finds: a
+# DataFrame with one row per problem (`rule`, `where`, `message`), with no rows
+# when the file conforms. The R library has the same function and reports the same
+# rules.
 
 MODALITY_NAME = SCREEN_SPEC["modalities"]["name_pattern"]
 
@@ -467,7 +437,7 @@ def validate_screen(file, index_limit=None) -> pd.DataFrame:
                     if np.any(node[()] == -2147483648):
                         log.add("S7.4", path, "An integer column holds a missing value; it must be stored as doubles.")
                 if cell_table and not re.fullmatch(SCREEN_SPEC["cell_tables"]["column_name_pattern"].strip("^$"), name):
-                    log.add("S5.4", path, "is not a valid covariate name (letters, digits, underscores and dots, starting with a letter).")
+                    log.add("S5.3", path, "is not a valid column name (letters, digits, underscores and dots, starting with a letter).")
             return kinds
 
         if "obs" in f:

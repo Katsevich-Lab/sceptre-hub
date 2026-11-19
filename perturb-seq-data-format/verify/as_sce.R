@@ -1,9 +1,9 @@
 # For the checks only. MuData::readH5MU returns a MultiAssayExperiment and the
 # prototype's R writer takes a SingleCellExperiment; this converts the first to
-# the second. `response_modality` picks the modality that becomes the main
+# the second. `main_modality` picks the modality that becomes the main
 # experiment; it may be left out when the file has one modality besides `grna`.
 #     source("verify/as_sce.R")   # after format/setup.R
-read_as_sce <- function(file, response_modality = NULL) {
+read_as_sce <- function(file, main_modality = NULL) {
     mae <- withCallingHandlers(
         MuData::readH5MU(file),
         warning = function(w) {
@@ -12,7 +12,7 @@ read_as_sce <- function(file, response_modality = NULL) {
     )
     stamp <- S4Vectors::metadata(mae)
     stamp <- lapply(stamp[intersect(names(SCREEN_SPEC$metadata$entries), names(stamp))], function(x) as.vector(x)[1])
-    main <- response_modality_of(names(mae), response_modality, file)
+    main <- main_modality_of(names(mae), main_modality, file)
     cells <- colnames(mae[[main]])
     if (!identical(cells, colnames(mae[[GRNA]]))) fmt_stop("The modalities must hold the same cells in the same order.")
     cell_table <- function(frame) {
@@ -41,8 +41,8 @@ read_as_sce <- function(file, response_modality = NULL) {
     SummarizedExperiment::colData(sce) <- S4Vectors::DataFrame(covariates, check.names = FALSE, row.names = cells)
     grna <- experiment(GRNA)
     SingleCellExperiment::altExp(sce, "gRNA") <- grna
-    # modalities no analysis here uses are carried along, so that writing the
-    # object back keeps them (S2.6)
+    # the other modalities are carried along, so that writing the object back
+    # keeps them (S2.5)
     for (name in setdiff(names(mae), c(main, GRNA))) {
         other <- experiment(name)
         SummarizedExperiment::colData(other) <- S4Vectors::DataFrame(
@@ -51,10 +51,22 @@ read_as_sce <- function(file, response_modality = NULL) {
         SingleCellExperiment::altExp(sce, name) <- other
     }
     S4Vectors::metadata(sce) <- c(
-        list(perturb_seq_format = stamp$perturb_seq_format, dataset_id = stamp$dataset_id, response_modality = main),
+        list(perturb_seq_format = stamp$perturb_seq_format, dataset_id = stamp$dataset_id, main_modality = main),
         stamp[intersect(OPTIONAL_METADATA, names(stamp))]
     )
     sce
+}
+# The modality that becomes the main experiment: the one asked for, or the only
+# one besides `grna`.
+main_modality_of <- function(modalities, requested = NULL, what = "The data file") {
+    if (!GRNA %in% modalities) fmt_stop(what, " has no modality named '", GRNA, "'.")
+    candidates <- setdiff(modalities, GRNA)
+    if (is.null(requested)) {
+        if (length(candidates) == 1L) return(candidates)
+        fmt_stop(what, " has the modalities ", paste(candidates, collapse = ", "), " besides '", GRNA, "'; say which one is the main experiment.")
+    }
+    if (!requested %in% candidates) fmt_stop(what, " has no modality named '", requested, "'.")
+    requested
 }
 from_file_frame <- function(frame, covariates) {
     frame <- as.data.frame(frame, optional = TRUE, stringsAsFactors = FALSE)

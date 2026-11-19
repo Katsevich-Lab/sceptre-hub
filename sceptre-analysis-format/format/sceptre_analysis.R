@@ -38,6 +38,9 @@ FIT_METHODS <- list(batched = c("R", "Python"), sceptre = c("R", "Python"), pysc
 
 ROW_GROUP_ROWS <- as.integer(TABLE_SPEC$max_rows_per_row_group)
 
+# The hash of a list of identifiers (A1.3).
+sha256_ids <- function(ids) unname(tools::sha256sum(bytes = charToRaw(paste(enc2utf8(ids), collapse = "\n"))))
+
 byte_order <- function(table, key) do.call(order, c(unname(as.list(table[key])), list(method = "radix")))
 
 # Each file is written under a temporary name and renamed into place (A6).

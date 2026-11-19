@@ -122,6 +122,9 @@ one rule, and no rounding between what a package computed and what it reads back
   - `screen`: the data file's `dataset_id` (S10), as `id`, the data file's format version, its numbers of cells, responses and gRNAs, a SHA-256 of each ordered identifier list, and a relative path as a hint.
 
   A reader refuses a dataset whose `id` or hashes differ, or that has no modality of that name.
+- **The response modality is found here, never by a fixed name** *(Decided)*. The data file names its modalities for what was measured and marks none as the one to test (S2). So a reader takes the response modality from `analysis.json`, and ignores the modalities the analysis does not name: a file may carry a hashing modality, for instance.
+- **In the packages.** Both packages call the response modality `response` in memory today, and users write `response_n_umis` in formulas. The packages' own readers and writers translate between that and the file's names, so no package behaviour changes *(measured: every round trip in [Appendix B](#appendix-b-what-the-prototype-implements) passed)*.
+- **Not in this format.** Testing two modalities in one analysis. Under this naming it is two analyses of one file.
 - **Why the response modality is here and not in the parameters record.** The link's response count and hash are those of the response modality, so the two belong together, and nothing in an analysis survives a change of response modality.
 - **Alternatives for the link.**
   - A path only: breaks when either side is moved.
@@ -177,7 +180,8 @@ one rule, and no rounding between what a package computed and what it reads back
   | `resampling_approximation` | the user-facing name | internal names such as `crt_spa_fast` |
   | `formula` | text | an R formula with its environment |
 
-- **Names inside settings.** A formula names covariates as the file does (`rna_n_umis`, S5). Setting names themselves keep role words (`response_n_umis_range`, `response_fit_method`).
+- **Names inside settings.** A formula names covariates by the modality's name (`rna_n_umis`, T7). What stays in role words: table columns (`response_id`, `grna_id`, `grna_target`) and setting names (`response_fit_method`, `response_n_umis_range`). A pair is a target and a response whatever was measured.
+- **`moi`** *(Decided)*. Whether a screen is treated as low or high multiplicity of infection selects an analysis's defaults: the control group, and what is done with cells that carry several gRNAs. The same data can reasonably be analysed either way, and real screens are not all one or the other. So it is a setting of the parameters record, and the data file has no such entry.
 - **Summaries** are small derived counts kept for display (cells removed by each rule). A reader must not need them.
 - **Not included.** R-only values: the design matrix's `assign` and `contrasts` attributes, table classes, and the old pipeline flags (`nuclear`, `nf_pipeline`, `integer_id`, `elements_to_analyze`).
 - **JSON rules.** UTF-8. Missing is `null`. No NaN or infinity. Each field's type is fixed by `SPEC.md` and its schemas; a reader does not infer integer-versus-double from how a number is printed. Doubles are written with 17 significant digits, so that the number read is the number written. *(measured)* With 15 digits, the stored significance threshold (T5) came back a hair smaller and misclassified the boundary pair.
@@ -234,6 +238,7 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 - **Supporting evidence from the code.** All four codebases load every assignment: the pipeline merges per-job lists *(verified)*, the fork rebuilds everything from the per-gRNA lists *(verified, `pipeline/r_state.py`)*, and R holds them in the object. Loading everything is sound at realistic sizes: *(measured)* a 10-million-row table reads in 7.8 s in Python and 10.1 s in R, 76 MB on disk (its measurement, not repeated here).
 - **Derived on read.** Per-target unions, per-control lists, and gRNAs per cell.
 - **Room to grow.** A score column (a posterior probability, a p-value) can be added under rule 6.
+- **Deferred: several gRNAs on one vector.** The data file holds per-gRNA counts and is written once (S8, S12), so sceptre's sum-within-vector has to become a step of an analysis. That implies a setting in the assignment stage's record, and an assignment table that names the unit it assigned, gRNA or vector, as results tables already switch their key by strategy. Nothing in the data file depends on the answer. It is listed in [section 7](#suggested-changes-to-what-the-packages-produce). The prototype's readers do not use `vector_id` when they build a package object.
 - **IGVF.** A 0/1 cells × guides matrix in the data file, `guide.layers['guide_assignment']`, with an optional second layer of posterior probabilities. pertpy does the same (`layers["assigned_guides"]`). The matrix and the table hold the same information. This format uses the table because the assignment belongs to an analysis, not to the data (S12 of the data file format), and because parallel jobs can each write a part. Since both precedents use the matrix, an export to that shape is worth providing; it is package code, not format.
 
 ### T1b. `assignment/flagged_cells.parquet` (optional) — *Adopted*
@@ -347,7 +352,12 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 ### T7. The design matrix — *Decided*
 
 - **Decision.** Not stored. The parameters record holds the formula text and the names of the matrix's columns; each language rebuilds the matrix. Only additive formulas of covariate names, `log(x)` and `log(x + 1)` are allowed, and a writer refuses others. No stored-matrix fallback.
-- **Names.** The formula text and the recorded term names use the file's covariate names (`log(rna_n_umis)`, S5).
+- **The covariate table** *(Decided)*. The model's covariate table is the data file's shared cell table together with the cell tables of `grna` and of the response modality, a modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. The formula text and the recorded term names use these names (`log(rna_n_umis)`). The data file keeps a shared column from taking such a name (S5).
+  - *Alternative.* A role prefix (`response_n_umis`) whatever was measured. A role prefix cannot name the RNA depth in an analysis of protein.
+  - *The cost.* Today's covariate names are `response_n_umis` and so on, and users write them in formulas. In a file they become `rna_n_umis`. Most users never type them, because the default formula is built automatically, and a package can keep accepting the old names; the prototype translates in both directions.
+  - *Dots in names.* The data file allows a dot in a column name (S5). *(measured)* R takes a dotted name in a formula as it is. pysceptre's formula parser rejects it, so the prototype's Python reader gives the column a dot-free alias for the call; with that, R and Python build bitwise-equal matrices for `~log(rna_n_umis) + S.Score + batch`. The parser change is listed in [section 7](#suggested-changes-to-what-the-packages-produce).
+  - *Locks in.* The prefix rule and the underscore. MuData's own `rna:n_umis` colon style is not used, because a colon is not valid in a formula.
+- **The baseline of a factor.** The data file stores a categorical's levels in order (S7). The first stored category is the baseline of the model. This is R's default contrasts; nothing is invented.
 - **Evidence.** *(measured)* On the example, R's `model.matrix()` and pysceptre's `model_matrix()` give bitwise-equal matrices on one machine.
 - **What a reader checks.** The rebuilt matrix's term names. The names (`batchbatch_2`) encode the factor levels, the baseline and the term order, which are the ways two languages can really disagree. That the data is the same data is the job of the link to the data file (A1).
 - **IGVF.** The design is recorded as a list of covariate options in the file's `uns`, and each method builds its own design from them. There is no check that two methods, or two languages, built the same matrix.
@@ -376,7 +386,7 @@ writers already do the file side of each.
 | R sceptre | Record which QC rule removed each cell | T2 |
 | pysceptre | Read and write these files in the package, not only in scripts | S1 |
 | Pipeline | Replace the `.rds` object passed between stages with stage files | A2, A6 |
-| Both | Translate between the packages' `response_` covariate names and the file's modality names, as the prototype does; later, accept the modality names directly | S2, S5 |
+| Both | Translate between the packages' `response_` covariate names and the file's modality names, as the prototype does; later, accept the modality names directly | A1, T7 |
 | Both | Translate the gRNA table's `chr`, `start`, `end` to and from `target_chr`, `target_start`, `target_end` | S8 |
 | Both | Store `log_2_fold_change` as computed, and take the stored value on read | T5 |
 
@@ -411,7 +421,7 @@ facts about IGVF and pertpy come from.
 | Results | Three copies; method-prefixed columns; annotations in every row; adjusted p-values stored | One copy; keys and results only | This format: nothing stored twice | T5 |
 | Settings | Several run-level files | One record per stage | This format, for continuing an analysis | A2 |
 | Link to the data | SHA-256 of the whole file | Dataset id and identifier hashes | Mixed: IGVF's catches in-place edits; this format's survives recompression and is fast | A1 |
-| Names | `guide_id`, `gene_id`, `intended_target_name` | `grna_id`, `response_id`, `grna_target` | Neither is a standard. An importer maps one to the other | S2 |
+| Names | `guide_id`, `gene_id`, `intended_target_name` | `grna_id`, `response_id`, `grna_target` | Neither is a standard. An importer maps one to the other | A3 |
 
 **What an IGVF importer has to do:** turn the assignment layer into a table,
 and move the pairs and results into an analysis folder.
@@ -440,7 +450,7 @@ is base 2 but does not say so.
 | Kind | What |
 |---|---|
 | Structure | One record per stage; tables keyed by identifier; a folder per stage |
-| Names | The table and column names in sections 3 and 4; the stage names |
+| Names | The table and column names in sections 3 and 4; the stage names; the covariate prefix rule (T7) |
 | Removals | A column or file that readers rely on cannot be taken away |
 
 Everything else can be added with a minor version, because readers ignore what
@@ -492,8 +502,9 @@ rationale](../perturb-seq-data-format/RATIONALE.md#suggested-changes-to-what-the
 | Decide the shared default fitting method | `batched` gives a dispersion of 1000 on 2 of 100 responses where the other two methods give 0.03 to 0.07 (T6) | *(measured)* |
 | Clear later stages' values when a stage is rerun | Stale values behind a "not run" flag in R (A4) | `R/s4_helpers.R` |
 | Resolve a dataset's `id` to a location from the user's configuration (a search path or a small registry) | Passing the data file's path by hand every time (A1) | Not built |
-| Let pysceptre's formula parser take covariate names with dots | An alias where pysceptre reads the file; a pysceptre analysis with such a covariate fails today (S5) | *(measured)* `model_matrix` raises on `S.Score` |
-| Combine a vector's gRNAs in the assignment stage, not at import: a setting in the assignment record, and an assignment table that names the unit assigned | Summing at import, which a written-once data file of per-gRNA counts cannot hold (S8) | sceptre sums within a vector in `import_data()` |
+| Accept modality-name covariates (`rna_n_umis`), keeping `response_n_umis` as an alias; add a response-modality argument and a modality name at import | The translation layer in the readers and writers (A1, T7) | — |
+| Let pysceptre's formula parser take covariate names with dots | An alias where pysceptre reads the file; a pysceptre analysis with such a covariate fails today (T7) | *(measured)* `model_matrix` raises on `S.Score` |
+| Combine a vector's gRNAs in the assignment stage, not at import: a setting in the assignment record, and an assignment table that names the unit assigned | Summing at import, which a written-once data file of per-gRNA counts cannot hold (T1) | sceptre sums within a vector in `import_data()` |
 
 ---
 
@@ -509,7 +520,7 @@ the code lives. This section gives what is particular to analyses.
 
 | Piece | Where | What it is for |
 |---|---|---|
-| The rules | `SPEC.md` | Numbered statements, each a file rule, a behaviour rule or guidance, with a scope, a glossary and the library versions it is defined against. A validator's report cites them (`S4.1`) |
+| The rules | `SPEC.md` | Numbered statements, each a file rule, a behaviour rule or guidance, with a scope, a glossary and the library versions it is defined against. A validator's report cites them (`T5.2`) |
 | The introduction | `overview.html` | One page: what is in an analysis folder, the choices that are expensive to change with their reasons in short, the questions that need a view, and what has been tested |
 | The reasons | this document | Why each rule is what it is |
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
@@ -536,6 +547,10 @@ Beyond the points in the data file format's rationale:
 2. **Sufficiency is the format's job, and needs a package.** Whether the files
    hold everything an analysis needs can only be tested by rebuilding a
    package's object from them.
+3. **What a standard reader returns still has to be interpreted.** The link
+   between an analysis and its data and the covariate table with modality
+   prefixes are each package's own code, as the data file format's rationale
+   says of the data file's interpretation.
 
 ### What is checked
 
@@ -552,9 +567,10 @@ Python, all passing:
 - two writers on seeded random content, a data file and an analysis of it,
   compared array by array and with the source;
 - readers written elsewhere, on the tables: pandas, polars, duckdb, arrow;
-- what a writer does beyond producing a conforming file: a copy keeps the
-  data file's identifier and every modality, and a stage written again leaves
-  nothing of its first attempt;
+- an encoding matrix for the tables: each kind of column written by each
+  language's standard Parquet library and read by the other's;
+- what a writer does beyond producing a conforming analysis: a stage written
+  again leaves nothing of its first attempt;
 - what a reader derives from the files, against values sceptre computed,
   stored beside the examples.
 
@@ -676,6 +692,9 @@ tested, not open choices:
 - A value may come back equal but not identical: a whole-number setting such
   as a threshold of `5` is an integer in JSON.
 - Refused with a message: a formula outside the additive subset.
+- The packages call the response modality `response`; a package's reader and
+  writer translate. The check of a response modality under another name
+  (`atac`) reused the RNA counts.
 - The tables of an analysis were measured at real size with made-up content,
   and the suite passes on Linux as on macOS. Not tested: a real analysis at
   scale, and methods other than those in the examples.

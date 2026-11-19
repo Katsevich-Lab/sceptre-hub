@@ -73,7 +73,7 @@ earlier principle wins.
 | # | Principle | Why | What follows |
 |---|---|---|---|
 | 1 | **The same file from R and Python.** | Screens are analysed in both languages, and what a file means should not depend on which language wrote or read it. | Only encodings that both languages read *and* write correctly today are allowed; that subset was measured, not assumed (Appendix A). Both languages read the file with standard libraries, so the format has no reader of its own. |
-| 2 | **Data only: nothing in the file depends on an analysis.** | One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. Anything in the file that depended on an analysis choice would fit one analysis only, or force the file to be rewritten. | The file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis. There is no label for low or high multiplicity of infection, which selects an analysis's defaults (S10). No modality is named for a role such as "response": which one an analysis tests is that analysis's choice (S2). The file is written once and no analysis modifies it (S12.2). |
+| 2 | **Data only: nothing in the file depends on an analysis.** | One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. Anything in the file that depended on an analysis choice would fit one analysis only, or force the file to be rewritten. | The file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis. There is no label for low or high multiplicity of infection, which is a choice about how to analyse a screen (S10). No modality is named for a role such as "response": which one an analysis tests is that analysis's choice (S2). The file is written once and software that analyses it does not modify it (S12.2). |
 | 3 | **It belongs to no tool.** | A file that many tools read and write cannot carry one tool's name or assumptions, and data outlives the tool that imported it. | The format is a set of names and rules on a standard MuData file. Its own entries sit at the top level of `uns`, under no tool's name (S10). Entries, modalities and columns that other tools add are left alone (S10.2, S2). The validator needs no analysis tool. |
 | 4 | **Every cell and feature has an identifier.** | Other files refer to the cells and features of a data file: analyses, annotations, results. A row number means something only for one file in one order, and R counts from 1 where Python counts from 0. | Cell identifiers are unique, and feature identifiers are unique across the modalities of a file (S9.1, S9.2). Cells without barcodes are given identifiers, which are stored (S9.3). A gRNA names its target and its vector, and does not point at a row. |
 | 5 | **Existing conventions before invented ones.** | An existing format comes with readers, tools and users. An invented encoding needs code in two languages and has no other reader. | AnnData and MuData encodings are used as specified. The format adds names and rules, not encodings. Target positions follow the convention of GTF files (S8.10). |
@@ -123,11 +123,11 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see S4.
 
 - **Decision.**
   - The gRNA modality is named `grna`. This name is fixed.
-  - Every other modality is named for what was measured: `rna` for RNA (recommended), and, for example, `atac` or `protein`. These names are free. A name starts with a letter and uses letters, digits and underscores, so that it can prefix a covariate name (S5).
+  - Every other modality is named for what was measured: `rna` for RNA (recommended), and, for example, `atac` or `protein`. These names are free. A name starts with a letter and uses letters, digits and underscores, so that it can prefix a column name where software sets the cell tables side by side (S5).
   - A file has `grna` and at least one other modality. All modalities hold the same cells in the same order.
-  - Which modality an analysis tests is the analysis's choice, recorded with the analysis (in the sceptre analysis format, in `analysis.json`). A reader finds the response modality there, never by a hard-coded name.
-  - A modality that an analysis does not name is ignored. A file may carry a hashing modality, for instance.
-  - Every modality follows the rules for counts, cell tables and feature tables, whether or not an analysis uses it *(Adopted)*. A file is then conforming or not on its own, whatever analysis looks at it, and any modality can become a response later.
+  - The file marks no modality as the one to analyse. Which modality an analysis tests is that analysis's choice, recorded with the analysis and not in the file.
+  - A file may carry more modalities than any one use needs: a hashing modality, for instance. A tool that reads a file and writes it again keeps them all.
+  - Every modality follows the rules for counts, cell tables and feature tables, whichever of them a piece of software uses *(Adopted)*. A file is then conforming or not on its own, and any modality can be analysed later.
 - **Alternatives.**
   - Name the modality for its role: `response`.
   - IGVF's names, `gene` and `guide`.
@@ -137,10 +137,7 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see S4.
   - `response` cannot name two modalities, and it does not say what a chromatin-only file contains.
   - No vocabulary is settled beyond `rna`: IGVF uses `gene`, `guide` and `hashing`; pertpy's one MuData example uses `rna`, `adt`, `hto` and `gdo` *(verified, pertpy tutorials at commit `4924c25`)*. So the format fixes only `grna` and leaves the rest free.
   - `grna` is kept because sceptre's vocabulary uses it throughout (`grna_id`, `grna_target`).
-- **What stays in role words.** Table columns (`response_id`, `grna_id`, `grna_target`) and setting names (`response_fit_method`, `response_n_umis_range`). A pair is a target and a response whatever was measured.
-- **In the packages.** Both packages call the response modality `response` in memory today, and users write `response_n_umis` in formulas. The packages' own readers and writers translate between that and the file's names, so no package behaviour changes *(measured: every round trip in Appendix B of [the sceptre analysis format's rationale](../sceptre-analysis-format/RATIONALE.md#appendix-b-what-the-prototype-implements) passed)*.
 - **Locks in.** The name `grna`, and the rule that names are otherwise free.
-- **Not in this format.** Testing two modalities in one analysis. Under this naming it is two analyses of one file.
 - **IGVF.** Modalities `gene` and `guide`, with `hashing` when present. This format takes IGVF's idea of a file that may carry more than two modalities, and not its names. An importer from IGVF files renames the two modalities.
 
 ### S3. Counts: cells × features, compressed by feature, canonical — *Decided (orientation)*
@@ -173,19 +170,18 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see S4.
 
 ### S5. Cell covariates: shared table for cell facts, modality tables for measurements — *Decided*
 
-- **Decision.** Facts about the cell (batch, donor, anything the user supplies) are in MuData's shared cell table. Measurements of one modality (`n_umis`, `n_nonzero`, `p_mito`) are in that modality's cell table. The model's covariate table is all of them, a modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. Formula text stored in an analysis uses these names (T7 of the sceptre analysis format).
-- **Alternatives.** Everything on the response modality; everything in the shared table; a role prefix (`response_n_umis`) whatever was measured.
-- **Why.** A batch belongs to the cell, not to its RNA. With two measured modalities, "everything on the response" has no answer for where batch goes, and a role prefix cannot name the RNA depth in an analysis of protein. *(measured)* The shared table round-trips in both directions between R and Python.
-- **The cost.** Today's covariate names are `response_n_umis` and so on, and users write them in formulas. In a file they become `rna_n_umis`. Most users never type them, because the default formula is built automatically, and a package can keep accepting the old names; the prototype translates in both directions.
-- **Covariate names** *(Adopted)*. A name starts with a letter and uses letters, digits, underscores and dots. Dots are allowed because they are common: Seurat's defaults, which pertpy's example dataset carries, include `S.Score` and `percent.mito`. Without this rule such a column could sit in a file and never be used in a formula. *(measured)* R takes a dotted name in a formula as it is. pysceptre's formula parser rejects it, so the prototype's Python reader gives the column a dot-free alias for the call; with that, R and Python build bitwise-equal matrices for `~log(rna_n_umis) + S.Score + batch`. The parser change is listed in [the sceptre analysis format's rationale](../sceptre-analysis-format/RATIONALE.md#suggested-changes-to-what-the-packages-produce).
-- **Locks in.** The prefix rule and the underscore. MuData's own `rna:n_umis` colon style is not used, because a colon is not valid in a formula.
-- **IGVF.** Per-cell measurements are on the modality's cell table, as here, under scanpy-derived names (`total_gene_umis`, `num_expressed_genes`, `total_guide_umis`, `percent_mito`); some are also copied to the shared table. IGVF's `percent_mito` is a percentage and sceptre's `p_mito` is a proportion, so an importer must convert it.
+- **Decision.** Facts about the cell (batch, donor, anything the user supplies) are in MuData's shared cell table. Measurements of one modality (`n_umis`, `n_nonzero`, `p_mito`) are in that modality's cell table, under their plain names. A shared column is not named with a modality's name and an underscore, so that software which sets the tables side by side, each modality's columns under its name (`rna_n_umis`, `grna_n_umis`), gets distinct names. The sceptre analysis format builds a model's covariate table that way (T7 there).
+- **Alternatives.** Everything on one modality's cell table; everything in the shared table.
+- **Why.** A batch belongs to the cell, not to its RNA. With two measured modalities, "everything on one modality" has no answer for where batch goes. *(measured)* The shared table round-trips in both directions between R and Python.
+- **Column names** *(Adopted)*. A name starts with a letter and uses letters, digits, underscores and dots. Dots are allowed because they are common: Seurat's defaults, which pertpy's example dataset carries, include `S.Score` and `percent.mito`. Without this rule such a column could sit in a file and never be used in a formula. *(measured)* R takes a dotted name in a formula as it is.
+- **Locks in.** That a shared column does not start with a modality's name and an underscore.
+- **IGVF.** Per-cell measurements are on the modality's cell table, as here, under scanpy-derived names (`total_gene_umis`, `num_expressed_genes`, `total_guide_umis`, `percent_mito`); some are also copied to the shared table. IGVF's `percent_mito` is a percentage and this format's `p_mito` is a proportion, so an importer must convert it.
 
 ### S6. Which computed columns are stored — *Adopted*
 
 - **Decision.** Every modality's cell table has `n_umis` and `n_nonzero`. `p_mito` is optional, for a modality that has mitochondrial genes. Not stored: each cell's top gRNA (`max_grna`, `max_grna_frac_umis`).
-- **Why required, not recommended** *(Adopted)*. A writer can always compute the two columns, the default formula needs them, and "recommended" would make every reader handle their absence. The prototype's writers compute them when a modality lacks them. `p_mito` cannot be required: it exists only where mitochondrial genes do.
-- **Why these and no others.** They are used by the default formula and by cell QC in nearly every analysis, and recomputing them is a full pass over the counts (principle 7). `p_mito` also records an import decision: which genes counted as mitochondrial. The top gRNA is read by one assignment method only *(verified, `R/assign_grna_functions.R`)* and follows from the gRNA counts, which are small. The prototype rebuilds it and matches R's values exactly *(measured)*.
+- **Why required, not recommended** *(Adopted)*. A writer can always compute the two columns, sceptre's default formula needs them, and "recommended" would make every reader handle their absence. The prototype's writers compute them when a modality lacks them. `p_mito` cannot be required: it exists only where mitochondrial genes do.
+- **Why these and no others.** They are used by sceptre's default formula and by cell QC in nearly every analysis, and recomputing them is a full pass over the counts (principle 7). `p_mito` also records an import decision: which genes counted as mitochondrial. The top gRNA is read by one assignment method only *(verified, `R/assign_grna_functions.R`)* and follows from the gRNA counts, which are small. The prototype rebuilds it and matches R's values exactly *(measured)*.
 - **Alternatives.** scanpy's names (`total_counts`, `n_genes_by_counts`). sceptre's names are kept because users write them in formulas *(verified, default formula builder in `R/aux_functions.R`)*.
 - **Not checked.** A validator checks that the columns exist and are numbers, not that they equal what the counts give.
 - **IGVF.** Stores about twenty per-cell QC columns from scanpy, including logarithms and percentages of other stored columns (`log1p_total_counts`, `pct_counts_in_top_50_genes`). Principle 7 excludes those here. A file may still carry them: readers ignore columns they do not know.
@@ -209,7 +205,7 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see S4.
   | either | double, 32-bit integer, categorical, plain text | correct |
 
 - **Alternatives.** Allow every AnnData type and fix the libraries. That is the right long-term direction and the fixes belong upstream (see the suggested changes in [section 6](#6-fixed-now-free-to-grow)). Until they land, a wider set would break principle 1.
-- **Factors.** A categorical's stored category order is the level order, and the first category is the baseline. This is AnnData's convention and R's default contrasts; nothing is invented. Because every text covariate is a categorical, R and Python cannot disagree about level order (R sorts by locale, Python by code point).
+- **Factors.** A categorical's stored category order is the level order. This is AnnData's convention; nothing is invented. Because every text covariate is a categorical, R and Python cannot disagree about level order (R sorts by locale, Python by code point).
 - **Locks in.** No boolean or 64-bit columns in the data file. Lifting this later is allowed by principle 6.
 - **IGVF.** The file is written by Python only and uses booleans (`targeting`, `mt`) and whatever integer width pandas chose. R reads only the count matrices, the MOI and the pairs from it (`bin/inference_sceptre.R`), so the encodings R misreads never matter there. This format's rule is stricter because both languages must read and write every column. IGVF's writers also replace missing strings with a token and store low-cardinality strings as categoricals (`make_h5mu_safe_dataframe`), for the reason S7 gives.
 
@@ -218,7 +214,7 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see S4.
 - **Decision.** One row per gRNA in the gRNA modality's feature table: `grna_target` (required), and optionally `target_chr`, `target_start`, `target_end`, the position of the *target*. A non-targeting gRNA has `grna_target` equal to `non-targeting`.
 - **Why.** These are facts about the gRNA, known at import. `non-targeting` is sceptre's long-standing convention *(verified, `R/assign_grna_functions.R`)*; a second marker could contradict it.
 - **Why `target_chr` and not `chr`.** sceptre's gRNA table calls these columns `chr`, `start` and `end` and uses them as the target's position when it builds cis pairs. The bare names do not say whether they locate the gRNA or its target, and IGVF's files carry both. The file names say which; the packages keep their own names and the prototype translates.
-- **Not stored.** `grna_group`. It depends on the analysis's integration strategy *(verified, `R/preprocessing_functions.R`)*, so it is derived (principle 2).
+- **Not stored.** `grna_group`. It depends on a choice an analysis makes, how gRNAs are combined *(verified, `R/preprocessing_functions.R`)*, so it is not data (principle 2).
 - **A gRNA under two targets is refused.** It cannot be one row, and a writer stops with a message. R accepts such tables today, with a warning on the development branch *(verified, `R/accessors.R`)*, and public pysceptre counts them and keeps the full table separately *(verified, `scripts/sceptre_io.py`)*. What pooling means for such a gRNA is a scientific question first; a separate gRNA-to-target table can be added later without changing anything else ([section 6](#6-fixed-now-free-to-grow)).
 - **Several gRNAs on one vector: `vector_id`** *(Decided)*.
   - *The rule.* A vector has one target. Several gRNAs delivered together against the same element are in scope. A vector whose gRNAs have different targets is a combinatorial screen and is out of scope: sceptre is not equipped to analyse those, and the format should be future-proof without accommodating every possibility. This is the rule sceptre already enforces, that `vector_id` is nested within `grna_target`.
@@ -228,7 +224,7 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see S4.
   - *Why a vector may not be named like another vector's gRNA (S8.8).* sceptre's collapse renames `vector_id` to `grna_id`, so a stray match would silently merge two different things. A vector with one gRNA may still be named after it.
   - *What this covers without anything more.* Under one target per vector, barcode-based designs need no new structure: a barcode standing for several gRNAs with one target is a feature with counts and a target, already a row of the gRNA table. *(from the papers as reported to me; not independently checked)* Adamson et al. 2016 and Norman et al. 2019 identify a multi-guide vector by one barcode; Replogle et al. 2022 count each guide separately by direct capture; CaRPool-seq, CROPseq-multi, Cas12a arrays and VIPerturb-seq each use a barcode per array or per guide. Both schemes fit.
   - *Not added, on purpose:* a vector-to-gRNA table (needed only when a vector carries several targets), targets as lists, a position within the vector, a field for the detection scheme, and a field for the target molecule.
-  - *Deferred: the analysis side.* Because the data file holds per-gRNA counts and is written once, sceptre's sum-within-vector has to become a step of an analysis. That implies a setting in the assignment stage's record, and an assignment table that names the unit it assigned, gRNA or vector, as results tables already switch their key by strategy. Nothing in the data file depends on the answer. It is listed in [the sceptre analysis format's rationale](../sceptre-analysis-format/RATIONALE.md#suggested-changes-to-what-the-packages-produce). The prototype's readers do not use `vector_id` when they build a package object.
+  - *Left to analyses.* Because the data file holds per-gRNA counts and is written once, summing within a vector is a step of an analysis. Nothing in the data file depends on how an analysis does it. What it implies for sceptre's analyses is in [the sceptre analysis format's rationale](../sceptre-analysis-format/RATIONALE.md#t1-assignmentassignmentsparquet--decided).
 - **No entry for the target molecule** *(Decided)*. Target coordinates are genomic positions; a screen that knocks down RNA names its transcript in `grna_target` and may leave coordinates out. Nothing in an analysis depends on the molecule: counts, assignments, targets and tests are the same, and the coordinates are used only when the user builds cis pairs. The optional `perturbation_type` (S10) records which kind of screen it was, and its knockdown value is the RNA-targeting case.
 - **The name `grna` is a slight wart.** The modality holds whatever identifies the perturbation, which for some designs is a barcode and could in principle be something other than a gRNA. It is kept because sceptre's vocabulary uses it throughout and another name buys nothing within this scope.
 - **Positions are 1-based with both ends included** *(Adopted)*. `target_start` is the first base of the target and `target_end` the last. One fixed convention for the whole format, with no entry saying which is in use.
@@ -246,14 +242,14 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see S4.
 - **Decision.** Every cell and every feature has a unique text identifier. Feature identifiers are unique across all modalities of a file, so no table needs a modality column.
 - **Why.** Principle 4. Cell identifiers are also load-bearing for results: R's current random-number protocol keys each cell's draws on its identifier *(verified, `R/rng_v2.R`)*.
 - **Screens without barcodes.** The writer assigns the positions `"1"`, `"2"`, ... as identifiers and stores them, as R does in memory today *(verified)*. Because identifiers affect results, they are fixed in the file, so both languages see the same ones.
-- **No line feeds.** An identifier must not contain a line feed, because the hash that links an analysis to its data joins identifiers with line feeds (A1 of the sceptre analysis format).
+- **No line feeds.** An identifier must not contain a line feed, so that a list of identifiers joined by line feeds is unambiguous. The sceptre analysis format hashes such a list to link an analysis to its data (A1 there).
 - **IGVF.** The same: cells, genes and guides are named by identifier (the cell barcode with a measurement-set suffix, the Ensembl gene identifier without its version, the guide name), and tables are keyed by them.
 
 ### S10. File-level metadata: a native record, not JSON text — *Adopted*
 
 - **Decision.** Scalar text entries at the top level of `uns`: `perturb_seq_format` (the version, such as `0.1`) and `dataset_id` (a random identifier assigned when the file is written, by which an analysis names its data file), and the optional entries below.
 - **At the top level, under no tool's name** *(Decided)*. These entries are facts about the dataset, and other tools should be able to read and write them. Under a key named for one tool, another tool would have to write into that tool's space or invent its own key for the same facts. Dataset facts at the top level of `uns` is what CELLxGENE's schema does *(not independently checked)*. The two entries that are the format's own bookkeeping carry distinctive names, because every tool shares this level: the version entry names the format, and `dataset_id` and `title` are not `id` and `name`.
-- **No `moi`** *(Decided)*. Whether a screen is treated as low or high multiplicity of infection selects an analysis's defaults: the control group, and what is done with cells that carry several gRNAs. The same data can reasonably be analysed either way, and real screens are not all one or the other. In the sceptre analysis format it is a setting of the analysis's parameters record (A3.6 there), not an entry of the data file.
+- **No `moi`** *(Decided)*. Whether a screen is treated as low or high multiplicity of infection is a choice about how to analyse it. The same data can reasonably be analysed either way, and real screens are not all one or the other. In the sceptre analysis format it is a setting of the analysis's parameters record (A3.6 there), not an entry of the data file.
 - **A two-part version** *(Decided)*. The version is `MAJOR.MINOR`. A minor increase adds something an older reader can safely ignore; a major increase is a change after which an older reader could misread a file. A reader reads any file of the major version it knows and refuses another.
   - *Why.* With one number, every addition either goes unrecorded or forces every reader to refuse the file. Two parts let a file say what it uses while old readers keep working. The stamp is in every file, so this had to be settled before the freeze.
   - *Precedent.* Apache Arrow versions its format this way and states the rule as: an older reader must either read newer data or detect that it cannot *(Arrow's `Versioning.rst` and `Changing.rst`; not independently checked)*.
@@ -268,7 +264,7 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see S4.
   - *The vocabulary* for `perturbation_type` is crisprVerse's five kinds: `CRISPRko`, `CRISPRi`, `CRISPRa`, `CRISPRbe`, `CRISPRkd` *(crisprDesign README, not independently checked; that `CRISPRkd` means knockdown of RNA with an RNA-targeting enzyme should be confirmed)*. CELLxGENE's schema, the EMBL-EBI Perturbation Catalogue and scPerturb record the same concept *(not independently checked)*. A new kind is a minor addition.
   - *`genome_build` is required with positions.* Positions are used to pair targets with nearby genes. If the two sets of positions are in different builds the pairs are wrong and nothing fails, and a file without the build gives no way to notice. The value is free text, such as `GRCh38`: the format keeps no list of builds, so software comparing two builds has to know that `GRCh38` and `hg38` name the same one. The cost is that positions of unknown build cannot be stored.
   - *It replaces a separate entry for the target molecule.* The knockdown kind is the RNA-targeting case, so one entry covers both distinctions.
-- **IGVF.** `moi` (`high` or `low`) and `capture_method` are in the guide modality's `uns`, each as a one-element string array; this format keeps `moi` in the analysis. There is no format version and no dataset identifier; a file is identified by a SHA-256 of all its bytes in a separate manifest. This format adds the version and the identifier because files outlive the code that wrote them.
+- **IGVF.** `moi` (`high` or `low`) and `capture_method` are in the guide modality's `uns`, each as a one-element string array; this format has no `moi` entry, because it is a choice of an analysis. There is no format version and no dataset identifier; a file is identified by a SHA-256 of all its bytes in a separate manifest. This format adds the version and the identifier because files outlive the code that wrote them.
 
 ### S11. Compression — *Adopted: writer's choice*
 
@@ -328,24 +324,26 @@ the top of this document.
 | Area | IGVF | This format | Which is better, and why | See |
 |---|---|---|---|---|
 | Data and analysis | One file holds both | Separate | This format: one dataset, many analyses. IGVF's own code shows the cost of patching results into the data file | S12 |
-| Cells | Only cells that passed QC | All cells; each analysis says which it used | This format: QC is an analysis choice | T2 |
-| Assignments | 0/1 matrix layer in the data file | Table in the analysis | This format, for the same reason. An export to the matrix is worth having | T1 |
+| Cells | Only cells that passed QC | All cells | This format: which cells are kept is an analysis choice | S12 |
+| Assignments | 0/1 matrix layer in the data file | Not in the data file | This format, for the same reason | S12 |
 | R and Python | Python writes; R reads the matrices, MOI and pairs | Both read and write everything | This format: it is the first requirement | S7 |
 | Format number, dataset id | Neither | Both | This format | S10 |
-| MOI | `high` or `low`, in the data file | `high` or `low`, in the analysis's parameters | This format: it selects an analysis's defaults, and one dataset can be analysed either way | S10, A3 |
+| MOI | `high` or `low`, in the data file | Not in the data file | This format: it is a choice about how to analyse a screen, and one dataset can be analysed either way | S10 |
 | Matrix layout | Compressed by cell | Compressed by feature | This format: one gene is one read, with no chunk files | S3 |
 | Count type | Smallest unsigned type that fits | Fixed 32-bit | A close call; kept for a type that never depends on the data | S4 |
 | gRNA annotation | Type, spacer, gRNA and target positions, target key | Target and target position | **IGVF.** Taken in part now (S8); the rest planned | S8, section 6 |
 | Gene annotation | Symbol, position, mitochondrial and ribosomal flags | Unspecified | **IGVF.** Planned | section 6 |
 | Reference genome | Build per gRNA; annotation file hash in the manifest | One build for the file, required when the gRNA table has positions; no annotation hash | **IGVF** for the annotation hash, which is planned | S8, S10 |
-| Other modalities | Optional `hashing` | Any, ignored unless named | Taken from IGVF | S2 |
+| Other modalities | Optional `hashing` | Any number, under free names | Taken from IGVF | S2 |
 | Names | `gene`, `guide`, `intended_target_name` | `rna`, `grna`, `grna_target` | Neither is a standard. An importer maps one to the other | S2 |
 
-In the rows on data and analysis, cells, assignments and MOI, "this format"
-keeps in the analysis what IGVF keeps in the data file; S12 gives the reason.
+In the rows on data and analysis, cells, assignments and MOI, this format
+keeps out of the data file what IGVF keeps in it; S12 gives the reason. Where
+sceptre's analyses keep them is compared in [the sceptre analysis format's
+rationale](../sceptre-analysis-format/RATIONALE.md#igvf).
 
-**What this format took from IGVF:** a file may carry modalities an analysis
-does not use; the gRNA table says whose position its coordinates are; and the
+**What this format took from IGVF:** a file may carry more than two
+modalities; the gRNA table says whose position its coordinates are; and the
 list of annotation to add in [section 6](#6-fixed-now-free-to-grow).
 
 **What an IGVF importer has to do:** rename the modalities and columns,
@@ -379,7 +377,7 @@ rationale](../sceptre-analysis-format/RATIONALE.md#pertpy).
 | Kind | What |
 |---|---|
 | Structure | Data separate from analysis; the matrix layout; the number types |
-| Names | `grna`; the column and entry names in section 4; the covariate prefix rule |
+| Names | `grna`; the column and entry names in section 4 |
 | Removals | A column or entry that readers rely on cannot be taken away |
 
 Everything else can be added with a minor version, because readers ignore what
@@ -407,7 +405,7 @@ reader can safely ignore it, **major** if it could misread the file.
 | A declared type for each modality, beside its name | File metadata | No dataset needs it yet | minor |
 | A gRNA-to-target table, for a gRNA with two targets | Data file | A scientific question first (S8) | major: a file using it has gRNAs an old reader would assign to one target |
 | A screen that combines targets on one vector (combinatorial perturbations) | Data file, S8.7 | Out of scope: sceptre cannot analyse them | minor, because today's readers refuse such files |
-| Which package and version wrote the data file | File metadata | Stage records already say this for each stage; the data file does not. The format and the packages are versioned separately, so this is information, not a rule | minor |
+| Which software and version wrote the data file | File metadata | The data file does not say this. The format and the software that writes it are versioned separately, so this is information, not a rule | minor |
 | True booleans and nullable integers in the data file | S7 | Needs the R MuData and pandas fixes upstream | major: an old R reader misreads them |
 | A Zarr variant | S1 | Not tested | a second container, not a version of this one |
 
@@ -421,7 +419,6 @@ format's rationale](../sceptre-analysis-format/RATIONALE.md#suggested-changes-to
 | Change | What it would remove | Evidence |
 |---|---|---|
 | Check at import that counts are integers | Non-integer "counts" reaching a file (S4) | `R/check_functions.R` |
-| Accept modality-name covariates (`rna_n_umis`), keeping `response_n_umis` as an alias; add a response-modality argument and a modality name at import | The translation layer in the readers and writers (S2, S5) | — |
 | Rename `chr`, `start`, `end` in the gRNA table, or accept both | The same (S8) | — |
 | Decide what a gRNA under two targets means | The refusal (S8) | R warns, pysceptre counts |
 | Report the R MuData and pandas problems upstream | The restrictions of S7 | Appendix A |
@@ -471,9 +468,8 @@ specification.
    most: counts written by hand, and column conversions. Python needs a
    setting, types set before writing, and the same conversions. The standard
    libraries open a conforming file and return the right values. What they do
-   not do is interpret it: the version check, the link between an analysis and
-   its data, the refusals the specification requires, the covariate table with
-   modality prefixes, true/false arriving as a categorical, and derived values.
+   not do is interpret it: the version check, the refusals the specification
+   requires, true/false arriving as a categorical, and derived values.
    That interpretation is each package's own, so the format has no reader.
    The reason is that the format allows only what both languages read
    correctly today and makes the writers stay inside that set. The burden
@@ -507,7 +503,10 @@ Python, all passing:
 - an encoding matrix: each kind of value written by each language's standard
   libraries and read by the other's;
 - readers written elsewhere: anndata, scanpy, HDF5Array;
-- the 64-bit branch of the index type, with the limit lowered (S4).
+- the 64-bit branch of the index type, with the limit lowered (S4);
+- what a writer does beyond producing a conforming file: a copy keeps the
+  dataset's identifier and every modality, and past the index limit
+  (lowered) both index arrays are 64-bit.
 
 The two temporary writers are compared with each other, on seeded random
 content, in the sceptre analysis format's folder, because that check writes
@@ -629,7 +628,7 @@ dataset are 32-bit, and the run was not repeated.
 | Both validators on both files | Conforming |
 | Read back in memory, R and Python | Same shape, nonzeros and count sums as the source |
 | 200 random genes read from disk one at a time, R (rhdf5) and Python (h5py) | Equal to the in-memory values |
-| MuData's backed reader, one response at a time | Sums identical to direct HDF5 reads; the 64-bit column pointers are read correctly |
+| MuData's backed reader, one feature at a time | Sums identical to direct HDF5 reads; the 64-bit column pointers are read correctly |
 
 **Sizes and times.** The file is 5.7 GB from either language, against 8.6 GB
 for the same data with counts as doubles. Times are from a cold start;
@@ -642,7 +641,7 @@ already held.
 | Validate the data file | 116 s, 29 GB | 79 s, 21 GB |
 | Read the data file in memory | 37 s, 15 GB | 106 s, 25 GB |
 | Read 200 genes from disk, one at a time | 3 s | 21 s with rhdf5; 3 s with HDF5Array |
-| Open disk-backed with MuData and read 200 responses | — | 5 s to open, 11 s to read, under 1 GB |
+| Open disk-backed with MuData and read 200 features | — | 5 s to open, 11 s to read, under 1 GB |
 
 An assignment table of real size was written and read in the same run; [the
 sceptre analysis format's rationale](../sceptre-analysis-format/RATIONALE.md#appendix-a-measurements) reports it.
@@ -675,22 +674,22 @@ rationale](../sceptre-analysis-format/RATIONALE.md#appendix-b-what-the-prototype
 **Limits that remain.** These are limits of the prototype or of what was
 tested, not open choices:
 
-- The packages call the response modality `response` and the gRNA table's
-  coordinates `chr`, `start`, `end`; a package's reader and writer translate.
+- sceptre and pysceptre call the gRNA table's coordinates `chr`, `start`,
+  `end`; a package's reader and writer translate.
 - A value may come back equal but not identical: an integer column with
   missing values is stored as doubles.
 - Refused with a message: a gRNA under two targets.
 - Tested once at scale (Appendix A): 207,324 cells. The suite passes on Linux
   as on macOS. Not tested: Zarr, the R readers anndataR and zellkonverter, and
-  a file whose second modality is real data (the `atac` and `hashing` test
-  reuses the RNA counts and a synthetic matrix).
+  a file whose second measured modality is real data (the conformance file
+  with a `hashing` modality holds a synthetic matrix).
 
 ## Appendix C. The examples
 
 | Dataset | What it is |
 |---|---|
-| `example/highmoi` | sceptre's built-in high-MOI data: 500 cells, 100 responses, 60 gRNAs |
-| `example/lowmoi` | sceptre's built-in low-MOI data: 1,000 cells, 100 responses, 50 gRNAs |
+| `example/highmoi` | sceptre's built-in high-MOI data: 500 cells, 100 genes, 60 gRNAs |
+| `example/lowmoi` | sceptre's built-in low-MOI data: 1,000 cells, 100 genes, 50 gRNAs |
 | `example/types` | 6 cells, synthetic: a data file with a factor whose levels are not alphabetical, a text covariate, a true/false covariate, a covariate with missing values, and a gRNA table with missing text and a missing integer |
 
 These files are fixed: nothing here regenerates them. Analyses of the first

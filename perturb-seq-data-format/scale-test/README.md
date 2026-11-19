@@ -9,9 +9,9 @@ One run on a real large screen: the Gasperini et al. (2019) at-scale data,
 
 | File | What it records |
 |---|---|
-| `results/results-python.json` | Python writes the data as a data file of the format, validates it, reads it back in memory and gene by gene, and writes an assignment table of real size |
-| `results/results-r.json` | R validates the Python-written file, reads it in memory and from disk, writes it again, and reads and rewrites the assignment table |
-| `results/results-r-backed.json` | R reads the file through MuData's backed reader, one response at a time |
+| `results/results-python.json` | Python writes the data as a data file of the format, validates it, reads it back in memory and gene by gene. It also records an assignment table of real size, which the sceptre analysis format's rationale reports |
+| `results/results-r.json` | R validates the Python-written file, reads it in memory and from disk, and writes it again. It also records reading and rewriting the assignment table |
+| `results/results-r-backed.json` | R reads the file through MuData's backed reader, one feature at a time |
 
 The results were produced by commit `e490b1c`, whose `scale-test/` holds the
 scripts. They predate the index type of S4: those files stored 64-bit column

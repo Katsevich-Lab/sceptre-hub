@@ -6,7 +6,8 @@
 # conformance files).
 #     verify/run.sh            every check
 #     verify/run.sh format     the checks that use no writer: the validators and
-#                              standard readers on the committed files
+#                              standard readers on the committed files, and the
+#                              standard Parquet libraries on each kind of column
 #     verify/run.sh writers    the checks of the two writers in format/, which
 #                              write a data file and an analysis of it
 # Python is taken from SCEPTRE_FORMAT_PYTHON (default: python3).
@@ -23,6 +24,9 @@ if [ "$PART" != writers ]; then
     Rscript verify/independent_readers.R
     "$PY" verify/derived.py
     Rscript verify/derived.R
+    "$PY" verify/encodings.py write
+    Rscript verify/encodings.R
+    "$PY" verify/encodings.py read
 fi
 if [ "$PART" != format ]; then
     "$PY" verify/random_inputs.py
