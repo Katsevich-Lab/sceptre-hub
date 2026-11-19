@@ -486,7 +486,7 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 
 - **Decision.** Three tables, one per testing stage. Key: `grna_target`, `response_id` (and `grna_id` under the singleton strategy). Columns as sceptre reports them, less what follows from others: `pass_qc`, `p_value`, `fold_change`, `se_fold_change`. Diagnostic columns may follow (rule 6).
 - **`log_2_fold_change` is stored only where there is no `fold_change`** *(Decided)*.
-  - It follows from `fold_change` (principle 7). A reader computes it as `log(fold_change) / log(2)`, which is sceptre's own expression *(verified, `R/aux_functions.R`)*. The expression matters: `log2()` gives a different last bit on about 30% of rows *(measured)*.
+  - It follows from `fold_change` (principle 7). A reader computes it as `log(fold_change) / log(2)`, which is sceptre's own expression *(verified, `R/aux_functions.R`)*. The expression matters: `log2()` gives a different last bit on about 30% of rows *(measured)*. The same expression still differs in its last bit between platforms: on the example, 136 of 15,768 values computed on Linux differ from those computed on macOS, by at most 3 parts in 10^16 *(measured)*. A value rebuilt from `fold_change` is therefore equal to the writer's to within rounding, not bit for bit.
   - *(measured)* On all 17,219 result rows of the examples, the derived value is identical to the one sceptre computed, in R and in Python.
   - Under the bonferroni strategy, sceptre's discovery and power results have no `fold_change` and no `se_fold_change`, only `log_2_fold_change` *(verified, `R/s4_analysis_functs_2.R`)*. There it is the stored column. The reverse derivation is not exact, so it cannot be dropped.
   - A reader uses a stored `log_2_fold_change` when it is present and derives it otherwise. A writer leaves it out only when it equals the derivation.
@@ -564,7 +564,7 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 - **Evidence.** *(measured)* On the example, R's `model.matrix()` and pysceptre's `model_matrix()` give bitwise-equal matrices and the same hash.
 - **What a reader checks.** Both the rebuilt matrix's term names and its hash. The names (`batchbatch_2`) encode the factor levels, the baseline and the term order, which are the ways two languages can really disagree; the hash catches everything else.
 - **IGVF.** The design is recorded as a list of covariate options in the file's `uns`, and each method builds its own design from them. There is no check that two methods, or two languages, built the same matrix.
-- **Known limit.** A bit-exact hash can fail on a correct matrix if a logarithm differs in its last bit between platforms or math libraries. On one machine R and Python agree to the last bit; a second platform was not tested.
+- **Known limit.** A bit-exact hash fails on a correct matrix when a logarithm differs in its last bit between platforms. On one machine R and Python agree to the last bit. Between macOS and Linux they do not: the natural logarithms of the whole numbers 1 to 200,000 differ in 16 values *(measured, numpy on both)*. A design with a logarithm in it, as the default formula has, can therefore hash differently on the two, and a reader on one would refuse an analysis written on the other (T7.4). This is open.
 - **Restriction to state plainly.** R sceptre accepts any formula today. Under this rule an analysis with an interaction or a spline cannot be saved.
 
 ---

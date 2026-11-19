@@ -72,9 +72,11 @@ for expected_file in sorted(Path("example").glob("*/expected/*/expected.json")):
         key = sf.unit_key(want)
         both = want.merge(got, on=key, suffixes=("_expected", ""))
         results.add(f"{label}: {stage} results cover the same pairs", len(both) == len(want) == len(got))
-        for column in ("p_value", "log_2_fold_change"):
-            results.add(f"{label}: {stage} {column} identical to sceptre's, to the last bit",
-                        np.array_equal(both[column].to_numpy(float), both[f"{column}_expected"].to_numpy(float), equal_nan=True))
+        results.add(f"{label}: {stage} p_value identical to sceptre's, to the last bit",
+                    np.array_equal(both["p_value"].to_numpy(float), both["p_value_expected"].to_numpy(float), equal_nan=True))
+        # a logarithm's last bit depends on the platform's math library, so not bit for bit
+        results.add(f"{label}: {stage} log_2_fold_change equal to sceptre's, to within rounding",
+                    bool(np.allclose(both["log_2_fold_change"].to_numpy(float), both["log_2_fold_change_expected"].to_numpy(float), rtol=1e-14, atol=0, equal_nan=True)))
         if "significant_expected" in both:
             same = [(None if pd.isna(a) else bool(a)) == (None if pd.isna(b) else bool(b)) for a, b in zip(both["significant"], both["significant_expected"])]
             results.add(f"{label}: {stage} `significant`, from the stored threshold, identical to sceptre's", all(same))

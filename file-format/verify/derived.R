@@ -60,9 +60,12 @@ for (expected_file in sort(Sys.glob("example/*/expected/*/expected.json"))) {
         key <- unit_key(want)
         both <- merge(want, got, by = key, suffixes = c("_expected", ""))
         check(paste0(label, ": ", stage, " results cover the same pairs"), nrow(both) == nrow(want) && nrow(want) == nrow(got))
-        for (column in c("p_value", "log_2_fold_change")) {
-            check(paste0(label, ": ", stage, " ", column, " identical to sceptre's, to the last bit"), identical(both[[column]], both[[paste0(column, "_expected")]]))
-        }
+        check(paste0(label, ": ", stage, " p_value identical to sceptre's, to the last bit"), identical(both$p_value, both$p_value_expected))
+        # a logarithm's last bit depends on the platform's math library, so not bit for bit
+        got_log <- both$log_2_fold_change
+        want_log <- both$log_2_fold_change_expected
+        check(paste0(label, ": ", stage, " log_2_fold_change equal to sceptre's, to within rounding"),
+            identical(is.na(got_log), is.na(want_log)) && all(abs(got_log - want_log) <= 1e-14 * abs(want_log), na.rm = TRUE))
         if (!is.null(both$significant_expected)) {
             check(paste0(label, ": ", stage, " `significant`, from the stored threshold, identical to sceptre's"), identical(both$significant, both$significant_expected))
         }

@@ -4798,7 +4798,7 @@ Functionality:
 <li><strong>The choice.</strong> The parameters record holds the formula text and a hash of the matrix. Each language rebuilds the matrix and checks its term names and hash.</li>
 <li><strong>Evidence.</strong> On the example, R and pysceptre build matrices that are equal to the last bit.</li>
 <li><strong>Cost.</strong> Only additive formulas of covariates, <code>log(x)</code> and <code>log(x + 1)</code> can be saved. An analysis with an interaction or a spline cannot.</li>
-<li><strong>Known limit.</strong> A hash of exact values could fail on a correct matrix if a logarithm differs in its last bit between platforms. A second platform was not tested.</li>
+<li><strong>Known limit.</strong> A hash of exact values fails on a correct matrix when a logarithm differs in its last bit between platforms, and between macOS and Linux some do (measured). An analysis written on one could be refused on the other. This is open.</li>
 </ul>
 </details>
 <details class="fold">
