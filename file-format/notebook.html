@@ -2314,7 +2314,7 @@ Close all
 <li>
 <details open>
 <summary class="row folder" style="--d:0">
-<span class="name"><code>screen.h5mu</code></span><span class="what">one dataset, written once and never modified</span><span class="size">388 KB</span>
+<span class="name"><code>screen.h5mu</code></span><span class="what">one dataset, written once and never modified</span><span class="size">394 KB</span>
 </summary>
 <ul>
 <li>
@@ -3106,7 +3106,7 @@ batch_1
 <li>
 <details>
 <summary class="row" style="--d:1">
-<span class="name"><code>uns/sceptre</code></span><span class="what">the format version, and what dataset this is</span><span class="size">6 entries</span>
+<span class="name"><code>uns/sceptre</code></span><span class="what">the format version, and what dataset this is</span><span class="size">7 entries</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
@@ -3133,6 +3133,17 @@ format
 </td>
 <td>
 the format version of this file
+</td>
+</tr>
+<tr>
+<td>
+genome_build
+</td>
+<td>
+GRCh38
+</td>
+<td>
+the genome build of the positions; required when the gRNA table has positions
 </td>
 </tr>
 <tr>
@@ -4743,7 +4754,7 @@ Functionality:
 <ol type="1">
 <li><strong>Is the scope right?</strong> The format fixes the form of results and leaves their meaning (what a p-value tests) to sceptre’s method documentation.</li>
 <li><strong>Is anything missing that a real screen needs?</strong> For gRNA annotation the format has a target, its position and an optional vector, and no gRNA type or spacer sequence yet.</li>
-<li><strong>Coordinates.</strong> Target positions are 1-based with both ends included, as in GTF files, and the genome build can be recorded. Is that the right convention, and should the build be required when positions are present?</li>
+<li><strong>Coordinates.</strong> Target positions are 1-based with both ends included, as in GTF files, and a file with positions has to say which genome build they are in. Is that the right convention?</li>
 <li><strong>Limits.</strong> A gRNA has one target, and so does a vector carrying several gRNAs; combinatorial screens are refused. DNA-targeting is assumed. Are those limits acceptable for now?</li>
 <li><strong>The fitting-method default.</strong> Saved fits are shared between R and Python only when the method matches, and the current default differs from the alternatives on a few responses. This is a scientific decision the format does not make.</li>
 <li><strong>Additive formulas only.</strong> Is it acceptable that an analysis with an interaction or a spline cannot be saved?</li>
@@ -4791,10 +4802,10 @@ Passed in Python
 Both validators report exactly the expected rules on every file of <code>conformance/</code> (files that conform, and files that each break a rule), and the standard readers read the files that must still be read
 </td>
 <td>
-98 of 98
+99 of 99
 </td>
 <td>
-98 of 98
+99 of 99
 </td>
 </tr>
 <tr>
