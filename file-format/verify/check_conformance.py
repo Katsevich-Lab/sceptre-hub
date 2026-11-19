@@ -7,13 +7,9 @@ and must give the same counts as the conforming file it was made from.
 """
 
 import json
-import shutil
 import sys
-import tempfile
 from pathlib import Path
 
-import anndata as ad
-import h5py
 import mudata as md
 
 sys.path.insert(0, "format")
@@ -52,48 +48,12 @@ for case in cases:
             result["reader_refused"] = False
         except ValueError:
             result["reader_refused"] = True
-    if case.get("copy_keeps_modalities"):
-        with tempfile.TemporaryDirectory() as folder:
-            copy = Path(folder) / "copy.h5mu"
-            sf.write_screen(md.read_h5mu(case["path"]), copy)
-            with h5py.File(case["path"]) as a, h5py.File(copy) as b:
-                same_id = ad.io.read_elem(a["uns/sceptre/id"]) == ad.io.read_elem(b["uns/sceptre/id"])
-                result["copy_kept_modalities"] = sorted(a["mod"]) == sorted(b["mod"]) and same_id and len(sf.validate_screen(copy)) == 0
     results[case["name"]] = result
-    failed = [k for k in ("reads_correctly", "reader_refused", "copy_kept_modalities", "wide_branch", "fits_as_expected") if result.get(k) is False]
+    failed = [k for k in ("reads_correctly", "reader_refused", "wide_branch", "fits_as_expected") if result.get(k) is False]
     if result["rules"] != case["expect"] or result["conforms"] != case["conforms"] or failed:
         wrong += 1
         print(f"MISMATCH {case['name']}: expected {case['expect']}, reported {result}")
         print(found.to_string(index=False))
-# A writer's own behaviour: a stage that did not finish leaves a folder without a
-# record; writing the stage again must leave nothing of the first attempt (A2.3).
-with tempfile.TemporaryDirectory() as folder:
-    retry = Path(folder) / "analysis"
-    shutil.copytree("conformance/valid/analyses/left_sided_written_by_python", retry)
-    saved = sf.read_analysis(retry)
-    sf.clear_stage(retry, "assignment")
-    (retry / "assignment").mkdir()
-    shutil.copy("conformance/valid/analyses/left_sided_written_by_python/qc/cells.parquet", retry / "assignment/flagged_cells.parquet")
-    record = saved["stages"]["assignment"]
-    sf.write_stage(retry, "assignment", {"settings": record["settings"]}, {"assignment/assignments": saved["tables"]["assignment/assignments"]}, record["provenance"])
-    clean = not (retry / "assignment/flagged_cells.parquet").exists() and len(sf.validate_analysis(retry)) == 0
-    results["(writer) a retried stage leaves nothing of the first attempt"] = {"rules": [], "conforms": True, "holds": clean}
-    if not clean:
-        wrong += 1
-        print("MISMATCH: a retried stage left files of its first attempt")
-# The writer's 64-bit branch, with the limit lowered: both index arrays of every
-# modality come out 64-bit, the file conforms under that limit, and it reads back equal.
-with tempfile.TemporaryDirectory() as folder:
-    wide = Path(folder) / "wide.h5mu"
-    source = "conformance/valid/types_written_by_python.h5mu"
-    sf.write_screen(md.read_h5mu(source), wide, index_limit=1)
-    with h5py.File(wide) as f:
-        types = {str(f[f"mod/{m}/X/{a}"].dtype) for m in f["mod"] for a in ("indices", "indptr")}
-    holds = types == {"int64"} and len(sf.validate_screen(wide, index_limit=1)) == 0 and same_counts(wide, source)
-    results["(writer) past the index limit both index arrays are 64-bit"] = {"rules": [], "conforms": True, "holds": holds}
-    if not holds:
-        wrong += 1
-        print("MISMATCH: the writer's 64-bit branch")
 Path("conformance/results-python.json").write_text(json.dumps(results, indent=2) + "\n")
 print(f"Python: {len(cases) - wrong} of {len(cases)} cases as expected")
 sys.exit(1 if wrong else 0)

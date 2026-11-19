@@ -18,6 +18,7 @@ Behind it are two reference documents: `SPEC.md` (the rules, numbered) and
 
 ```sh
 verify/run.sh     # the verification suite; SCEPTRE_FORMAT_PYTHON picks the Python to use
+                  # `verify/run.sh format` runs the part that uses no writer, `verify/run.sh writers` the rest
 ./render.sh       # notebook.html, which reports the suite's results
 ```
 

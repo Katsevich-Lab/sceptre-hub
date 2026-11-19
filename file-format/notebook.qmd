@@ -185,6 +185,7 @@ SHOWS = {
     "two-writers": "R and Python each write the same random content. The files are compared array by array and column by column, and each language reads the other's file and gets the source back",
     "independent-readers": "Tools outside this code read the files: anndata, scanpy, pandas, polars and duckdb in Python; HDF5Array and arrow in R",
     "wide-index": "The 64-bit branch of the count matrix's index type, with the limit lowered because no test file reaches it",
+    "writers": "What a writer does beyond producing a conforming file: a copy keeps the dataset's identifier and every modality, a retried stage leaves nothing of its first attempt, and large matrices get 64-bit index arrays",
     "derived": "What software computes from the files (cells per gRNA and per target, cells in use, pairs passing QC, log2 fold change, significance, control groups) equals what sceptre itself computed",
 }
 

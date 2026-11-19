@@ -1,7 +1,10 @@
 # The verification suite
 
 Every check of the format. It needs neither sceptre nor pysceptre.
-`verify/run.sh` runs all of it and prints a summary. `../notebook.html` says
+`verify/run.sh` runs all of it and prints a summary; `verify/run.sh format` runs
+the part that uses no writer (the validators and standard readers on the
+committed files), and `verify/run.sh writers` the checks of the two writers in
+`format/`. `../notebook.html` says
 what each check shows, and `../README.md` which libraries it needs.
 
 ## Testing another implementation

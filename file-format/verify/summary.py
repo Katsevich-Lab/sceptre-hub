@@ -1,7 +1,7 @@
 """Prints what every check of the verification suite found, and exits with an
 error if any failed.
 
-    python verify/summary.py
+    python verify/summary.py [format|writers]
 """
 import json
 import sys
@@ -14,7 +14,7 @@ for path in sorted(Path("verify/out/results").glob("*.json")):
     rows[name][language] = json.loads(path.read_text())
 conformance = {"python": "conformance/results-python.json", "r": "conformance/results-r.json"}
 cases = {c["name"]: c for c in json.loads(Path("conformance/cases.json").read_text())}
-for language, path in conformance.items():
+for language, path in conformance.items() if sys.argv[1:] != ["writers"] else ():
     results = json.loads(Path(path).read_text())
     rows["conformance"][language] = [
         {"check": name, "result": "pass" if name not in cases or (sorted(r["rules"]) == cases[name]["expect"] and r["conforms"] == cases[name]["conforms"]

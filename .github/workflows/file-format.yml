@@ -1,10 +1,10 @@
 # The verification suite of the file format (file-format/verify/run.sh), on
-# Linux and macOS. It installs standard libraries only: neither sceptre nor
-# pysceptre.
-#
-# It runs only when started by hand (Actions > File format > Run workflow), so
-# that adding this file starts nothing. This workflow has not yet been run:
-# the suite was run on one Mac. Add a `push:` trigger once it has passed here.
+# Linux and macOS, in two parts:
+#   format   the validators and standard readers on the committed files; no writer
+#   writers  the checks of the writers. Today these are the two writers in
+#            file-format/format/; when sceptre and pysceptre write the format,
+#            this part installs them and checks their files instead.
+# It installs standard libraries only: neither sceptre nor pysceptre.
 name: File format
 
 on:
@@ -12,11 +12,13 @@ on:
 
 jobs:
   verify:
+    name: ${{ matrix.part }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        part: [format, writers]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -36,9 +38,9 @@ jobs:
           BiocManager::install(c("MuData", "rhdf5", "HDF5Array", "SingleCellExperiment", "MultiAssayExperiment"), ask = FALSE, update = FALSE)
         shell: Rscript {0}
       - name: Verification suite
-        run: file-format/verify/run.sh
+        run: file-format/verify/run.sh ${{ matrix.part }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: results-${{ matrix.os }}
+          name: results-${{ matrix.part }}-${{ matrix.os }}
           path: file-format/verify/out/results/

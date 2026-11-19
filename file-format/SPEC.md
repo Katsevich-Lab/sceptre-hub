@@ -308,7 +308,7 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S10.1 | file | `uns/sceptre` MUST be an AnnData dictionary with the scalar text entries `format` (a version, `MAJOR.MINOR`), `moi` and `id` (not empty). | V |
 | S10.2 | file | `moi` MUST be `high` or `low`. | V |
 | S10.3 | file | `format` is the data file's own format version, `0.1` for this document. A reader MUST refuse a major version other than the one it knows. | V |
-| S10.4 | behaviour | `id` identifies the dataset. A writer assigns a new random `id` when it imports data, and keeps the `id` when it copies a data file. | tests (the conformance run: a copied data file keeps its `id`). A new `id` on import: none (testing it needs a package) |
+| S10.4 | behaviour | `id` identifies the dataset. A writer assigns a new random `id` when it imports data, and keeps the `id` when it copies a data file. | tests (`verify/writers`: a copied data file keeps its `id`). A new `id` on import: none (testing it needs a package) |
 | S10.5 | file | `uns/sceptre` MAY have these scalar text entries; `genome_build` is required where the gRNA table has positions (S8.14). None identifies the dataset (`id` does), and no reader's behaviour depends on them: `name`, a label for people; `source`, a URL, DOI or accession saying where the data came from; `perturbation_type`; `organism`, as a scientific name such as `Homo sapiens`; `genome_build`, such as `GRCh38`, the build of every coordinate in the file. | V |
 | S10.6 | file | `perturbation_type`, if present, MUST be one of `CRISPRko` (knockout), `CRISPRi` (interference), `CRISPRa` (activation), `CRISPRbe` (base editing), `CRISPRkd` (knockdown of RNA). | V |
 | S10.7 | guidance | A writer SHOULD record `perturbation_type` and `organism` when it knows them, and `genome_build` even in a file without positions. They are known at import, cannot be worked out from the file, and are lost for good if not written down. | — |
@@ -351,7 +351,7 @@ and `discovery`. The last three do not depend on one another.
 |---|---|---|---|
 | A2.1 | file | A stage's record is the file `record.json` in the folder named for the stage. It MUST conform to `spec/stage.schema.json` and have `stage` equal to the folder's name. | V |
 | A2.2 | file | A stage's record MUST NOT exist unless the records of all earlier stages exist. | V |
-| A2.3 | behaviour | A stage has run if and only if its record exists. A writer MUST write the record after the stage's tables, all in the stage's folder. A writer that finds a stage's folder without a record MUST delete the folder before writing the stage. | V (a stage is written again over an unfinished attempt) |
+| A2.3 | behaviour | A stage has run if and only if its record exists. A writer MUST write the record after the stage's tables, all in the stage's folder. A writer that finds a stage's folder without a record MUST delete the folder before writing the stage. | tests (`verify/writers`: a stage is written again over an unfinished attempt) |
 | A2.4 | file | A record holds the stage's `settings` (what the user chose, with defaults filled in), `provenance` (`package`, `version`, `language`: the implementation's language, which is `R` or `Python` for the two libraries here and may be any other, and `written_at`: UTC, `YYYY-MM-DDTHH:MM:SSZ`), and `files` (A5). It MAY hold `summaries`, which a reader MUST NOT need. | V (through A2.1) |
 
 ### A3. Settings and JSON
@@ -369,7 +369,7 @@ and `discovery`. The last three do not depend on one another.
 | Rule | Kind | | Check |
 |---|---|---|---|
 | A4.1 | file | A stage's folder MUST NOT hold one of that stage's tables that its record does not list. A folder holding tables and no record is a stage that did not finish. | V |
-| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the writer SHOULD delete the fit cache too (T6.6). | tests (the conformance run: a retried stage) |
+| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the writer SHOULD delete the fit cache too (T6.6). | tests (`verify/writers`: a retried stage) |
 | A4.3 | behaviour | A reader MUST ignore files it does not know. | V (a valid conformance case) |
 
 ### A5. Files of a stage
