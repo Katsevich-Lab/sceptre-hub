@@ -1,5 +1,7 @@
 # The sceptre file format
 
+[![File format checks](https://github.com/Katsevich-Lab/sceptre-hub/actions/workflows/file-format.yml/badge.svg?branch=main)](https://github.com/Katsevich-Lab/sceptre-hub/actions/workflows/file-format.yml)
+
 > **Draft.** It has not been reviewed. The format is version 0.1 until
 > sceptre's first release that uses it, which freezes it as 1.0.
 
