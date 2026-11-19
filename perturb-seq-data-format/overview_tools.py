@@ -29,7 +29,7 @@ def n(count, noun) -> str:
 
 def cell(value) -> str:
     if isinstance(value, float):
-        return f"{value:.4g}"
+        return f"{int(value)}" if value == int(value) and abs(value) < 1e15 else f"{value:.4g}"
     if hasattr(value, "__len__") and not isinstance(value, str):
         shown = ", ".join(f"{v:.3g}" for v in list(value)[:4])
         return f"[{shown}{', …' if len(value) > 4 else ''}]"
@@ -145,6 +145,48 @@ def principles(rationale, link, heading) -> str:
         if len(cells) == 4 and cells[0].isdigit():
             number, principle, why, follows = cells
             follows = follows.replace("](#", f"]({link}#").replace("](../", f"]({link.rsplit('/', 2)[0]}/")
+            follows = follows.replace("of this document", "of `RATIONALE.md`")
+            follows = re.sub(r"\s*\((?:[SAT]\d+b?(?:\.\d+)?(?:, | to | and )?)+\)", "", follows)
             out.append(f'<details class="fold">\n<summary><strong>{number}. {html.escape(principle.strip("*"))}</strong></summary>\n\n'
                        f"- **Why.** {why}\n- **What follows.** {follows}\n\n</details>\n")
     return "\n".join(out)
+
+
+def rule_counts(spec) -> dict:
+    """How many statements a SPEC.md has of each kind, and how many of its file
+    rules the validators check, counted from its tables."""
+    rows = [line for line in Path(spec).read_text().splitlines() if re.match(r"\| [SAT]\d+b?\.\d+ \|", line)]
+    kind = [line.split("|")[2].strip() for line in rows]
+    check = [line.rstrip().rstrip("|").split("|")[-1].strip() for line in rows]
+    name = [line.split("|")[1].strip() for line in rows]
+    checked = [k == "file" and (c.lower().startswith("v") or "types: V" in c) for k, c in zip(kind, check)]
+    return {
+        "file_unchecked": [n for n, k, ok in zip(name, kind, checked) if k == "file" and not ok],
+        "all": len(rows), "file": kind.count("file"), "behaviour": kind.count("behaviour"), "guidance": kind.count("guidance"),
+        "file_checked": sum(k == "file" and (c.lower().startswith("v") or "types: V" in c) for k, c in zip(kind, check)),
+        "behaviour_tested": sum(k == "behaviour" and not c.startswith("none") for k, c in zip(kind, check)),
+    }
+
+
+def cases() -> list:
+    return json.loads(Path("conformance/cases.json").read_text())
+
+
+def cases_table(conforming: bool) -> str:
+    """The conformance cases that conform, or those that do not, with what each
+    is and the rules a validator must report for it."""
+    lines = "".join(
+        f"<tr><td><code>{html.escape(c['name'].split('/')[-1])}</code></td><td>{text(c['what'])}</td>"
+        + ("" if conforming else f"<td>{html.escape(', '.join(c['expect']))}</td>") + "</tr>"
+        for c in cases() if c["conforms"] == conforming)
+    head = "<th>File or folder</th><th>What it is</th>" + ("" if conforming else "<th>Rules to report</th>")
+    return f"<table class='defs'><thead><tr>{head}</tr></thead><tbody>{lines}</tbody></table>"
+
+
+def definitions(items, name="Name") -> str:
+    """A table of the columns or entries the specification defines: `items` is a
+    list of definitions, each with a name, a description and whether it is required."""
+    lines = "".join(
+        f"<tr><td><code>{html.escape(i['name'])}</code></td><td>{'required' if i.get('required') else 'optional'}</td><td>{text(i.get('description', '') + ('' if not i.get('values') or all(v in i.get('description', '') for v in i['values']) else ': ' + ', '.join(f'`{v}`' for v in i['values'])))}</td></tr>"
+        for i in items)
+    return f"<table class='defs'><thead><tr><th>{name}</th><th></th><th>What it is</th></tr></thead><tbody>{lines}</tbody></table>"

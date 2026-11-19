@@ -248,7 +248,7 @@ broken_screen("both_index_arrays_64_bit", ["S4.2", "S4.3"], "Both index arrays s
 cases[-1]["conforming_with_index_limit"] = 5   # the rna modality has 6 cells
 broken_screen("shared_column_named_like_a_modality", ["S5.1"], "A shared cell column named `rna_quality`",
               lambda f: add_column(f, "obs", "rna_quality", np.arange(6, dtype=np.float64)))
-broken_screen("covariate_name_with_a_dash", ["S5.3"], "A cell column named `donor-age`, which no formula can use",
+broken_screen("covariate_name_with_a_dash", ["S5.3"], "A cell column named `donor-age`, which has a character outside the allowed ones",
               lambda f: add_column(f, "obs", "donor-age", np.arange(6, dtype=np.float64)))
 
 

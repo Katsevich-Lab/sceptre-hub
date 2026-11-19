@@ -235,7 +235,7 @@
       "S5.3"
     ],
     "conforms": false,
-    "what": "A cell column named `donor-age`, which no formula can use"
+    "what": "A cell column named `donor-age`, which has a character outside the allowed ones"
   },
   {
     "name": "invalid/screens/n_umis_as_labels.h5mu",

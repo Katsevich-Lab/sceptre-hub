@@ -42,3 +42,21 @@ def analysis_tree() -> str:
         parts = [table_leaf(p, says["part"], 2) for p in sorted(fits.glob("*.parquet"))]
         children.append(nt.branch(f"{table_spec['fits']['folder']}/", says["fits"], nt.n(len(parts), "file"), parts, 1))
     return nt.as_tree(nt.branch(f"{ANALYSIS.name}/", says["analysis"], nt.kilobytes(ANALYSIS), children, 0))
+
+
+def tables_overview() -> str:
+    """Every table the specification defines, by stage: its file, whether it is
+    required once the stage has run, what it holds, and its defined columns."""
+    stages = table_spec["descriptions"]["stages"]
+    lines = []
+    for table in table_spec["tables"]:
+        stage, _, name = table["name"].partition("/")
+        where = f"{table['name']}/" if table["stage"] is None else f"{stage}/{name}.parquet"
+        columns = ", ".join(f"<code>{c['name']}</code>" for c in table["columns"])
+        if table.get("extra_columns") == "covariates":
+            columns += ", one column per covariate"
+        key = ", ".join(f"<code>{k}</code>" for k in table["key"])
+        lines.append(f"<tr><td><code>{where}</code></td><td>{'required' if table['required'] else 'optional'}</td>"
+                     f"<td>{nt.text(table['description'])}</td><td>{columns}</td><td>{key}</td></tr>")
+    return ("<table class='defs'><thead><tr><th>File</th><th></th><th>What it holds</th><th>Defined columns</th><th>Sorted by</th></tr></thead>"
+            f"<tbody>{''.join(lines)}</tbody></table>")

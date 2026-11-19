@@ -2207,13 +2207,13 @@ vertical-align: -.125em;
     <h2 id="toc-title">Table of contents</h2>
    
   <ul class="collapse">
-  <li><a href="#the-principles" id="toc-the-principles" class="nav-link active" data-scroll-target="#the-principles">The principles</a></li>
-  <li><a href="#what-is-on-disk" id="toc-what-is-on-disk" class="nav-link" data-scroll-target="#what-is-on-disk">What is on disk</a></li>
-  <li><a href="#open-the-file-yourself" id="toc-open-the-file-yourself" class="nav-link" data-scroll-target="#open-the-file-yourself">Open the file yourself</a></li>
-  <li><a href="#the-choices-to-review" id="toc-the-choices-to-review" class="nav-link" data-scroll-target="#the-choices-to-review">The choices to review</a></li>
-  <li><a href="#questions-for-reviewers" id="toc-questions-for-reviewers" class="nav-link" data-scroll-target="#questions-for-reviewers">Questions for reviewers</a></li>
-  <li><a href="#what-has-been-tested" id="toc-what-has-been-tested" class="nav-link" data-scroll-target="#what-has-been-tested">What has been tested</a></li>
-  <li><a href="#what-is-in-this-folder" id="toc-what-is-in-this-folder" class="nav-link" data-scroll-target="#what-is-in-this-folder">What is in this folder</a></li>
+  <li><a href="#at-a-glance" id="toc-at-a-glance" class="nav-link active" data-scroll-target="#at-a-glance">At a glance</a></li>
+  <li><a href="#principles" id="toc-principles" class="nav-link" data-scroll-target="#principles">Principles</a></li>
+  <li><a href="#specification-overview" id="toc-specification-overview" class="nav-link" data-scroll-target="#specification-overview">Specification overview</a></li>
+  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  <li><a href="#native-reading" id="toc-native-reading" class="nav-link" data-scroll-target="#native-reading">Native reading</a></li>
+  <li><a href="#validation" id="toc-validation" class="nav-link" data-scroll-target="#validation">Validation</a></li>
+  <li><a href="#open-questions" id="toc-open-questions" class="nav-link" data-scroll-target="#open-questions">Open questions</a></li>
   </ul>
 </nav>
 </div>
@@ -2241,16 +2241,16 @@ vertical-align: -.125em;
 </header>
 
 
-<p>This page is the way into the format. It gives the principles, shows what a data file holds, and says what review is asked for and what has been tested. Most of it is folded: open what you want to read.</p>
-<p>The format is a set of names and rules on top of a standard MuData file. Nothing in it is specific to one analysis tool. One tool that builds on it is sceptre, whose analyses of a data file are stored in the <a href="https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/sceptre-analysis-format/overview.html">sceptre analysis format</a>.</p>
-<p>Two reference documents sit behind this page: <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/SPEC.md"><code>SPEC.md</code></a> has the rules, numbered, and <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md"><code>RATIONALE.md</code></a> has the full reasons, with evidence, under the same numbers.</p>
+<p>This page introduces a file format for the data of a Perturb-seq screen: the counts, and what is known about the cells and the gRNAs. It is written for someone who has not seen the format before.</p>
+<p>The format does not invent a container. It is a set of names and rules on top of <a href="https://mudata.readthedocs.io">MuData</a>, an existing file format for cells measured in several ways. It is meant for any software that handles Perturb-seq data, and nothing in it is specific to one analysis tool. The <a href="https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/sceptre-analysis-format/overview.html">sceptre analysis format</a>, which stores sceptre’s analyses of such a file, is separate and builds on this one: an analysis names its data file by the dataset identifier that the file carries.</p>
+<p><strong>If you are reviewing.</strong> Comments are wanted most on the <a href="#open-questions">open questions</a> at the end, and this page is meant to be enough to answer them. The rules themselves, numbered, are in <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/SPEC.md"><code>SPEC.md</code></a>, and the reasons for each, with evidence, are in <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md"><code>RATIONALE.md</code></a>; read those to check a detail. A label such as S8 on this page is the number of a group of rules, the same in both documents.</p>
 <div class="callout callout-style-simple callout-note">
 <div class="callout-body d-flex">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-body-container">
-<p><strong>Draft.</strong> Nothing here has been reviewed. The format is version 0.1 until it is frozen as 1.0.</p>
+<p><strong>Draft.</strong> Nothing here has been reviewed. The format is version 0.1 until it is frozen as 1.0, and anything in it can still change. No released version of sceptre or of pysceptre, its Python counterpart, reads or writes it yet: adopting it in the packages and the pipeline is the next phase of the <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/ROADMAP.md">roadmap</a>.</p>
 </div>
 </div>
 </div>
@@ -2289,6 +2289,10 @@ details.fold > :not(summary) { margin-left: 1.4em; }
 details.fold .where { opacity: 0.6; font-size: 0.88em; white-space: nowrap; }
 table.status td, table.status th { padding: 0.35em 0.8em 0.35em 0; vertical-align: top; text-align: left; border-bottom: 1px solid rgba(120, 130, 150, 0.25); }
 table.status td:nth-child(n+3) { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.defs { font-size: 0.93em; }
+table.defs td, table.defs th { padding: 0.3em 0.9em 0.3em 0; vertical-align: top; text-align: left; border-bottom: 1px solid rgba(120, 130, 150, 0.25); }
+table.defs td:nth-child(2) { white-space: nowrap; opacity: 0.75; }
+pre.layout { font-size: 0.88em; line-height: 1.35; }
 </style>
 <script>
 function treeAll(button, open) {
@@ -2298,8 +2302,73 @@ function treeAll(button, open) {
   if (!open) tree.querySelector("details").open = true;
 }
 </script>
-<section id="the-principles" class="level2">
-<h2 class="anchored" data-anchor-id="the-principles">The principles</h2>
+<section id="at-a-glance" class="level2">
+<h2 class="anchored" data-anchor-id="at-a-glance">At a glance</h2>
+<p>A data file is one MuData file, with the extension <code>.h5mu</code>. MuData holds one set of cells measured in several ways. Each kind of measurement is a <strong>modality</strong>, and each modality has three parts: a count matrix (<code>X</code>), a table with one row per cell (<code>obs</code>), and a table with one row per feature (<code>var</code>). The file also has a cell table shared by all modalities, and a place for entries about the file as a whole (<code>uns</code>).</p>
+<pre class="layout">screen.h5mu
+├── mod/
+│   ├── rna/        one modality for each thing measured
+│   │   ├── X       counts, cells × features
+│   │   ├── obs     this modality&#39;s cell table
+│   │   └── var     its feature table: one row per gene
+│   └── grna/       the gRNA modality, always under this name
+│       ├── X       gRNA counts, cells × gRNAs
+│       ├── obs
+│       └── var     the gRNA table: one row per gRNA
+├── obs             the cell table shared by all modalities
+└── uns             entries about the file as a whole
+</pre>
+<p>For someone who knows sceptre, this is where its inputs end up:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>In sceptre today</th>
+<th>In a data file</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>The response matrix</td>
+<td>The counts of a modality named for what was measured, usually <code>rna</code></td>
+</tr>
+<tr class="even">
+<td>The gRNA matrix</td>
+<td>The counts of the modality <code>grna</code></td>
+</tr>
+<tr class="odd">
+<td><code>grna_target_data_frame</code></td>
+<td>The gRNA table: <code>grna_target</code>, and the optional <code>target_chr</code>, <code>target_start</code>, <code>target_end</code> and <code>vector_id</code>. The gRNA’s identifier is the row name</td>
+</tr>
+<tr class="even">
+<td>The covariates sceptre computes (<code>response_n_umis</code>, <code>grna_n_nonzero</code>, …)</td>
+<td><code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> in each modality’s cell table. They are optional</td>
+</tr>
+<tr class="odd">
+<td>A covariate recorded with the experiment, such as batch or lane</td>
+<td>A column of the shared cell table</td>
+</tr>
+<tr class="even">
+<td><code>extra_covariates</code> given for an analysis</td>
+<td>Not in the data file. They are stored with the analysis</td>
+</tr>
+<tr class="odd">
+<td><code>moi</code></td>
+<td>Not in the data file. It is a setting of an analysis</td>
+</tr>
+<tr class="even">
+<td>Assignments, quality control, results</td>
+<td>Not in the data file. They are an analysis</td>
+</tr>
+</tbody>
+</table>
+<p>The rest of the page has five parts: the <strong>principles</strong> every choice follows from, a <strong>specification overview</strong>, an <strong>example</strong> file opened up, <strong>native reading</strong> with standard libraries, and <strong>validation</strong>: how a file, and the format itself, is checked.</p>
+</section>
+<section id="principles" class="level2">
+<h2 class="anchored" data-anchor-id="principles">Principles</h2>
 <p>Every choice in the format follows from these eight. Where two of them pull apart, the earlier one wins. Open one for its reason and what follows from it.</p>
 <details class="fold">
 <summary>
@@ -2307,7 +2376,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Screens are analysed in both languages, and what a file means should not depend on which language wrote or read it.</li>
-<li><strong>What follows.</strong> Only encodings that both languages read <em>and</em> write correctly today are allowed; that subset was measured, not assumed (Appendix A). Both languages read the file with standard libraries, so the format has no reader of its own.</li>
+<li><strong>What follows.</strong> Only encodings that both languages read <em>and</em> write correctly today are allowed; that subset was measured, not assumed (the measurements are in Appendix A of <code>RATIONALE.md</code>). Both languages read the file with standard libraries, so the format has no reader of its own.</li>
 </ul>
 </details>
 <details class="fold">
@@ -2316,7 +2385,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. Anything in the file that depended on an analysis choice would fit one analysis only, or force the file to be rewritten.</li>
-<li><strong>What follows.</strong> The file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis. There is no label for low or high multiplicity of infection, which is a choice about how to analyse a screen (S10). No modality is named for a role such as “response”: which one an analysis tests is that analysis’s choice (S2). Covariates that a user supplies for an analysis, such as a score, a cluster or a cell-type label that some method computed, are part of that analysis and are saved with it, not in the data file (S12.3). The file is written once and software that analyses it does not modify it (S12.2).</li>
+<li><strong>What follows.</strong> The file holds no assignments, no quality-control flags and no grouping of gRNAs. Counts are stored per gRNA, and are never summed over the gRNAs that one vector delivers together: combining them is a step of an analysis. There is no label for low or high multiplicity of infection, which is a choice about how to analyse a screen. No modality is named for a role such as “response”: which one an analysis tests is that analysis’s choice. Covariates that a user supplies for an analysis, such as a score, a cluster or a cell-type label that some method computed, are part of that analysis and are saved with it, not in the data file. The file is written once and software that analyses it does not modify it.</li>
 </ul>
 </details>
 <details class="fold">
@@ -2325,7 +2394,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> A file that many tools read and write cannot carry one tool’s name or assumptions, and data outlives the tool that imported it.</li>
-<li><strong>What follows.</strong> The format is a set of names and rules on a standard MuData file. Its own entries sit at the top level of <code>uns</code>, under no tool’s name (S10). Entries, modalities and columns that other tools add are left alone (S10.2, S2). The validator needs no analysis tool.</li>
+<li><strong>What follows.</strong> The format is a set of names and rules on a standard MuData file. Its own entries sit at the top level of <code>uns</code>, under no tool’s name. Entries, modalities and columns that other tools add are left alone. The validator needs no analysis tool.</li>
 </ul>
 </details>
 <details class="fold">
@@ -2334,7 +2403,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Other files refer to the cells and features of a data file: analyses, annotations, results. A row number means something only for one file in one order, and R counts from 1 where Python counts from 0.</li>
-<li><strong>What follows.</strong> Cell identifiers are unique, and feature identifiers are unique across the modalities of a file (S9.1, S9.2). Cells without barcodes are given identifiers, which are stored (S9.3). A gRNA names its target and its vector, and does not point at a row.</li>
+<li><strong>What follows.</strong> Cell identifiers are unique, and feature identifiers are unique across the modalities of a file. Cells without barcodes are given identifiers, which are stored. The gRNA table gives each gRNA’s target, and its vector where there is one, by name.</li>
 </ul>
 </details>
 <details class="fold">
@@ -2343,7 +2412,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> An existing format comes with readers, tools and users. An invented encoding needs code in two languages and has no other reader.</li>
-<li><strong>What follows.</strong> AnnData and MuData encodings are used as specified. The format adds names and rules, not encodings. Target positions follow the convention of GTF files (S8.10).</li>
+<li><strong>What follows.</strong> AnnData and MuData encodings are used as specified. The format adds names and rules, not encodings. Target positions follow the convention of GTF files.</li>
 </ul>
 </details>
 <details class="fold">
@@ -2352,7 +2421,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> The format will grow, and files outlive the code that wrote them. Older software has to keep working on newer files where it can, and fail cleanly where it cannot.</li>
-<li><strong>What follows.</strong> Columns, modalities and entries that do not change the meaning of what is already there can be added with a minor version (S10). Software refuses a file of a major version it does not know (S10.3).</li>
+<li><strong>What follows.</strong> Columns, modalities and entries that do not change the meaning of what is already there can be added with a minor version. Software refuses a file of a major version it does not know.</li>
 </ul>
 </details>
 <details class="fold">
@@ -2361,7 +2430,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Two copies of one fact can disagree, and the file then does not say which is right.</li>
-<li><strong>What follows.</strong> There are no logarithms or percentages of stored columns, and no per-cell top gRNA (S6). The exception is a value that nearly every analysis needs and that takes a full pass over the counts to recompute: <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> may be stored, and a writer should store the first two (S6).</li>
+<li><strong>What follows.</strong> There are no logarithms or percentages of stored columns, and no per-cell top gRNA. The exception is a value that nearly every analysis needs and that takes a full pass over the counts to recompute: <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> may be stored, and a writer should store the first two.</li>
 </ul>
 </details>
 <details class="fold">
@@ -2370,13 +2439,402 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Code is corrected in the next release. A file already written stays as it is for years.</li>
-<li><strong>What follows.</strong> Each choice is made on its merits and before the freeze. How existing code reads data is evidence when the pattern is sound, and never the only reason. What does not lock anything in is left open: compression is the writer’s choice, because HDF5 decompresses transparently (S11). <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md#6-fixed-now-free-to-grow">Section 6</a> says which parts would be expensive to change.</li>
+<li><strong>What follows.</strong> Each choice is made on its merits and before the freeze. How existing code reads data is evidence when the pattern is sound, and never the only reason. What does not lock anything in is left open: compression is the writer’s choice, because HDF5 decompresses transparently. The section <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/perturb-seq-data-format/RATIONALE.md#6-fixed-now-free-to-grow">Fixed now, free to grow</a> says which parts would be expensive to change.</li>
 </ul>
 </details>
 </section>
-<section id="what-is-on-disk" class="level2">
-<h2 class="anchored" data-anchor-id="what-is-on-disk">What is on disk</h2>
-<p>A screen is <strong>one file</strong>: a standard MuData <code>.h5mu</code> file, written once and never modified. It holds raw counts and what is known about the cells and the gRNAs, and nothing an analysis computes. The tree below is read from the example in <code>example/highmoi/</code>. Open a group to see what is in it, and an entry to see what it holds.</p>
+<section id="specification-overview" class="level2">
+<h2 class="anchored" data-anchor-id="specification-overview">Specification overview</h2>
+<p>MuData says how matrices and tables are encoded. This format says which ones a Perturb-seq file has, what they are called, and what they may contain.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>Rules</th>
+<th>In brief</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Modalities</td>
+<td>S2</td>
+<td>A modality named <code>grna</code> and at least one other, each named for what was measured (<code>rna</code>, <code>protein</code>). All hold the same cells in the same order</td>
+</tr>
+<tr class="even">
+<td>Counts</td>
+<td>S3, S4</td>
+<td>Raw integer counts, cells × features, sparse, stored feature by feature, as 32-bit integers</td>
+</tr>
+<tr class="odd">
+<td>Cell tables</td>
+<td>S5 to S7</td>
+<td>What was recorded about each cell with the experiment (batch, lane, donor) is in the shared table. What was measured in one modality is in that modality’s table. Only a few kinds of column are allowed, listed below</td>
+</tr>
+<tr class="even">
+<td>gRNA table</td>
+<td>S8</td>
+<td><code>grna_target</code> for every gRNA, with <code>non-targeting</code> for a control. Optionally the target’s position, the vector that delivers the gRNA, and the kind of gRNA</td>
+</tr>
+<tr class="odd">
+<td>Identifiers</td>
+<td>S9</td>
+<td>Every cell has a unique identifier. Every feature has one that is unique across the modalities of the file</td>
+</tr>
+<tr class="even">
+<td>The file’s own entries</td>
+<td>S10</td>
+<td>The format version and an identifier for the dataset. Optionally a title, the organism, the genome build, the kind of perturbation and a source</td>
+</tr>
+<tr class="odd">
+<td>Compression</td>
+<td>S11</td>
+<td>None or gzip, as the writer chooses</td>
+</tr>
+<tr class="even">
+<td>What is left out</td>
+<td>S12</td>
+<td>Anything an analysis chooses or produces. The file is written once. Changing the data means writing a new file</td>
+</tr>
+</tbody>
+</table>
+<p>The three tables below are read from <code>spec/screen.json</code>, the machine-readable part of the specification.</p>
+<details class="fold">
+<summary>
+Columns of a modality’s cell table
+</summary>
+<table class="defs">
+<thead>
+<tr>
+<th>
+Column
+</th>
+<th>
+</th>
+<th>
+What it is
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>n_umis</code>
+</td>
+<td>
+optional
+</td>
+<td>
+the cell&#39;s total count
+</td>
+</tr>
+<tr>
+<td>
+<code>n_nonzero</code>
+</td>
+<td>
+optional
+</td>
+<td>
+the cell&#39;s number of features with a nonzero count
+</td>
+</tr>
+<tr>
+<td>
+<code>p_mito</code>
+</td>
+<td>
+optional
+</td>
+<td>
+the cell&#39;s fraction of mitochondrial counts
+</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Other columns are allowed, in this table and in the shared one. A column name starts with a letter and has only letters, digits, underscores and dots.</li>
+<li><strong>Kinds of column.</strong> In a cell table: a decimal number, a 32-bit whole number, or a categorical (a factor). In a feature table, which includes the gRNA table: the same, or text. True/false columns, 64-bit whole numbers and text columns in a cell table are not allowed, because one of the two languages does not read them back correctly. A covariate that is text is stored as a categorical.</li>
+<li>A missing value is <code>NaN</code> in a decimal column and a missing level in a categorical.</li>
+<li><code>p_mito</code> is computed when the file is written, by whoever knows which genes are mitochondrial. The format defines no annotation of genes.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+Columns of the gRNA table
+</summary>
+<table class="defs">
+<thead>
+<tr>
+<th>
+Column
+</th>
+<th>
+</th>
+<th>
+What it is
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>grna_target</code>
+</td>
+<td>
+required
+</td>
+<td>
+what the gRNA is aimed at; <code>non-targeting</code> for a negative control
+</td>
+</tr>
+<tr>
+<td>
+<code>target_chr</code>
+</td>
+<td>
+optional
+</td>
+<td>
+chromosome of the target
+</td>
+</tr>
+<tr>
+<td>
+<code>target_start</code>
+</td>
+<td>
+optional
+</td>
+<td>
+first base of the target, 1-based
+</td>
+</tr>
+<tr>
+<td>
+<code>target_end</code>
+</td>
+<td>
+optional
+</td>
+<td>
+last base of the target, included
+</td>
+</tr>
+<tr>
+<td>
+<code>vector_id</code>
+</td>
+<td>
+optional
+</td>
+<td>
+the vector that delivers the gRNA
+</td>
+</tr>
+<tr>
+<td>
+<code>grna_type</code>
+</td>
+<td>
+optional
+</td>
+<td>
+the kind of gRNA: <code>targeting</code>, or one of the kinds of control (<code>non-targeting</code>, <code>safe-targeting</code>, <code>negative control</code>)
+</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>The gRNA’s identifier</strong> is the row name of the table, as the cell’s identifier is the row name of a cell table.</li>
+<li><strong>A target position</strong> is 1-based with both ends included, as in a GTF file. A file with positions must give the genome build. Positions are on the genome: a screen that targets RNA names the transcript in <code>grna_target</code> and leaves positions out. They may be stored as whole or as decimal numbers; the example stores them as decimal numbers.</li>
+<li><strong>A vector</strong> is the construct that delivers gRNAs into a cell. Some libraries put several gRNAs against one target on one vector. <code>vector_id</code> says which gRNAs travel together. Where the column is present every gRNA has a value, and a gRNA delivered alone has a vector of its own. All gRNAs of a vector must have the same target; a library that combines different targets on one vector is outside this version of the format.</li>
+<li><strong>The kinds of gRNA.</strong> <code>targeting</code> is an ordinary gRNA. The other three are controls: <code>non-targeting</code> matches nothing in the genome, <code>safe-targeting</code> cuts at a site believed to have no effect, and <code>negative control</code> is any other control. Every control, of whichever kind, has <code>grna_target</code> equal to <code>non-targeting</code> and no position. So the word <code>non-targeting</code> appears in two columns: as the target of every control, and as the kind of one sort of control. A file records that a safe-targeting gRNA is a control and not where it cuts. A positive control is a <code>targeting</code> gRNA: which pairs serve as positive controls is a choice of an analysis.</li>
+<li><strong>Not stored:</strong> sceptre’s <code>grna_group</code>, the grouping of gRNAs that an analysis tests together. It depends on how the analysis combines gRNAs.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+Entries of <code>uns</code>
+</summary>
+<table class="defs">
+<thead>
+<tr>
+<th>
+Entry
+</th>
+<th>
+</th>
+<th>
+What it is
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>perturb_seq_format</code>
+</td>
+<td>
+required
+</td>
+<td>
+the version of the Perturb-seq data file format this file follows
+</td>
+</tr>
+<tr>
+<td>
+<code>dataset_id</code>
+</td>
+<td>
+required
+</td>
+<td>
+identifies the dataset; random, assigned at import
+</td>
+</tr>
+<tr>
+<td>
+<code>title</code>
+</td>
+<td>
+optional
+</td>
+<td>
+a title for people
+</td>
+</tr>
+<tr>
+<td>
+<code>source</code>
+</td>
+<td>
+optional
+</td>
+<td>
+where the data came from: a URL, DOI or accession
+</td>
+</tr>
+<tr>
+<td>
+<code>perturbation_type</code>
+</td>
+<td>
+optional
+</td>
+<td>
+the kind of perturbation: <code>CRISPRko</code>, <code>CRISPRi</code>, <code>CRISPRa</code>, <code>CRISPRbe</code>, <code>CRISPRkd</code>
+</td>
+</tr>
+<tr>
+<td>
+<code>organism</code>
+</td>
+<td>
+optional
+</td>
+<td>
+the organism, as a scientific name
+</td>
+</tr>
+<tr>
+<td>
+<code>genome_build</code>
+</td>
+<td>
+optional
+</td>
+<td>
+the genome build of the positions; required when the gRNA table has positions
+</td>
+</tr>
+</tbody>
+</table>
+<p><code>dataset_id</code> is assigned when a file is first written from the raw data. A copy of the file keeps it. Data that is imported again, or corrected, is a new dataset and gets a new one.</p>
+<p><code>uns</code> may hold entries of other tools. They are not the format’s, and software reading the file ignores them. In R the entries are in <code>metadata()</code> of the object that is read.</p>
+</details>
+<section id="versions" class="level3">
+<h3 class="anchored" data-anchor-id="versions">Versions</h3>
+<p>A file carries the version of the format it follows, <code>perturb_seq_format</code>, in two parts: <code>MAJOR.MINOR</code>. A minor increase adds something older software can ignore. A major increase is any change after which older software could misread a file, and software refuses a file whose major version it does not know. Version 0 is the draft: until 1.0, rules can change without notice.</p>
+</section>
+<section id="the-choices-behind-it" class="level3">
+<h3 class="anchored" data-anchor-id="the-choices-behind-it">The choices behind it</h3>
+<p>These are the choices that cannot change after the format is frozen without breaking existing files. Each opens to its reason and the alternative it was chosen over.</p>
+<details class="fold">
+<summary>
+<strong>The data is one MuData <code>.h5mu</code> file.</strong> <span class="where">S1</span>
+</summary>
+<ul>
+<li><strong>Why.</strong> MuData is the standard of scverse, the Python single-cell ecosystem that scanpy belongs to, for one set of cells measured in several ways. Bioconductor reads and writes it too. Standard libraries open it in both languages, and one file is easy to move and publish.</li>
+<li><strong>Instead of.</strong> A Zarr store, two <code>.h5ad</code> files, the <code>ondisc</code> format, or a folder of Parquet and matrix files. <code>RATIONALE.md</code>, S1, compares them.</li>
+<li><strong>Locks in.</strong> HDF5. A Zarr variant could be added later without changing anything else.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>Data and analysis are separate.</strong> <span class="where">S12</span>
+</summary>
+<ul>
+<li><strong>The choice.</strong> The data file holds nothing an analysis produces: no assignments, no kept-or-removed flag, no results. Analyses are stored apart from it.</li>
+<li><strong>Why.</strong> One dataset has many analyses, and the data file is then written once and never touched again. Keeping a kept-or-removed flag in the data file, as pysceptre (the Python implementation of sceptre) does, means rewriting the whole file to work on the kept cells.</li>
+<li><strong>Instead of.</strong> One self-contained file holding data, assignments and results, which is the layout of the IGVF consortium’s Perturb-seq pipeline and suits uploading one file to a portal.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>Counts are stored by feature.</strong> <span class="where">S3</span>
+</summary>
+<ul>
+<li><strong>The choice.</strong> The count matrix is cells × features, column-compressed, so one gene is one contiguous read.</li>
+<li><strong>Why.</strong> Fitting a model goes gene by gene. With counts stored by cell, the IGVF consortium’s pipeline first splits the whole file into per-gene chunk files.</li>
+<li><strong>Cost.</strong> A file from another tool is usually stored by cell and is converted once at import.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>Modalities are named for what was measured.</strong> <span class="where">S2</span>
+</summary>
+<ul>
+<li><strong>The choice.</strong> The gRNA modality is always <code>grna</code>. Every other modality is named for its measurement (<code>rna</code>, <code>protein</code>, …). The file marks none as the one to analyse.</li>
+<li><strong>Why.</strong> A file can then hold a second measured modality, and any of them can be analysed later.</li>
+<li><strong>Instead of.</strong> A name for the part a modality plays in an analysis, such as <code>response</code>.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>Facts about the cell are in the shared cell table, measurements in each modality’s own.</strong> <span class="where">S5</span>
+</summary>
+<ul>
+<li><strong>The choice.</strong> Facts about the cell (batch, donor) are in the shared cell table. Measurements of a modality (<code>n_umis</code>) are in that modality’s cell table, under their plain names. No shared column starts with a modality’s name and an underscore, so software that sets the tables side by side under prefixed names (<code>rna_n_umis</code>) gets distinct names.</li>
+<li><strong>Why.</strong> A batch belongs to the cell, not to its RNA.</li>
+<li><strong>Instead of.</strong> Everything in one modality’s cell table, or everything in the shared table.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>The file’s own entries are at the top level of <code>uns</code>.</strong> <span class="where">S10</span>
+</summary>
+<ul>
+<li><strong>The choice.</strong> The format version (<code>perturb_seq_format</code>), the dataset’s identifier (<code>dataset_id</code>) and what is known about the screen (<code>title</code>, <code>organism</code>, <code>genome_build</code>, <code>perturbation_type</code>, <code>source</code>) are scalar entries at the top level of <code>uns</code>.</li>
+<li><strong>Why.</strong> They are facts about the dataset, so other tools should be able to read and write them. Under a key named for one tool they would belong to that tool.</li>
+<li><strong>Not in the file.</strong> Whether a screen is treated as low or high multiplicity of infection. It is a choice about how to analyse a screen, so it belongs with the analysis.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>The names.</strong> <span class="where">S2 to S10</span>
+</summary>
+<p>Names are as hard to change as structure: the modality names <code>rna</code> and <code>grna</code>, and the columns <code>grna_target</code>, <code>target_chr</code>, <code>target_start</code>, <code>target_end</code>, <code>vector_id</code>, <code>n_umis</code>, <code>n_nonzero</code>, <code>p_mito</code>. They are sceptre’s names. Other formats use other names for the same things, and none is a standard: the IGVF consortium’s pipeline calls the modalities <code>gene</code> and <code>guide</code> and the target <code>intended_target_name</code>, and pertpy’s example data calls them <code>rna</code> and <code>gdo</code>. If a name reads wrongly to you, now is the time to say so.</p>
+</details>
+</section>
+</section>
+<section id="example" class="level2">
+<h2 class="anchored" data-anchor-id="example">Example</h2>
+<p>The tree below is a real data file, <code>example/highmoi/screen.h5mu</code>: sceptre’s high-MOI example data, with 500 cells, 100 genes and 60 gRNAs. Open a group to see what is in it, and an entry to see its first rows. The descriptions are read from the specification’s own files.</p>
 <div class="tree">
 <div class="bar">
 <button onclick="treeAll(this, true)">
@@ -3028,10 +3486,10 @@ ENSG00000224277
 chr22
 </td>
 <td>
-2.357e+07
+23567064
 </td>
 <td>
-2.357e+07
+23567113
 </td>
 </tr>
 <tr>
@@ -3045,10 +3503,10 @@ ENSG00000224277
 chr22
 </td>
 <td>
-2.357e+07
+23567114
 </td>
 <td>
-2.357e+07
+23567163
 </td>
 </tr>
 <tr>
@@ -3062,10 +3520,10 @@ ENSG00000233521
 chr22
 </td>
 <td>
-2.723e+07
+27225134
 </td>
 <td>
-2.723e+07
+27225183
 </td>
 </tr>
 <tr>
@@ -3079,10 +3537,10 @@ ENSG00000233521
 chr22
 </td>
 <td>
-2.723e+07
+27225184
 </td>
 <td>
-2.723e+07
+27225233
 </td>
 </tr>
 <tr>
@@ -3096,10 +3554,10 @@ ENSG00000226772
 chr22
 </td>
 <td>
-2.911e+07
+29111683
 </td>
 <td>
-2.911e+07
+29111732
 </td>
 </tr>
 </tbody>
@@ -3276,10 +3734,12 @@ the genome build of the positions; required when the gRNA table has positions
 </li>
 </ul>
 </div>
+<p>A file may have columns the format does not define, such as <code>response_name</code> in the gene table here, which holds gene symbols. Software ignores columns it does not know.</p>
+<p>Two more example files are in <code>example/</code>: sceptre’s low-MOI example data, and a small made-up file that has every kind of column the format allows.</p>
 </section>
-<section id="open-the-file-yourself" class="level2">
-<h2 class="anchored" data-anchor-id="open-the-file-yourself">Open the file yourself</h2>
-<p>Standard libraries read it, in R or Python.</p>
+<section id="native-reading" class="level2">
+<h2 class="anchored" data-anchor-id="native-reading">Native reading</h2>
+<p>The format has no reader of its own. A data file is read with the standard MuData library of each language, and what comes back is a standard object held in memory: a <code>MultiAssayExperiment</code> in R and a <code>MuData</code> in Python.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="language">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href>R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href>Python</a></li></ul>
 <div class="tab-content" data-group="language">
@@ -3303,13 +3763,42 @@ Functionality:
  exportClass() - save data to flat files</code></pre>
 </div>
 </div>
+<p>The file’s own entries, and the gRNA table:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>S4Vectors<span class="sc">::</span><span class="fu">metadata</span>(screen)[<span class="fu">c</span>(<span class="st">&quot;perturb_seq_format&quot;</span>, <span class="st">&quot;dataset_id&quot;</span>, <span class="st">&quot;genome_build&quot;</span>)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$perturb_seq_format
+[1] &quot;0.1&quot;
+attr(,&quot;encoding-scalar&quot;)
+[1] TRUE
+
+$dataset_id
+[1] &quot;b907fd1b151fd398b78ff993ae9e86d6&quot;
+attr(,&quot;encoding-scalar&quot;)
+[1] TRUE
+
+$genome_build
+[1] &quot;GRCh38&quot;
+attr(,&quot;encoding-scalar&quot;)
+[1] TRUE</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(SummarizedExperiment<span class="sc">::</span><span class="fu">rowData</span>(screen[[<span class="st">&quot;grna&quot;</span>]]), <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>DataFrame with 3 rows and 4 columns
+                          grna_target target_chr target_start target_end
+                          &lt;character&gt;   &lt;factor&gt;    &lt;numeric&gt;  &lt;numeric&gt;
+ENSG00000224277_grna1 ENSG00000224277      chr22     23567064   23567113
+ENSG00000224277_grna2 ENSG00000224277      chr22     23567114   23567163
+ENSG00000233521_grna1 ENSG00000233521      chr22     27225134   27225183</code></pre>
+</div>
+</div>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> mudata</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>screen <span class="op">=</span> mudata.read_h5mu(<span class="st">&quot;example/highmoi/screen.h5mu&quot;</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(screen)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> mudata</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>screen <span class="op">=</span> mudata.read_h5mu(<span class="st">&quot;example/highmoi/screen.h5mu&quot;</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(screen)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>MuData object with n_obs × n_vars = 500 × 160
   obs:  &#39;batch&#39;
@@ -3325,117 +3814,726 @@ Functionality:
       layers:   None</code></pre>
 </div>
 </div>
+<p>The file’s own entries, and the gRNA table:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>({key: screen.uns[key] <span class="cf">for</span> key <span class="kw">in</span> (<span class="st">&quot;perturb_seq_format&quot;</span>, <span class="st">&quot;dataset_id&quot;</span>, <span class="st">&quot;genome_build&quot;</span>)})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>{&#39;perturb_seq_format&#39;: &#39;0.1&#39;, &#39;dataset_id&#39;: &#39;b907fd1b151fd398b78ff993ae9e86d6&#39;, &#39;genome_build&#39;: &#39;GRCh38&#39;}</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(screen[<span class="st">&quot;grna&quot;</span>].var.head(<span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                           grna_target target_chr  target_start  target_end
+ENSG00000224277_grna1  ENSG00000224277      chr22    23567064.0  23567113.0
+ENSG00000224277_grna2  ENSG00000224277      chr22    23567114.0  23567163.0
+ENSG00000233521_grna1  ENSG00000233521      chr22    27225134.0  27225183.0</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>R shows each matrix as features × cells, and Python as cells × features. It is the same stored matrix, which each language presents in its own convention.</p>
+<section id="reading-from-disk" class="level3">
+<h3 class="anchored" data-anchor-id="reading-from-disk">Reading from disk</h3>
+<p>For a file too large for memory, the counts stay on disk and are read one feature at a time. Because counts are stored feature by feature, one gene is one short read.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset" data-group="language">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href>R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href>Python</a></li></ul>
+<div class="tab-content" data-group="language">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>counts <span class="ot">&lt;-</span> HDF5Array<span class="sc">::</span><span class="fu">H5SparseMatrix</span>(<span class="st">&quot;example/highmoi/screen.h5mu&quot;</span>, <span class="st">&quot;mod/rna/X&quot;</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(counts)                 <span class="co"># 100 500: features × cells, still on disk</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(counts[<span class="dv">1</span>, ])            <span class="co"># 81: the counts of the first gene, read from the file</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> h5py</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> h5py.File(<span class="st">&quot;example/highmoi/screen.h5mu&quot;</span>) <span class="im">as</span> <span class="bu">file</span>:</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    counts <span class="op">=</span> <span class="bu">file</span>[<span class="st">&quot;mod/rna/X&quot;</span>]</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    start, end <span class="op">=</span> counts[<span class="st">&quot;indptr&quot;</span>][<span class="dv">0</span>:<span class="dv">2</span>]          <span class="co"># where the first gene&#39;s counts are</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(counts[<span class="st">&quot;data&quot;</span>][start:end].<span class="bu">sum</span>())      <span class="co"># 81: one contiguous read</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 </div>
 </div>
 </div>
 </section>
-<section id="the-choices-to-review" class="level2">
-<h2 class="anchored" data-anchor-id="the-choices-to-review">The choices to review</h2>
-<p>These are the choices that cannot change after the format is frozen without breaking existing files. Disagreement is cheap now and costly then. Each opens to its reason and the alternative it was chosen over; the label after each is the section of <code>RATIONALE.md</code> (and of <code>SPEC.md</code>) with the detail.</p>
+<section id="what-a-tool-still-has-to-check" class="level3">
+<h3 class="anchored" data-anchor-id="what-a-tool-still-has-to-check">What a tool still has to check</h3>
+<p>A standard library does not know this format’s rules, so a tool that reads a data file makes two checks of its own afterwards. <code>check_screen()</code>, in the folder <code>format/</code> of this repository, makes both on an object that has been read.</p>
+<ul>
+<li><strong>Refuse a file of a major version it does not know.</strong></li>
+<li><strong>Refuse a file in which one vector carries gRNAs with different targets.</strong></li>
+</ul>
+<p>This is different from validating a file, which checks every rule and is described in the next section. A tool that reads a file need not validate it.</p>
+</section>
+<section id="writing" class="level3">
+<h3 class="anchored" data-anchor-id="writing">Writing</h3>
+<p>There is no standard writer either, and the standard libraries do not write a conforming file by default: R’s MuData writer, for instance, stores counts as decimal numbers. A writer is a thin layer over the standard one that stores counts as integers, feature by feature, and keeps to the allowed kinds of column. <code>format/</code> has one for each language, <code>fmt_write_screen()</code> in R and <code>write_screen()</code> in Python. They are temporary: they exist to test the format, and the packages will write the files themselves.</p>
+</section>
+</section>
+<section id="validation" class="level2">
+<h2 class="anchored" data-anchor-id="validation">Validation</h2>
+<p>Four things check the format: a validator, a set of test files, a suite of checks, and automatic runs of that suite on every change.</p>
+<section id="what-conforms-means" class="level3">
+<h3 class="anchored" data-anchor-id="what-conforms-means">What “conforms” means</h3>
+<p>The specification has 64 numbered statements of three kinds.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Kind</th>
+<th>What it is about</th>
+<th>How many</th>
+<th>How it is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>File rule</td>
+<td>What a file contains</td>
+<td>42</td>
+<td>By the validator, on the file alone. The validators check all of them</td>
+</tr>
+<tr class="even">
+<td>Behaviour rule</td>
+<td>What software reading or writing a file does</td>
+<td>12</td>
+<td>By a test where one exists: 6 have one</td>
+</tr>
+<tr class="odd">
+<td>Guidance</td>
+<td>Advice to whoever writes files</td>
+<td>10</td>
+<td>Not checked</td>
+</tr>
+</tbody>
+</table>
+<p>A file <strong>conforms</strong> when it breaks no file rule. <code>SPEC.md</code> says beside each statement how it is checked, and which ones nothing tests yet.</p>
+</section>
+<section id="the-validator" class="level3">
+<h3 class="anchored" data-anchor-id="the-validator">The validator</h3>
+<p><code>validate_screen()</code> takes a file on disk and returns the rules it breaks, with where and why. It exists twice, in R and in Python (<code>format/</code>), and both read the same machine-readable definitions (<code>spec/screen.json</code>). It uses no analysis tool. Here it is on a test file in which a gRNA with a real target is marked as a control:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">&quot;format&quot;</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> perturb_seq_data</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>problems <span class="op">=</span> perturb_seq_data.validate_screen(<span class="st">&quot;conformance/invalid/screens/control_type_with_a_target.h5mu&quot;</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(problems.to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> rule                  where                                                                                                                                                message
+S8.16 mod/grna/var/grna_type `grna_type` and `grna_target` disagree: a control of any kind has the target `non-targeting` and no position, and a targeting gRNA has another target.</code></pre>
+</div>
+</div>
+<p>On a conforming file the result is empty.</p>
+</section>
+<section id="the-conformance-files" class="level3">
+<h3 class="anchored" data-anchor-id="the-conformance-files">The conformance files</h3>
+<p><code>conformance/</code> holds 10 files that conform and 43 files that each break one rule or a few. <code>conformance/cases.json</code> says, for every file, which rules a validator must report. Both validators must report exactly those, no more and no fewer. Someone writing another validator, or a reader, tests it against the same files.</p>
 <details class="fold">
 <summary>
-<strong>Data and analysis are separate.</strong> <span class="where">S12</span>
+The files that conform
 </summary>
-<ul>
-<li><strong>The choice.</strong> The data file holds nothing an analysis produces: no assignments, no kept-or-removed flag, no results. Analyses are stored apart from it.</li>
-<li><strong>Why.</strong> One dataset has many analyses, and the data file is then written once and never touched again. Keeping a kept-or-removed flag in the data file, as public pysceptre does, means rewriting the whole file to work on the kept cells.</li>
-<li><strong>Instead of.</strong> One self-contained file holding data, assignments and results, which is the IGVF pipeline’s layout and suits uploading one file to a portal.</li>
-</ul>
+<table class="defs">
+<thead>
+<tr>
+<th>
+File or folder
+</th>
+<th>
+What it is
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>types_written_by_r.h5mu</code>
+</td>
+<td>
+Every allowed kind of column, written by R
+</td>
+</tr>
+<tr>
+<td>
+<code>types_written_by_python.h5mu</code>
+</td>
+<td>
+The same data, written by Python
+</td>
+</tr>
+<tr>
+<td>
+<code>highmoi_written_by_r.h5mu</code>
+</td>
+<td>
+The high-MOI example, written by R
+</td>
+</tr>
+<tr>
+<td>
+<code>highmoi_written_by_python.h5mu</code>
+</td>
+<td>
+The high-MOI example, written by Python
+</td>
+</tr>
+<tr>
+<td>
+<code>types_with_another_tools_entry.h5mu</code>
+</td>
+<td>
+<code>uns</code> also holds an entry of another tool, which the format ignores (S10.2)
+</td>
+</tr>
+<tr>
+<td>
+<code>types_gzip_counts.h5mu</code>
+</td>
+<td>
+Counts compressed with gzip, which S11 allows
+</td>
+</tr>
+<tr>
+<td>
+<code>types_extra_modality_and_columns.h5mu</code>
+</td>
+<td>
+A third modality, and a gRNA column the format does not define
+</td>
+</tr>
+<tr>
+<td>
+<code>highmoi_without_count_summaries.h5mu</code>
+</td>
+<td>
+No cell table has <code>n_umis</code> or <code>n_nonzero</code>, which are optional (S6.1)
+</td>
+</tr>
+<tr>
+<td>
+<code>highmoi_with_grna_types.h5mu</code>
+</td>
+<td>
+The gRNA table says what kind of gRNA each is (<code>grna_type</code>); the controls are of two kinds
+</td>
+</tr>
+<tr>
+<td>
+<code>highmoi_grnas_on_shared_vectors.h5mu</code>
+</td>
+<td>
+Each target&#39;s two gRNAs are on one vector (<code>vector_id</code>); a non-targeting gRNA&#39;s vector is named after it
+</td>
+</tr>
+</tbody>
+</table>
 </details>
 <details class="fold">
 <summary>
-<strong>The data is one MuData <code>.h5mu</code> file.</strong> <span class="where">S1</span>
+The files that do not, and the rules each breaks
 </summary>
-<ul>
-<li><strong>Why.</strong> MuData is the scverse standard for one set of cells measured in several ways. Standard libraries open it in both languages, and one file is easy to move and publish.</li>
-<li><strong>Instead of.</strong> A Zarr store, two <code>.h5ad</code> files, the <code>ondisc</code> format, or a folder of Parquet and matrix files.</li>
-<li><strong>Locks in.</strong> HDF5. A Zarr variant could be added later without changing anything else.</li>
-</ul>
-</details>
-<details class="fold">
-<summary>
-<strong>Counts are stored by feature.</strong> <span class="where">S3</span>
-</summary>
-<ul>
-<li><strong>The choice.</strong> The count matrix is cells × features, column-compressed, so one gene is one contiguous read.</li>
-<li><strong>Why.</strong> Fitting a model goes gene by gene. With counts stored by cell, the IGVF pipeline first splits the whole file into per-gene chunk files.</li>
-<li><strong>Cost.</strong> A file from another tool is usually stored by cell and is converted once at import.</li>
-</ul>
-</details>
-<details class="fold">
-<summary>
-<strong>Modalities are named for what was measured.</strong> <span class="where">S2</span>
-</summary>
-<ul>
-<li><strong>The choice.</strong> The gRNA modality is always <code>grna</code>. Every other modality is named for its measurement (<code>rna</code>, <code>protein</code>, …). The file marks none as the one to analyse.</li>
-<li><strong>Why.</strong> A file can then hold a second measured modality, and any of them can be analysed later.</li>
-<li><strong>Instead of.</strong> A name for the part a modality plays in an analysis, such as <code>response</code>.</li>
-</ul>
-</details>
-<details class="fold">
-<summary>
-<strong>Facts about the cell are in the shared cell table, measurements in each modality’s own.</strong> <span class="where">S5</span>
-</summary>
-<ul>
-<li><strong>The choice.</strong> Facts about the cell (batch, donor) are in the shared cell table. Measurements of a modality (<code>n_umis</code>) are in that modality’s cell table, under their plain names. No shared column starts with a modality’s name and an underscore, so software that sets the tables side by side under prefixed names (<code>rna_n_umis</code>) gets distinct names.</li>
-<li><strong>Why.</strong> A batch belongs to the cell, not to its RNA.</li>
-<li><strong>Instead of.</strong> Everything in one modality’s cell table, or everything in the shared table.</li>
-</ul>
-</details>
-<details class="fold">
-<summary>
-<strong>Nothing is stored that follows from something else stored.</strong> <span class="where">S6</span>
-</summary>
-<ul>
-<li><strong>Examples.</strong> There are no logarithms or percentages of stored columns, and no per-cell top gRNA.</li>
-<li><strong>The exception.</strong> Each cell’s total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them.</li>
-</ul>
-</details>
-<details class="fold">
-<summary>
-<strong>The file’s own entries are at the top level of <code>uns</code>.</strong> <span class="where">S10</span>
-</summary>
-<ul>
-<li><strong>The choice.</strong> The format version (<code>perturb_seq_format</code>), the dataset’s identifier (<code>dataset_id</code>) and what is known about the screen (<code>title</code>, <code>organism</code>, <code>genome_build</code>, <code>perturbation_type</code>, <code>source</code>) are scalar entries at the top level of <code>uns</code>.</li>
-<li><strong>Why.</strong> They are facts about the dataset, so other tools should be able to read and write them. Under a key named for one tool they would belong to that tool.</li>
-<li><strong>The version</strong> is <code>MAJOR.MINOR</code>. A minor increase adds something older software can ignore. A major increase is any change after which older software could misread a file, and software refuses a major version it does not know.</li>
-<li><strong>Not in the file.</strong> Whether a screen is treated as low or high multiplicity of infection. It is a choice about how to analyse a screen, so it belongs with the analysis.</li>
-</ul>
-</details>
-<details class="fold">
-<summary>
-<strong>The names.</strong> <span class="where">SPEC, section 2</span>
-</summary>
-<p>Names are as hard to change as structure: the modality names <code>rna</code> and <code>grna</code>, and the columns <code>grna_target</code>, <code>target_chr</code>, <code>target_start</code>, <code>target_end</code>, <code>vector_id</code>, <code>n_umis</code>, <code>n_nonzero</code>, <code>p_mito</code>. Other formats use other names for the same things, and none is a standard. If one reads wrongly to you, now is the time to say so.</p>
+<table class="defs">
+<thead>
+<tr>
+<th>
+File or folder
+</th>
+<th>
+What it is
+</th>
+<th>
+Rules to report
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>not_hdf5.h5mu</code>
+</td>
+<td>
+A text file with the right extension
+</td>
+<td>
+S1.1
+</td>
+</tr>
+<tr>
+<td>
+<code>no_grna_modality.h5mu</code>
+</td>
+<td>
+The gRNA modality is named <code>guide</code>
+</td>
+<td>
+S2.1
+</td>
+</tr>
+<tr>
+<td>
+<code>bad_modality_name.h5mu</code>
+</td>
+<td>
+A modality named <code>1rna</code>
+</td>
+<td>
+S2.2
+</td>
+</tr>
+<tr>
+<td>
+<code>cells_in_another_order.h5mu</code>
+</td>
+<td>
+The gRNA modality lists two cells in the other order
+</td>
+<td>
+S2.3
+</td>
+</tr>
+<tr>
+<td>
+<code>compressed_by_cell.h5mu</code>
+</td>
+<td>
+The RNA counts are marked as compressed by cell (<code>csr_matrix</code>), as in an IGVF file
+</td>
+<td>
+S3.1
+</td>
+</tr>
+<tr>
+<td>
+<code>pointers_past_the_end.h5mu</code>
+</td>
+<td>
+The last column pointer is larger than the number of stored values
+</td>
+<td>
+S3.2
+</td>
+</tr>
+<tr>
+<td>
+<code>cells_unsorted_within_a_feature.h5mu</code>
+</td>
+<td>
+Two cell positions of the first gene are swapped
+</td>
+<td>
+S3.3
+</td>
+</tr>
+<tr>
+<td>
+<code>stored_zero.h5mu</code>
+</td>
+<td>
+A zero is stored as if it were a count
+</td>
+<td>
+S3.4
+</td>
+</tr>
+<tr>
+<td>
+<code>counts_as_doubles.h5mu</code>
+</td>
+<td>
+Counts stored as doubles, as R&#39;s MuData writes them by default
+</td>
+<td>
+S4.1
+</td>
+</tr>
+<tr>
+<td>
+<code>counts_as_uint16.h5mu</code>
+</td>
+<td>
+Counts stored as 16-bit unsigned integers, as an IGVF file has them
+</td>
+<td>
+S4.1
+</td>
+</tr>
+<tr>
+<td>
+<code>cell_positions_64_bit.h5mu</code>
+</td>
+<td>
+Cell positions stored as 64-bit integers beside 32-bit column pointers
+</td>
+<td>
+S4.2
+</td>
+</tr>
+<tr>
+<td>
+<code>pointers_64_bit.h5mu</code>
+</td>
+<td>
+Column pointers stored as 64-bit integers beside 32-bit cell positions: mixed widths, which scipy rejects in some operations
+</td>
+<td>
+S4.3
+</td>
+</tr>
+<tr>
+<td>
+<code>both_index_arrays_64_bit.h5mu</code>
+</td>
+<td>
+Both index arrays stored as 64-bit integers in a file small enough for 32-bit. The same file is what a file past the limit must look like: with the limit lowered for the test, the validators pass it
+</td>
+<td>
+S4.2, S4.3
+</td>
+</tr>
+<tr>
+<td>
+<code>shared_column_named_like_a_modality.h5mu</code>
+</td>
+<td>
+A shared cell column named <code>rna_quality</code>
+</td>
+<td>
+S5.1
+</td>
+</tr>
+<tr>
+<td>
+<code>covariate_name_with_a_dash.h5mu</code>
+</td>
+<td>
+A cell column named <code>donor-age</code>, which has a character outside the allowed ones
+</td>
+<td>
+S5.3
+</td>
+</tr>
+<tr>
+<td>
+<code>n_umis_as_labels.h5mu</code>
+</td>
+<td>
+<code>n_umis</code> stored as a categorical instead of a number
+</td>
+<td>
+S6.2
+</td>
+</tr>
+<tr>
+<td>
+<code>boolean_column.h5mu</code>
+</td>
+<td>
+A true/false cell column stored as booleans, as Python writes it by default
+</td>
+<td>
+S7.1
+</td>
+</tr>
+<tr>
+<td>
+<code>integer_column_64_bit.h5mu</code>
+</td>
+<td>
+A 64-bit integer cell column, as pandas writes integers by default
+</td>
+<td>
+S7.1
+</td>
+</tr>
+<tr>
+<td>
+<code>text_covariate.h5mu</code>
+</td>
+<td>
+A cell covariate stored as plain text instead of a categorical
+</td>
+<td>
+S7.1
+</td>
+</tr>
+<tr>
+<td>
+<code>nullable_string_column.h5mu</code>
+</td>
+<td>
+A gRNA column in anndata&#39;s nullable string encoding, which R cannot open
+</td>
+<td>
+S7.2
+</td>
+</tr>
+<tr>
+<td>
+<code>categorical_code_out_of_range.h5mu</code>
+</td>
+<td>
+A categorical with a code beyond its categories
+</td>
+<td>
+S7.3
+</td>
+</tr>
+<tr>
+<td>
+<code>integer_column_with_missing_value.h5mu</code>
+</td>
+<td>
+An integer cell column holding R&#39;s missing-integer value
+</td>
+<td>
+S7.4
+</td>
+</tr>
+<tr>
+<td>
+<code>no_grna_target.h5mu</code>
+</td>
+<td>
+The gRNA table has no <code>grna_target</code>
+</td>
+<td>
+S8.1
+</td>
+</tr>
+<tr>
+<td>
+<code>grna_group_stored.h5mu</code>
+</td>
+<td>
+The gRNA table stores <code>grna_group</code>, which is an analysis&#39;s choice
+</td>
+<td>
+S8.5
+</td>
+</tr>
+<tr>
+<td>
+<code>vector_with_two_targets.h5mu</code>
+</td>
+<td>
+Two gRNAs with different targets share a <code>vector_id</code>: a combinatorial screen
+</td>
+<td>
+S8.7
+</td>
+</tr>
+<tr>
+<td>
+<code>vector_named_like_another_grna.h5mu</code>
+</td>
+<td>
+A vector is named with the identifier of a gRNA on another vector
+</td>
+<td>
+S8.8
+</td>
+</tr>
+<tr>
+<td>
+<code>unknown_grna_type.h5mu</code>
+</td>
+<td>
+A <code>grna_type</code> is not one of the four kinds
+</td>
+<td>
+S8.15
+</td>
+</tr>
+<tr>
+<td>
+<code>control_type_with_a_target.h5mu</code>
+</td>
+<td>
+A gRNA with a real target is marked <code>safe-targeting</code>
+</td>
+<td>
+S8.16
+</td>
+</tr>
+<tr>
+<td>
+<code>targeting_type_without_a_target.h5mu</code>
+</td>
+<td>
+A gRNA whose target is <code>non-targeting</code> is marked <code>targeting</code>
+</td>
+<td>
+S8.16
+</td>
+</tr>
+<tr>
+<td>
+<code>vector_id_as_a_number.h5mu</code>
+</td>
+<td>
+<code>vector_id</code> stored as numbers
+</td>
+<td>
+S8.6
+</td>
+</tr>
+<tr>
+<td>
+<code>target_start_zero.h5mu</code>
+</td>
+<td>
+A target starts at position 0: a 0-based coordinate, as in a BED file
+</td>
+<td>
+S8.10
+</td>
+</tr>
+<tr>
+<td>
+<code>target_end_before_start.h5mu</code>
+</td>
+<td>
+A target ends before it starts
+</td>
+<td>
+S8.10
+</td>
+</tr>
+<tr>
+<td>
+<code>target_start_without_chromosome.h5mu</code>
+</td>
+<td>
+A gRNA has a target start and end and no chromosome
+</td>
+<td>
+S8.11
+</td>
+</tr>
+<tr>
+<td>
+<code>positions_without_genome_build.h5mu</code>
+</td>
+<td>
+The gRNA table has positions and the file has no <code>genome_build</code>
+</td>
+<td>
+S8.14
+</td>
+</tr>
+<tr>
+<td>
+<code>target_start_as_text.h5mu</code>
+</td>
+<td>
+<code>target_start</code> stored as text
+</td>
+<td>
+S8.2
+</td>
+</tr>
+<tr>
+<td>
+<code>duplicate_cell_identifiers.h5mu</code>
+</td>
+<td>
+Two cells have the same identifier
+</td>
+<td>
+S9.1
+</td>
+</tr>
+<tr>
+<td>
+<code>gene_named_like_a_grna.h5mu</code>
+</td>
+<td>
+A gene and a gRNA have the same identifier
+</td>
+<td>
+S9.2
+</td>
+</tr>
+<tr>
+<td>
+<code>identifier_with_a_line_feed.h5mu</code>
+</td>
+<td>
+A cell identifier contains a line feed
+</td>
+<td>
+S9.4
+</td>
+</tr>
+<tr>
+<td>
+<code>no_format_entries.h5mu</code>
+</td>
+<td>
+The file has neither <code>perturb_seq_format</code> nor <code>dataset_id</code>
+</td>
+<td>
+S10.1
+</td>
+</tr>
+<tr>
+<td>
+<code>title_as_a_number.h5mu</code>
+</td>
+<td>
+The optional title is a number
+</td>
+<td>
+S10.5
+</td>
+</tr>
+<tr>
+<td>
+<code>unknown_perturbation_type.h5mu</code>
+</td>
+<td>
+The optional perturbation type is not one of the listed kinds
+</td>
+<td>
+S10.6
+</td>
+</tr>
+<tr>
+<td>
+<code>format_from_the_future.h5mu</code>
+</td>
+<td>
+The data file&#39;s format version is 9.0
+</td>
+<td>
+S10.3
+</td>
+</tr>
+<tr>
+<td>
+<code>format_as_a_number.h5mu</code>
+</td>
+<td>
+The data file&#39;s format is the integer 0, not a version
+</td>
+<td>
+S10.1
+</td>
+</tr>
+</tbody>
+</table>
 </details>
 </section>
-<section id="questions-for-reviewers" class="level2">
-<h2 class="anchored" data-anchor-id="questions-for-reviewers">Questions for reviewers</h2>
-<ol type="1">
-<li><strong>Is anything missing that a real screen needs?</strong> For gRNA annotation the format has a target, its position, an optional vector and an optional type, and no spacer sequence or position of the gRNA itself yet. It defines no annotation of genes.</li>
-<li><strong>Coordinates.</strong> Target positions are 1-based with both ends included, as in GTF files, and a file with positions has to say which genome build they are in. Is that the right convention?</li>
-<li><strong>Limits.</strong> A gRNA has one target, and so does a vector carrying several gRNAs; combinatorial screens are refused. DNA-targeting is assumed. Are those limits acceptable for now?</li>
-<li><strong>The matrix layout.</strong> Counts are stored by feature, which suits fitting one gene at a time. Files from mapping pipelines and from scanpy are stored by cell. Should the format allow both and recommend one?</li>
-<li><strong>Nothing a method computed is in the file.</strong> A cell-type label, a cluster or a score is kept with the analysis that uses it, and the two count summaries <code>n_umis</code> and <code>n_nonzero</code> are optional. Other formats keep such annotations in the cell table. Is this boundary the right one?</li>
-<li><strong>The names.</strong> Would you use <code>rna</code> and <code>grna</code>, <code>grna_target</code>, and the entry names at the top level of <code>uns</code>, or do the names of another format serve better?</li>
-</ol>
-<details class="fold">
-<summary>
-What does not need review now
-</summary>
-<p>These can be added or changed later without breaking any file.</p>
-<ul>
-<li><strong>Optional columns not yet in the format:</strong> spacer, the gRNA’s own position, gene annotation (<code>RATIONALE.md</code>, planned additions).</li>
-<li><strong>The wording of individual rules.</strong> The sorting into file rules, behaviour rules and guidance is meant to be final; the sentences are not.</li>
-<li><strong>Compression settings.</strong> Software reading the files does not depend on them.</li>
-<li><strong>The code in <code>format/</code>.</strong> The validators show that the rules can be checked in both languages; the writer is temporary.</li>
-<li><strong>The comparisons with IGVF and pertpy</strong> in <code>RATIONALE.md</code>, unless you know those formats and see an error.</li>
-</ul>
-</details>
-</section>
-<section id="what-has-been-tested" class="level2">
-<h2 class="anchored" data-anchor-id="what-has-been-tested">What has been tested</h2>
-<p><code>verify/run.sh</code> runs every check. It uses no analysis tool. The counts below are from the run this page was rendered after.</p>
+<section id="the-suite" class="level3">
+<h3 class="anchored" data-anchor-id="the-suite">The suite</h3>
+<p><code>verify/run.sh</code> runs every check, in R and in Python, and prints a summary. The counts below are from the run this page was rendered after.</p>
 <table class="status">
 <thead>
 <tr>
@@ -3459,7 +4557,7 @@ Passed in Python
 <code>conformance</code>
 </td>
 <td>
-Both validators report exactly the expected rules on every data file of <code>conformance/</code> (files that conform, and files that each break a rule), and the standard readers read the files that must still be read
+Both validators report exactly the expected rules on every conformance file. A few broken files, such as one with counts stored as decimal numbers, do not conform but must still be read correctly by the standard libraries, and are
 </td>
 <td>
 53 of 53
@@ -3473,7 +4571,7 @@ Both validators report exactly the expected rules on every data file of <code>co
 <code>encodings</code>
 </td>
 <td>
-Every kind of column, written by each language&#39;s standard libraries and read by the other&#39;s. The kinds the format allows come back correct; the kinds it forbids still break
+Every kind of column, written by each language&#39;s standard library and read by the other&#39;s. The kinds the format allows come back correct. The kinds it forbids, such as true/false columns, do not, which is why they are forbidden
 </td>
 <td>
 12 of 12
@@ -3487,7 +4585,7 @@ Every kind of column, written by each language&#39;s standard libraries and read
 <code>independent-readers</code>
 </td>
 <td>
-Tools outside this code read the files: anndata and scanpy in Python, HDF5Array in R
+Tools that know nothing of this format read the example files: anndata and scanpy in Python, HDF5Array in R
 </td>
 <td>
 19 of 19
@@ -3501,7 +4599,7 @@ Tools outside this code read the files: anndata and scanpy in Python, HDF5Array 
 <code>wide-index</code>
 </td>
 <td>
-The 64-bit branch of the count matrix&#39;s index type, with the limit lowered because no test file reaches it
+Files whose count matrices need 64-bit positions, which very large screens do. No test file is that large, so the limit is lowered for the test
 </td>
 <td>
 13 of 13
@@ -3515,7 +4613,7 @@ The 64-bit branch of the count matrix&#39;s index type, with the limit lowered b
 <code>writers</code>
 </td>
 <td>
-What a writer does beyond producing a conforming file: a copy of a data file keeps the dataset&#39;s identifier and every modality, and past the index limit (lowered) both index arrays are 64-bit
+What a writer must do beyond producing a conforming file: a copy of a data file keeps the dataset&#39;s identifier and every modality
 </td>
 <td>
 7 of 7
@@ -3526,23 +4624,53 @@ What a writer does beyond producing a conforming file: a copy of a data file kee
 </tr>
 </tbody>
 </table>
+<p>The two languages run different numbers of checks in some groups, because each tests its own libraries.</p>
+</section>
+<section id="automatic-runs" class="level3">
+<h3 class="anchored" data-anchor-id="automatic-runs">Automatic runs</h3>
+<p>The suite runs by itself on GitHub whenever a change is pushed to this folder, on three fresh machines: Linux, macOS and Windows. Each installs only standard libraries, then runs <code>verify/run.sh</code>. A failure on any of them marks the change as failing. The current state and the history of runs are at the <a href="https://github.com/Katsevich-Lab/sceptre-hub/actions/workflows/perturb-seq-data-format.yml">workflow’s page</a>.</p>
+</section>
+<section id="at-real-size" class="level3">
+<h3 class="anchored" data-anchor-id="at-real-size">At real size</h3>
+<p>The example files are small. Once, by hand, the format was run on a real large screen: 207,324 cells, 13,135 genes and 13,077 gRNAs. Both languages wrote the data to identical files of 5.7 GB, both validators passed them, and both read them back, in memory and one gene at a time from disk. <code>scale-test/</code> has the numbers.</p>
+</section>
+<section id="what-is-not-tested" class="level3">
+<h3 class="anchored" data-anchor-id="what-is-not-tested">What is not tested</h3>
 <ul>
-<li><strong>Once, at scale:</strong> on a real screen of 207,324 cells, written by both languages to identical files and read back in memory and from disk (<code>scale-test/</code>).</li>
-<li><strong>On three operating systems:</strong> the suite passes on macOS, Linux and Windows.</li>
-</ul>
-<p><strong>Not tested.</strong></p>
-<ul>
-<li>Real data in a second measured modality.</li>
-<li>Count matrices past the 32-bit index limit. The 64-bit types are handled; values that large are not exercised.</li>
+<li>Real data with a second measured modality, such as protein.</li>
+<li>A count matrix with more than about 2.1 billion nonzero counts, where positions no longer fit in 32 bits. The file layout for that case is tested at small size only.</li>
 <li>An implementation by someone else. One author wrote the specification and both validators.</li>
 </ul>
-<p><code>SPEC.md</code> marks each rule with how it is checked, including the rules nothing tests.</p>
 </section>
-<section id="what-is-in-this-folder" class="level2">
-<h2 class="anchored" data-anchor-id="what-is-in-this-folder">What is in this folder</h2>
+</section>
+<section id="open-questions" class="level2">
+<h2 class="anchored" data-anchor-id="open-questions">Open questions</h2>
+<p>Review is wanted on these most.</p>
+<ol type="1">
+<li><strong>Is anything missing that a real screen needs?</strong> For gRNAs the format has a target, its position, an optional vector and an optional kind. It has no spacer sequence and no position of the gRNA itself yet, and it defines no annotation of genes, not even gene symbols. It holds gRNA counts, so a screen delivered only as gRNA calls has no place in it.</li>
+<li><strong>Coordinates.</strong> Target positions are 1-based with both ends included, as in GTF files, and a file with positions has to say which genome build they are in. Is that the right convention?</li>
+<li><strong>Limits.</strong> A gRNA has one target, and so does a vector carrying several gRNAs; a library that combines targets on one vector is refused. Targets are assumed to be on DNA. Are those limits acceptable for now?</li>
+<li><strong>Controls.</strong> Every control, of whichever kind, has the target <code>non-targeting</code> and no position. Is it right that a file does not record where a safe-targeting gRNA cuts?</li>
+<li><strong>The matrix layout.</strong> Counts are stored feature by feature, which suits fitting one gene at a time. Files from mapping pipelines and from scanpy are stored cell by cell. Should the format allow both and recommend one? The cost of converting a large file from one layout to the other has not been measured.</li>
+<li><strong>What counts as data.</strong> A cell-type label, a cluster or a score that some method computed is kept with the analysis that uses it, not in the data file. The only computed values the file may hold are the count summaries <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code>. Other formats keep computed annotations in the cell table. Is this boundary the right one?</li>
+<li><strong>The names.</strong> Would you use <code>rna</code> and <code>grna</code>, <code>grna_target</code>, and the entry names in <code>uns</code>, or do the names of another format serve better?</li>
+</ol>
 <details class="fold">
 <summary>
-The folders and files of <code>perturb-seq-data-format/</code>
+What does not need review now
+</summary>
+<p>These can be added or changed later without breaking any file.</p>
+<ul>
+<li><strong>Optional columns not yet in the format:</strong> spacer, the gRNA’s own position, gene annotation (<code>RATIONALE.md</code>, planned additions).</li>
+<li><strong>The wording of individual rules.</strong> The sorting into file rules, behaviour rules and guidance is meant to be final; the sentences are not.</li>
+<li><strong>Compression settings.</strong> Software reading the files does not depend on them.</li>
+<li><strong>The code in <code>format/</code>.</strong> The validators show that the rules can be checked in both languages; the writers there are temporary.</li>
+<li><strong>The comparisons with other formats</strong> in <code>RATIONALE.md</code>, unless you know those formats and see an error.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+What is in this folder
 </summary>
 <table class="caption-top table">
 <colgroup>
@@ -3556,15 +4684,15 @@ The folders and files of <code>perturb-seq-data-format/</code>
 </tr>
 <tr class="even">
 <td><code>SPEC.md</code></td>
-<td>The specification: scope, terms, and numbered statements sorted into file rules, behaviour rules and guidance</td>
+<td>The specification: scope, terms, and the numbered statements</td>
 </tr>
 <tr class="odd">
 <td><code>RATIONALE.md</code></td>
-<td>The reasons: every choice with its alternatives and evidence, comparisons with the IGVF pipeline’s format and with pertpy, planned additions, and the measurements</td>
+<td>The reasons: every choice with its alternatives and evidence, comparisons with other formats, planned additions, and the measurements</td>
 </tr>
 <tr class="even">
 <td><code>spec/screen.json</code></td>
-<td>The machine-readable structure of a data file. The descriptions in the tree above are read from it</td>
+<td>The machine-readable structure of a data file</td>
 </tr>
 <tr class="odd">
 <td><code>format/</code></td>
@@ -3572,15 +4700,15 @@ The folders and files of <code>perturb-seq-data-format/</code>
 </tr>
 <tr class="even">
 <td><code>example/</code></td>
-<td>Data files in the format: a high-MOI dataset, a low-MOI dataset, and a small synthetic file with every kind of column</td>
+<td>Three data files in the format</td>
 </tr>
 <tr class="odd">
 <td><code>conformance/</code></td>
-<td>Data files that conform and data files that each break a rule, with what a validator must report</td>
+<td>Files that conform and files that each break a rule, with what a validator must report</td>
 </tr>
 <tr class="even">
 <td><code>verify/</code></td>
-<td>The verification suite</td>
+<td>The suite of checks</td>
 </tr>
 <tr class="odd">
 <td><code>scale-test/</code></td>
@@ -3588,16 +4716,6 @@ The folders and files of <code>perturb-seq-data-format/</code>
 </tr>
 </tbody>
 </table>
-</details>
-<details class="fold">
-<summary>
-How the format is defined
-</summary>
-<ul>
-<li><strong>The format is <code>SPEC.md</code> and <code>spec/screen.json</code>.</strong> The validator, <code>validate_screen()</code>, exists in R and in Python and decides whether a file conforms. There is no canonical writer.</li>
-<li><strong>A data file is read with standard libraries:</strong> <code>mudata.read_h5mu</code> in Python, <code>MuData::readH5MU</code> in R. The format has no reader of its own.</li>
-<li><strong>Writers are custom.</strong> Each is a wrapper around the standard writer that stays inside what both languages read correctly.</li>
-</ul>
 </details>
 </section>
 

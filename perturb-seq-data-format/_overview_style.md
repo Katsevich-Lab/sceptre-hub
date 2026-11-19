@@ -34,6 +34,10 @@ details.fold > :not(summary) { margin-left: 1.4em; }
 details.fold .where { opacity: 0.6; font-size: 0.88em; white-space: nowrap; }
 table.status td, table.status th { padding: 0.35em 0.8em 0.35em 0; vertical-align: top; text-align: left; border-bottom: 1px solid rgba(120, 130, 150, 0.25); }
 table.status td:nth-child(n+3) { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.defs { font-size: 0.93em; }
+table.defs td, table.defs th { padding: 0.3em 0.9em 0.3em 0; vertical-align: top; text-align: left; border-bottom: 1px solid rgba(120, 130, 150, 0.25); }
+table.defs td:nth-child(2) { white-space: nowrap; opacity: 0.75; }
+pre.layout { font-size: 0.88em; line-height: 1.35; }
 </style>
 <script>
 function treeAll(button, open) {
