@@ -257,12 +257,12 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S8.8 | file | A `vector_id` MUST NOT equal the identifier of a gRNA on another vector. A vector with one gRNA may be named after it. | V |
 | S8.9 | behaviour | A reader MUST refuse a file that breaks S8.7 or S8.8. A writer MUST NOT sum counts over the gRNAs of a vector: counts are stored per gRNA, and combining them is a step of an analysis. | tests (`check_screen()` refuses the conformance files, in both languages) |
 | S8.10 | file | Positions are **1-based with both ends included**: `target_start` is the first base of the target and `target_end` the last. Both are whole numbers, `target_start` is at least 1, and `target_end` is not before `target_start`. A single position has the two equal. | V |
-| S8.11 | file | A gRNA has all three of `target_chr`, `target_start` and `target_end`, or none of them. A non-targeting gRNA has none. | V |
+| S8.11 | file | A gRNA has all three of `target_chr`, `target_start` and `target_end`, or none of them. | V |
 | S8.12 | guidance | This is the convention of GTF and GFF files, Ensembl, and Bioconductor's `GRanges`. An interval from a BED file (0-based, end excluded) is converted at import by adding 1 to its start. The format has one convention and no entry that says which is in use. Any position column added later follows it. | — |
 | S8.13 | guidance | Chromosome names are text, and the format does not choose between `chr1` and `1`. They have to match the naming of whatever positions they are compared with. | — |
 | S8.14 | file | A file in which any gRNA has a position MUST have `genome_build` (S10.5). A position cannot be compared with another without knowing the build of both, and the build cannot be worked out from the file. | V |
 | S8.15 | file | The gRNA table MAY have `grna_type`, the kind of each gRNA: text with no missing values, one of `targeting`, `non-targeting`, `safe-targeting`, `negative control`. The last three are kinds of control. A table without the column does not record the kind. | V |
-| S8.16 | file | Where `grna_type` is present it MUST agree with `grna_target`: a gRNA of any control kind has `grna_target` equal to `non-targeting` and no target position, and a `targeting` gRNA has another target. | V |
+| S8.16 | file | Where `grna_type` is present it MUST agree with `grna_target`: a gRNA of any control kind has `grna_target` equal to `non-targeting`, and a `targeting` gRNA has another target. A control MAY have a position: where it cuts, for a safe-targeting gRNA. | V |
 | S8.17 | guidance | Whether a gRNA is a control is decided by `grna_target` (S8.3), with or without `grna_type`; the column says which kind of control it is. A file that carries other columns of the IGVF guide table (the gRNA's own position, spacer, PAM, strand) SHOULD keep IGVF's names for them. | — |
 
 ### S9. Identifiers

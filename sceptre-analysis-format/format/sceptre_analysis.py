@@ -152,9 +152,16 @@ def _byte_order(table: pd.DataFrame, key) -> list[int]:
 # ---------------------------------------------------------------- tables (T0)
 
 
-def write_table(table: pd.DataFrame, path, key, metadata=None) -> int:
-    """Rows sorted by the key in byte order; row groups of at most a million rows.
-    `metadata` is text by key, stored in the file's own key-value metadata."""
+def row_group_limit(name=None) -> tuple[int, str]:
+    """The most rows a row group of the table may have, and the rule that says so:
+    a million for every table (T0.3), fewer for the tables with a list per row (T5.7)."""
+    definition = TABLE_DEFINITIONS.get(name, {})
+    return int(definition.get("max_rows_per_row_group", ROW_GROUP_ROWS)), definition.get("row_group_rule", "T0.3")
+
+
+def write_table(table: pd.DataFrame, path, key, metadata=None, table_name=None) -> int:
+    """Rows sorted by the key in byte order, in row groups no larger than the table
+    `table_name` allows. `metadata` is text by key, stored in the file's own key-value metadata."""
     import pyarrow as pa
     import pyarrow.parquet as pq
 
@@ -180,7 +187,7 @@ def write_table(table: pd.DataFrame, path, key, metadata=None) -> int:
         arrays.append(array)
         fields.append(pa.field(str(name), array.type))
     out = pa.Table.from_arrays(arrays, schema=pa.schema(fields, metadata=metadata))
-    _atomically(path, lambda t: pq.write_table(out, t, row_group_size=ROW_GROUP_ROWS))
+    _atomically(path, lambda t: pq.write_table(out, t, row_group_size=row_group_limit(table_name)[0]))
     return len(table)
 
 
@@ -335,7 +342,7 @@ def write_stage(directory, stage, record: dict, tables=None, provenance=None) ->
         if name not in TABLES or TABLES[name][0] != stage:
             raise ValueError(f"Stage '{stage}' does not write the table {name}.")
         # listed by its name within the stage's folder
-        files.append({"path": f"{name.split('/')[-1]}.parquet", "rows": write_table(table, table_path(directory, name), _table_key(name, table))})
+        files.append({"path": f"{name.split('/')[-1]}.parquet", "rows": write_table(table, table_path(directory, name), _table_key(name, table), table_name=name)})
     provenance = dict(provenance or {"package": "sceptre_analysis.py", "version": "prototype", "language": "Python"})
     provenance.setdefault("written_at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
     _write_json({"stage": stage, **record, "provenance": provenance, "files": files}, _stage_file(directory, stage))
@@ -433,6 +440,24 @@ def write_fits(directory, table: pd.DataFrame, identity: dict) -> Path:
     part = directory / FITS / f"part-{uuid.uuid4().hex[:12]}.parquet"
     write_table(table, part, _table_key(FITS, table), {FIT_KEY: json.dumps(identity, sort_keys=True)})
     return part
+
+
+def merge_fits(directory) -> list:
+    """Replace the parts that carry one identity by a single part holding their
+    fits (T6.4). For a writer that knows no job is still adding to the cache.
+    Returns the parts written."""
+    by_identity = {}
+    for file, identity in fit_parts(directory):
+        if identity is not None:
+            by_identity.setdefault(json.dumps(identity, sort_keys=True), []).append(file)
+    written = []
+    for text, files in by_identity.items():
+        if len(files) > 1:
+            table = read_table(files, TABLES[FITS][2]).drop_duplicates(subset="response_id").reset_index(drop=True)
+            written.append(write_fits(directory, table, json.loads(text)))
+            for file in files:
+                file.unlink()
+    return written
 
 
 def read_fits(directory, identity=None):
@@ -875,8 +900,9 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
         parts = []
         for file in _table_files(full):
             parquet = pq.ParquetFile(file)
-            if any(parquet.metadata.row_group(i).num_rows > ROW_GROUP_ROWS for i in range(parquet.metadata.num_row_groups)):
-                log.add("T0.3", where, f"has a row group of more than {ROW_GROUP_ROWS} rows.")
+            limit, rule = row_group_limit(name)
+            if any(parquet.metadata.row_group(i).num_rows > limit for i in range(parquet.metadata.num_row_groups)):
+                log.add(rule, where, f"has a row group of more than {limit} rows.")
             parts.append(parquet.read())
         ok = True
         for column in definition["columns"]:

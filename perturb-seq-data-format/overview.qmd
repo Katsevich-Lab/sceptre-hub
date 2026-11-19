@@ -190,10 +190,9 @@ print(nt.definitions(spec["grna_table"], "Column"))
   controls: `non-targeting` matches nothing in the genome, `safe-targeting`
   cuts at a site believed to have no effect, and `negative control` is any
   other control. Every control, of whichever kind, has `grna_target` equal to
-  `non-targeting` and no position. So the word `non-targeting` appears in two
-  columns: as the target of every control, and as the kind of one sort of
-  control. A file records that a safe-targeting gRNA is a control and not
-  where it cuts. A positive control is a `targeting` gRNA: which pairs
+  `non-targeting`. So the word `non-targeting` appears in two columns: as the
+  target of every control, and as the kind of one sort of control. A control
+  may have a position: for a safe-targeting gRNA, where it cuts. A positive control is a `targeting` gRNA: which pairs
   serve as positive controls is a choice of an analysis.
 - **Not stored:** sceptre's `grna_group`, the grouping of gRNAs that an
   analysis tests together. It depends on how the analysis combines gRNAs.
@@ -538,10 +537,9 @@ Review is wanted on these most.
 1. **Is anything missing that a real screen needs?** For gRNAs the format has a target, its position, an optional vector and an optional kind. It has no spacer sequence and no position of the gRNA itself yet, and it defines no annotation of genes, not even gene symbols. It holds gRNA counts, so a screen delivered only as gRNA calls has no place in it.
 2. **Coordinates.** Target positions are 1-based with both ends included, as in GTF files, and a file with positions has to say which genome build they are in. Is that the right convention?
 3. **Limits.** A gRNA has one target, and so does a vector carrying several gRNAs; a library that combines targets on one vector is refused. Targets are assumed to be on DNA. Are those limits acceptable for now?
-4. **Controls.** Every control, of whichever kind, has the target `non-targeting` and no position. Is it right that a file does not record where a safe-targeting gRNA cuts?
-5. **The matrix layout.** Counts are stored feature by feature, which suits fitting one gene at a time. Files from mapping pipelines and from scanpy are stored cell by cell. Should the format allow both and recommend one? The cost of converting a large file from one layout to the other has not been measured.
-6. **What counts as data.** A cell-type label, a cluster or a score that some method computed is kept with the analysis that uses it, not in the data file. The only computed values the file may hold are the count summaries `n_umis`, `n_nonzero` and `p_mito`. Other formats keep computed annotations in the cell table. Is this boundary the right one?
-7. **The names.** Would you use `rna` and `grna`, `grna_target`, and the entry names in `uns`, or do the names of another format serve better?
+4. **The matrix layout.** Counts are stored feature by feature, which suits fitting one gene at a time. Files from mapping pipelines and from scanpy are stored cell by cell. Should the format allow both and recommend one? The cost of converting a large file from one layout to the other has not been measured.
+5. **What counts as data.** The format advises that a value some method computed, such as a cell-type label, a cluster or a score, is kept with the analysis that uses it and not in the data file. This is advice: a file that carries such a column still conforms, and sceptre does not put its own there. The count summaries `n_umis`, `n_nonzero` and `p_mito` are the exception the format itself defines. Other formats keep computed annotations in the cell table. Is this boundary the right one?
+6. **The names.** Would you use `rna` and `grna`, `grna_target`, and the entry names in `uns`, or do the names of another format serve better?
 
 <details class="fold">
 <summary>What does not need review now</summary>

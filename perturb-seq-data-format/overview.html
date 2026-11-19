@@ -2653,7 +2653,7 @@ the kind of gRNA: <code>targeting</code>, or one of the kinds of control (<code>
 <li><strong>The gRNA’s identifier</strong> is the row name of the table, as the cell’s identifier is the row name of a cell table.</li>
 <li><strong>A target position</strong> is 1-based with both ends included, as in a GTF file. A file with positions must give the genome build. Positions are on the genome: a screen that targets RNA names the transcript in <code>grna_target</code> and leaves positions out. They may be stored as whole or as decimal numbers; the example stores them as decimal numbers.</li>
 <li><strong>A vector</strong> is the construct that delivers gRNAs into a cell. Some libraries put several gRNAs against one target on one vector. <code>vector_id</code> says which gRNAs travel together. Where the column is present every gRNA has a value, and a gRNA delivered alone has a vector of its own. All gRNAs of a vector must have the same target; a library that combines different targets on one vector is outside this version of the format.</li>
-<li><strong>The kinds of gRNA.</strong> <code>targeting</code> is an ordinary gRNA. The other three are controls: <code>non-targeting</code> matches nothing in the genome, <code>safe-targeting</code> cuts at a site believed to have no effect, and <code>negative control</code> is any other control. Every control, of whichever kind, has <code>grna_target</code> equal to <code>non-targeting</code> and no position. So the word <code>non-targeting</code> appears in two columns: as the target of every control, and as the kind of one sort of control. A file records that a safe-targeting gRNA is a control and not where it cuts. A positive control is a <code>targeting</code> gRNA: which pairs serve as positive controls is a choice of an analysis.</li>
+<li><strong>The kinds of gRNA.</strong> <code>targeting</code> is an ordinary gRNA. The other three are controls: <code>non-targeting</code> matches nothing in the genome, <code>safe-targeting</code> cuts at a site believed to have no effect, and <code>negative control</code> is any other control. Every control, of whichever kind, has <code>grna_target</code> equal to <code>non-targeting</code>. So the word <code>non-targeting</code> appears in two columns: as the target of every control, and as the kind of one sort of control. A control may have a position: for a safe-targeting gRNA, where it cuts. A positive control is a <code>targeting</code> gRNA: which pairs serve as positive controls is a choice of an analysis.</li>
 <li><strong>Not stored:</strong> sceptre’s <code>grna_group</code>, the grouping of gRNAs that an analysis tests together. It depends on how the analysis combines gRNAs.</li>
 </ul>
 </details>
@@ -3927,15 +3927,15 @@ ENSG00000233521_grna1  ENSG00000233521      chr22    27225134.0  27225183.0</cod
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>problems <span class="op">=</span> perturb_seq_data.validate_screen(<span class="st">&quot;conformance/invalid/screens/control_type_with_a_target.h5mu&quot;</span>)</span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(problems.to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> rule                  where                                                                                                                                                message
-S8.16 mod/grna/var/grna_type `grna_type` and `grna_target` disagree: a control of any kind has the target `non-targeting` and no position, and a targeting gRNA has another target.</code></pre>
+<pre><code> rule                  where                                                                                                                                message
+S8.16 mod/grna/var/grna_type `grna_type` and `grna_target` disagree: a control of any kind has the target `non-targeting`, and a targeting gRNA has another target.</code></pre>
 </div>
 </div>
 <p>On a conforming file the result is empty.</p>
 </section>
 <section id="the-conformance-files" class="level3">
 <h3 class="anchored" data-anchor-id="the-conformance-files">The conformance files</h3>
-<p><code>conformance/</code> holds 10 files that conform and 43 files that each break one rule or a few. <code>conformance/cases.json</code> says, for every file, which rules a validator must report. Both validators must report exactly those, no more and no fewer. Someone writing another validator, or a reader, tests it against the same files.</p>
+<p><code>conformance/</code> holds 11 files that conform and 43 files that each break one rule or a few. <code>conformance/cases.json</code> says, for every file, which rules a validator must report. Both validators must report exactly those, no more and no fewer. Someone writing another validator, or a reader, tests it against the same files.</p>
 <details class="fold">
 <summary>
 The files that conform
@@ -4022,6 +4022,14 @@ No cell table has <code>n_umis</code> or <code>n_nonzero</code>, which are optio
 </td>
 <td>
 The gRNA table says what kind of gRNA each is (<code>grna_type</code>); the controls are of two kinds
+</td>
+</tr>
+<tr>
+<td>
+<code>highmoi_safe_targeting_control_with_a_position.h5mu</code>
+</td>
+<td>
+A safe-targeting control has a position, where it cuts, and the target <code>non-targeting</code>
 </td>
 </tr>
 <tr>
@@ -4560,10 +4568,10 @@ Passed in Python
 Both validators report exactly the expected rules on every conformance file. A few broken files, such as one with counts stored as decimal numbers, do not conform but must still be read correctly by the standard libraries, and are
 </td>
 <td>
-53 of 53
+54 of 54
 </td>
 <td>
-53 of 53
+54 of 54
 </td>
 </tr>
 <tr>
@@ -4650,9 +4658,8 @@ What a writer must do beyond producing a conforming file: a copy of a data file 
 <li><strong>Is anything missing that a real screen needs?</strong> For gRNAs the format has a target, its position, an optional vector and an optional kind. It has no spacer sequence and no position of the gRNA itself yet, and it defines no annotation of genes, not even gene symbols. It holds gRNA counts, so a screen delivered only as gRNA calls has no place in it.</li>
 <li><strong>Coordinates.</strong> Target positions are 1-based with both ends included, as in GTF files, and a file with positions has to say which genome build they are in. Is that the right convention?</li>
 <li><strong>Limits.</strong> A gRNA has one target, and so does a vector carrying several gRNAs; a library that combines targets on one vector is refused. Targets are assumed to be on DNA. Are those limits acceptable for now?</li>
-<li><strong>Controls.</strong> Every control, of whichever kind, has the target <code>non-targeting</code> and no position. Is it right that a file does not record where a safe-targeting gRNA cuts?</li>
 <li><strong>The matrix layout.</strong> Counts are stored feature by feature, which suits fitting one gene at a time. Files from mapping pipelines and from scanpy are stored cell by cell. Should the format allow both and recommend one? The cost of converting a large file from one layout to the other has not been measured.</li>
-<li><strong>What counts as data.</strong> A cell-type label, a cluster or a score that some method computed is kept with the analysis that uses it, not in the data file. The only computed values the file may hold are the count summaries <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code>. Other formats keep computed annotations in the cell table. Is this boundary the right one?</li>
+<li><strong>What counts as data.</strong> The format advises that a value some method computed, such as a cell-type label, a cluster or a score, is kept with the analysis that uses it and not in the data file. This is advice: a file that carries such a column still conforms, and sceptre does not put its own there. The count summaries <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> are the exception the format itself defines. Other formats keep computed annotations in the cell table. Is this boundary the right one?</li>
 <li><strong>The names.</strong> Would you use <code>rna</code> and <code>grna</code>, <code>grna_target</code>, and the entry names in <code>uns</code>, or do the names of another format serve better?</li>
 </ol>
 <details class="fold">

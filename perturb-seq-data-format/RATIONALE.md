@@ -218,7 +218,8 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see S4.
 - **A gRNA under two targets is refused.** It cannot be one row, and a writer stops with a message. R accepts such tables today, with a warning on the development branch *(verified, `R/accessors.R`)*, and public pysceptre counts them and keeps the full table separately *(verified, `scripts/sceptre_io.py`)*. What pooling means for such a gRNA is a scientific question first; a separate gRNA-to-target table can be added later without changing anything else ([section 6](#6-fixed-now-free-to-grow)).
 - **The kind of gRNA: `grna_type`** *(Decided)*.
   - *The column.* An optional text column of the gRNA table with four values: `targeting`, `non-targeting`, `safe-targeting`, `negative control`. These are the values of the `type` column in the IGVF pipeline's guide table *(verified, `docs/mudata_schema.md` on its `dev` branch)*.
-  - *Controls keep one marker.* A gRNA of any of the three control kinds has `grna_target` equal to `non-targeting` and no target position. That is how the IGVF pipeline treats them: it takes a guide as a control if its type is one of the three or its target name is `non-targeting`, and its guide documentation says controls should carry no invented positions *(verified, `bin/intended_target_key_utils.py` and `docs/guide-metadata.md`)*. So whether a gRNA is a control is still decided by `grna_target` alone (S8.3), and the column adds one thing: which kind of control it is. A safe-targeting gRNA does cut somewhere; the format records that it is a control and not where it cuts.
+  - *Controls keep one marker.* A gRNA of any of the three control kinds has `grna_target` equal to `non-targeting`. That is how the IGVF pipeline treats them: it takes a guide as a control if its type is one of the three or its target name is `non-targeting` *(verified, `bin/intended_target_key_utils.py`)*. So whether a gRNA is a control is still decided by `grna_target` alone (S8.3), and the column adds one thing: which kind of control it is.
+  - *A control may have a position.* A safe-targeting gRNA does cut somewhere, and where it cuts is a fact about the experiment, so a file may record it. IGVF's guide documentation says controls should carry no invented positions *(verified, `docs/guide-metadata.md`)*; a real cut site is not an invented one. A non-targeting gRNA has no position to record.
   - *The two must agree* (S8.16). A file in which a control kind has a real target, or a `targeting` gRNA has the target `non-targeting`, says two different things about one gRNA.
   - *Why optional.* Most existing data says only "non-targeting", including libraries whose controls are in fact safe-targeting, so a required column would make an importer state a guess as fact. For a targeting gRNA the value follows from the target, which principle 7 says not to store.
   - *Not added:* columns for the gRNA's own position, spacer, PAM and strand. They are planned ([section 6](#6-fixed-now-free-to-grow)); a file that carries them keeps IGVF's names.
@@ -440,7 +441,7 @@ format's rationale](../sceptre-analysis-format/RATIONALE.md#suggested-changes-to
 | The introduction | `overview.html` | One page: the principles, what is in a file, the choices that are expensive to change with their reasons in short, the questions that need a view, and what has been tested |
 | The reasons | this document | Why each rule is what it is |
 | Data-file definition | `spec/screen.json` | The structure of a data file as data: required groups, number types, encodings, allowed column kinds, required columns and metadata. Both validators read it |
-| Conformance files | `conformance/`, built by `verify/make_conformance.py` | 10 conforming files, written by R and by Python, and 43 that each break a rule, with the rules a validator must report. Five of the 41 store counts or index arrays in another number type, which a reader must still read (S4.4) |
+| Conformance files | `conformance/`, built by `verify/make_conformance.py` | 11 conforming files, written by R and by Python, and 43 that each break a rule, with the rules a validator must report. Five of the 41 store counts or index arrays in another number type, which a reader must still read (S4.4) |
 | Validator | `validate_screen()` in `format/perturb_seq_data.R` and `format/perturb_seq_data.py` | Checks a data file without building a package object, and reports every problem, not only the first |
 
 **Why define it this way.** Writing the schemas exposes ambiguities in the
@@ -501,7 +502,7 @@ the data and runs on the committed files with standard libraries only.
 Python, all passing:
 
 - the validators and readers on the conformance set. Both validators accept
-  all 10 conforming files and report exactly the expected rules for all 43
+  all 11 conforming files and report exactly the expected rules for all 43
   broken ones, the same in both languages. 36 rules are exercised by at least
   one broken file. One more is checked with no file: S11.1 (no filter other
   than gzip), because R cannot read a file compressed otherwise at all;

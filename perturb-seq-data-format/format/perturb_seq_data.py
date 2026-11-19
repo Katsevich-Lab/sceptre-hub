@@ -106,16 +106,16 @@ def vector_faults(grna_ids, vectors, targets) -> list[tuple[str, str]]:
 GRNA_TYPES = tuple(next(c for c in SCREEN_SPEC["grna_table"] if c["name"] == "grna_type")["values"])
 
 
-def type_faults(types, targets, placed) -> list[tuple[str, str]]:
+def type_faults(types, targets) -> list[tuple[str, str]]:
     """The optional column `grna_type` of the gRNA table says what kind of gRNA each
     is (S8.15), and agrees with `grna_target`: a control of any kind has the target
-    `non-targeting` and no position, and a targeting gRNA has another target
-    (S8.16). `placed` says which gRNAs have a target position. Returns the rules broken."""
+    `non-targeting`, and a targeting gRNA has another target (S8.16). A control may
+    have a position: where it cuts. Returns the rules broken."""
     if any(t not in GRNA_TYPES for t in types):
         return [("S8.15", f"`grna_type` must be one of {', '.join(GRNA_TYPES)}.")]
     control = [t != "targeting" for t in types]
-    if any(c != (target == "non-targeting") or (c and has) for c, target, has in zip(control, targets, placed, strict=True)):
-        return [("S8.16", "`grna_type` and `grna_target` disagree: a control of any kind has the target `non-targeting` and no position, and a targeting gRNA has another target.")]
+    if any(c != (target == "non-targeting") for c, target in zip(control, targets, strict=True)):
+        return [("S8.16", "`grna_type` and `grna_target` disagree: a control of any kind has the target `non-targeting`, and a targeting gRNA has another target.")]
     return []
 
 
@@ -161,12 +161,8 @@ def write_screen(mdata, file, index_limit=None) -> None:
         raise ValueError("Every gRNA needs a `grna_target`.")
     _check_vectors(mdata[GRNA].var, None)
     if "grna_type" in mdata[GRNA].var:
-        placed = np.zeros(mdata[GRNA].n_vars, dtype=bool)
-        for column in GRNA_COORDINATES.values():
-            if column in mdata[GRNA].var:
-                placed |= mdata[GRNA].var[column].notna().to_numpy()
         kinds = [None if pd.isna(t) else str(t) for t in mdata[GRNA].var["grna_type"]]
-        for _, message in type_faults(kinds, list(map(str, targets)), placed):
+        for _, message in type_faults(kinds, list(map(str, targets))):
             raise ValueError(message)
     modalities = {}
     for name in names:
@@ -543,12 +539,6 @@ def validate_screen(file, index_limit=None) -> pd.DataFrame:
             if "grna_type" in group and "grna_target" in group:
                 kinds = {"string", "categorical"}
                 if _storage_kind(group["grna_type"]) in kinds and _storage_kind(group["grna_target"]) in kinds and None not in text("grna_target"):
-                    placed = np.zeros(n_grnas, dtype=bool)
-                    if chromosome is not None:
-                        placed |= np.array([c is not None for c in chromosome])
-                    for values in (start, end):
-                        if values is not None:
-                            placed |= ~np.isnan(values)
-                    for rule, message in type_faults(text("grna_type"), text("grna_target"), placed):
+                    for rule, message in type_faults(text("grna_type"), text("grna_target")):
                         log.add(rule, f"{table}/grna_type", message)
     return log.all()

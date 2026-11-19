@@ -144,16 +144,16 @@ vector_faults <- function(grna_ids, vectors, targets) {
 
 # The optional column `grna_type` of the gRNA table says what kind of gRNA each
 # is (S8.15), and agrees with `grna_target`: a control of any kind has the target
-# `non-targeting` and no position, and a targeting gRNA has another target
-# (S8.16). `placed` says which gRNAs have a target position. Returns the rules broken.
+# `non-targeting`, and a targeting gRNA has another target (S8.16). A control may
+# have a position: where it cuts. Returns the rules broken.
 GRNA_TYPES <- unlist(Filter(function(column) column$name == "grna_type", SCREEN_SPEC$grna_table)[[1]]$values)
-type_faults <- function(types, targets, placed) {
+type_faults <- function(types, targets) {
     if (anyNA(types) || !all(types %in% GRNA_TYPES)) {
         return(list(list(rule = "S8.15", message = paste0("`grna_type` must be one of ", paste(GRNA_TYPES, collapse = ", "), "."))))
     }
     control <- types != "targeting"
-    if (any(control != (targets == "non-targeting")) || any(control & placed)) {
-        return(list(list(rule = "S8.16", message = "`grna_type` and `grna_target` disagree: a control of any kind has the target `non-targeting` and no position, and a targeting gRNA has another target.")))
+    if (any(control != (targets == "non-targeting"))) {
+        return(list(list(rule = "S8.16", message = "`grna_type` and `grna_target` disagree: a control of any kind has the target `non-targeting`, and a targeting gRNA has another target.")))
     }
     list()
 }
@@ -195,8 +195,7 @@ fmt_write_screen <- function(sce, file, index_limit = NULL) {
         for (fault in vector_faults(rownames(grna), as.character(grna_table$vector_id), as.character(grna_table$grna_target))) fmt_stop(fault$message)
     }
     if (!is.null(grna_table$grna_type)) {
-        placed <- Reduce(`|`, lapply(intersect(GRNA_COORDINATES, names(grna_table)), function(name) !is.na(grna_table[[name]])), rep(FALSE, nrow(grna_table)))
-        for (fault in type_faults(as.character(grna_table$grna_type), as.character(grna_table$grna_target), placed)) fmt_stop(fault$message)
+        for (fault in type_faults(as.character(grna_table$grna_type), as.character(grna_table$grna_target))) fmt_stop(fault$message)
     }
     covariates <- split_covariates(SummarizedExperiment::colData(sce), c(main, GRNA))
     modality <- function(experiment, obs, var) {
@@ -567,9 +566,7 @@ validate_screen <- function(file, index_limit = NULL) {
             types <- tryCatch(text("grna_type"), error = function(e) NULL)
             targets <- tryCatch(text("grna_target"), error = function(e) NULL)
             if (!is.null(types) && !is.null(targets) && !anyNA(targets)) {
-                placed <- rep(FALSE, length(targets))
-                for (values in list(chromosome, start, end)) if (!is.null(values)) placed <- placed | !is.na(values)
-                for (fault in type_faults(types, targets, placed)) log$add(fault$rule, paste0(table, "/grna_type"), fault$message)
+                for (fault in type_faults(types, targets)) log$add(fault$rule, paste0(table, "/grna_type"), fault$message)
             }
         }
     }

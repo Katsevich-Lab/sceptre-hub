@@ -48,7 +48,8 @@
   "log_2_of": "a column that must equal the base-2 logarithm of another, computed as log(x) / log(2), to the relative tolerance given, wherever the table has both and neither is missing",
   "present_under": "on a column: the gRNA integration strategies under which the column is present; under any other strategy it is absent",
   "forbidden_columns": "columns the table must not have",
-  "unique_across_parts": "false where two part files may hold the same key (the fit cache); a reader then takes either row"
+  "unique_across_parts": "false where two part files may hold the same key (the fit cache); a reader then takes either row",
+  "max_rows_per_row_group": "on a table: a limit on the rows of a row group that is smaller than the general one"
  },
  "tables": [
   {
@@ -542,7 +543,9 @@
      "type": "list<double>",
      "required": true
     }
-   ]
+   ],
+   "max_rows_per_row_group": 10000,
+   "row_group_rule": "T5.7"
   },
   {
    "name": "power/resamples",
@@ -580,7 +583,9 @@
      "type": "list<double>",
      "required": true
     }
-   ]
+   ],
+   "max_rows_per_row_group": 10000,
+   "row_group_rule": "T5.7"
   },
   {
    "name": "discovery/resamples",
@@ -618,7 +623,9 @@
      "type": "list<double>",
      "required": true
     }
-   ]
+   ],
+   "max_rows_per_row_group": 10000,
+   "row_group_rule": "T5.7"
   },
   {
    "name": "fits/response",

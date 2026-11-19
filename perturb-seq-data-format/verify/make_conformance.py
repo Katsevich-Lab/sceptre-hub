@@ -147,6 +147,21 @@ with h5py.File(with_types, "r+") as f:
     add_text_column(f, "grna_type", types_of(f))
 case("screen", with_types, [], "The gRNA table says what kind of gRNA each is (`grna_type`); the controls are of two kinds")
 
+placed_control = VALID / "highmoi_safe_targeting_control_with_a_position.h5mu"
+shutil.copy(with_types, placed_control)
+with h5py.File(placed_control, "r+") as f:
+    kinds = [v.decode() for v in f["mod/grna/var/grna_type"][()]]
+    row = kinds.index("safe-targeting")
+    table = f["mod/grna/var"]
+    for name, value in (("target_start", 1000.0), ("target_end", 1019.0)):
+        values = table[name][()]
+        values[row] = value
+        table[name][...] = values
+    codes = table["target_chr/codes"][()]
+    codes[row] = 0
+    table["target_chr/codes"][...] = codes
+case("screen", placed_control, [], "A safe-targeting control has a position, where it cuts, and the target `non-targeting`")
+
 with_vectors = VALID / "highmoi_grnas_on_shared_vectors.h5mu"
 shutil.copy(high_py, with_vectors)
 with h5py.File(with_vectors, "r+") as f:

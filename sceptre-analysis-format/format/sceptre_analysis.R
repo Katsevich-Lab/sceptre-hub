@@ -65,9 +65,19 @@ read_json <- function(path) {
 
 # ---------------------------------------------------------------- tables (T0)
 
-# Rows sorted by the key in byte order; row groups of at most a million rows.
-# `metadata` is text by key, stored in the file's own key-value metadata.
-write_table <- function(table, path, key, metadata = NULL) {
+# The most rows a row group of the table may have, and the rule that says so:
+# a million for every table (T0.3), fewer for the tables with a list per row (T5.7).
+row_group_limit <- function(name = NULL) {
+    definition <- if (is.null(name)) NULL else TABLES[[name]]$definition
+    list(
+        rows = as.integer(if (is.null(definition$max_rows_per_row_group)) ROW_GROUP_ROWS else definition$max_rows_per_row_group),
+        rule = if (is.null(definition$row_group_rule)) "T0.3" else definition$row_group_rule
+    )
+}
+
+# Rows sorted by the key in byte order, in row groups no larger than the table
+# `name` allows. `metadata` is text by key, stored in the file's own key-value metadata.
+write_table <- function(table, path, key, metadata = NULL, name = NULL) {
     table <- as.data.frame(table, stringsAsFactors = FALSE)
     factors <- vapply(table, is.factor, logical(1))
     table[factors] <- lapply(table[factors], as.character)
@@ -76,7 +86,7 @@ write_table <- function(table, path, key, metadata = NULL) {
     atomically(path, function(temporary) {
         nanoparquet::write_parquet(
             table, temporary, metadata = metadata,
-            options = nanoparquet::parquet_options(num_rows_per_row_group = ROW_GROUP_ROWS)
+            options = nanoparquet::parquet_options(num_rows_per_row_group = row_group_limit(name)$rows)
         )
     })
     nrow(table)
@@ -196,7 +206,7 @@ fmt_write_stage <- function(directory, stage, record, tables = list(), provenanc
     files <- lapply(names(tables), function(name) {
         if (is.null(TABLES[[name]]) || !identical(TABLES[[name]]$stage, stage)) fmt_stop("Stage '", stage, "' does not write the table ", name, ".")
         # listed by its name within the stage's folder
-        list(path = paste0(basename(name), ".parquet"), rows = write_table(tables[[name]], table_path(directory, name), table_key(name, tables[[name]])))
+        list(path = paste0(basename(name), ".parquet"), rows = write_table(tables[[name]], table_path(directory, name), table_key(name, tables[[name]]), name = name))
     })
     if (is.null(provenance)) provenance <- list(package = "sceptre_analysis.R", version = "prototype", language = "R")
     if (is.null(provenance$written_at)) provenance$written_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
@@ -284,6 +294,25 @@ fmt_write_fits <- function(directory, table, identity) {
     text <- as.character(jsonlite::toJSON(identity[sort(names(identity))], auto_unbox = TRUE))
     write_table(table, part, table_key(FITS, table), stats::setNames(text, FIT_KEY))
     invisible(part)
+}
+
+# Replace the parts that carry one identity by a single part holding their fits
+# (T6.4). For a writer that knows no job is still adding to the cache. Returns
+# the parts written.
+fmt_merge_fits <- function(directory) {
+    parts <- Filter(function(part) !is.null(part$identity), fit_parts(directory))
+    texts <- vapply(parts, function(part) as.character(jsonlite::toJSON(part$identity[sort(names(part$identity))], auto_unbox = TRUE)), character(1))
+    written <- character()
+    for (text in unique(texts)) {
+        files <- vapply(parts[texts == text], function(part) part$file, character(1))
+        if (length(files) > 1L) {
+            table <- read_table(files, TABLES[[FITS]]$columns)
+            table <- table[!duplicated(table$response_id), , drop = FALSE]
+            written <- c(written, fmt_write_fits(directory, table, parts[[which(texts == text)[1]]]$identity))
+            unlink(files)
+        }
+    }
+    invisible(written)
 }
 
 # The cached fits made as `identity` says, and that identity, or NULL if no
@@ -673,7 +702,8 @@ validate_analysis <- function(directory, screen_file = NULL) {
             part <- as.data.frame(nanoparquet::read_parquet(file), stringsAsFactors = FALSE)
             class(part) <- "data.frame"
             groups <- nanoparquet::read_parquet_metadata(file)$row_groups$num_rows
-            if (any(groups > ROW_GROUP_ROWS)) log$add("T0.3", where, "has a row group of more than ", ROW_GROUP_ROWS, " rows.")
+            limit <- row_group_limit(name)
+            if (any(groups > limit$rows)) log$add(limit$rule, where, "has a row group of more than ", limit$rows, " rows.")
             part
         })
         ok <- TRUE

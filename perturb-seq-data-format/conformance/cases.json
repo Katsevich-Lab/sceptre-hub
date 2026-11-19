@@ -73,6 +73,14 @@
     "what": "The gRNA table says what kind of gRNA each is (`grna_type`); the controls are of two kinds"
   },
   {
+    "name": "valid/highmoi_safe_targeting_control_with_a_position.h5mu",
+    "kind": "screen",
+    "path": "conformance/valid/highmoi_safe_targeting_control_with_a_position.h5mu",
+    "expect": [],
+    "conforms": true,
+    "what": "A safe-targeting control has a position, where it cuts, and the target `non-targeting`"
+  },
+  {
     "name": "valid/highmoi_grnas_on_shared_vectors.h5mu",
     "kind": "screen",
     "path": "conformance/valid/highmoi_grnas_on_shared_vectors.h5mu",
