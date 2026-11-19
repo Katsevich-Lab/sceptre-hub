@@ -6,7 +6,7 @@ cover only the boundaries between repositories, never internals.
 ## Principles
 
 - **The R package is the reference implementation** for the statistical
-  methods ([proposal 0002](../proposals/0002-r-reference-implementation.md)).
+  methods.
   Other implementations show agreement by reproducing R's outputs.
 - **Executable, not prose.** Whatever a test can check is a test or a
   machine-readable file. Prose explains intent and tolerances only.

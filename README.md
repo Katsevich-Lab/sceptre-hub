@@ -24,8 +24,6 @@ language's repository.
 This repository holds:
 
 - [ROADMAP.md](ROADMAP.md): the development phases and priorities.
-- [proposals/](proposals/): two decisions accepted in October 2026, kept as a
-  record. There is no proposal process at present.
 - [file-format/](file-format/): a draft of the on-disk format for Perturb-seq
   data and sceptre analyses, the same files in R and Python.
 - [contracts/](contracts/): the few things the implementations must agree on,
