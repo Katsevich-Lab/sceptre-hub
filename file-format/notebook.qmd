@@ -500,8 +500,8 @@ print(status())
 
 **Not tested.**
 
-- An analysis larger than 1,000 cells.
-- A second operating system: everything ran on macOS.
+- A real analysis larger than 1,000 cells. Its tables were measured at real size with made-up content; `scale-test/README.md` has the numbers and what they suggest changing.
+- Windows. The suite passes on macOS and on Linux.
 - Real data in a second measured modality.
 - Count matrices past the 32-bit index limit. The 64-bit types are handled; values that large are not exercised.
 - An implementation by someone else. One author wrote the specification and both prototypes.

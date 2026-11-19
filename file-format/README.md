@@ -28,7 +28,7 @@ Both use standard libraries only and the committed files in `example/` and
 `nanoparquet`, `jsonvalidate`, `arrow` (`nanoparquet` and `jsonvalidate` may
 be in `./rlib`), and for the notebook `reticulate` and quarto. In Python:
 `mudata`, `anndata`, `h5py`, `pyarrow`, `pandas`, `scipy`, `jsonschema`,
-`scanpy`, `polars`, `duckdb`. Everything ran on macOS only.
+`scanpy`, `polars`, `duckdb`. The suite passes on macOS and on Linux (Ubuntu 24.04).
 
 `verify/README.md` says how another implementation is tested against the same
 files.

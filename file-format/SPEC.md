@@ -5,7 +5,8 @@
 **Status.** This is a first draft. It was written in about a week, by one
 author, and implemented twice by that same author, in R and in Python. It has
 been tested on datasets of 500 and 1,000 cells, and the data file alone on one
-real screen of 207,324 cells. No analysis has been run through it at scale, and
+real screen of 207,324 cells. The tables of an analysis have been written and
+read at real size with made-up content, on Linux; no real analysis has, and
 nobody else has reviewed it. It looks more finished than it is.
 
 **Scope.** This document fixes how a Perturb-seq dataset and sceptre's

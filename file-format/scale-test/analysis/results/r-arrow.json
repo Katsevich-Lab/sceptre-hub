@@ -1,0 +1,127 @@
+[
+ {
+  "table": "results",
+  "rows": 100000000,
+  "rows_per_row_group": 1000000,
+  "one_target": {
+   "rows": 20000,
+   "seconds": 2.78,
+   "peak_gb": 0.36
+  },
+  "one_pair": {
+   "rows": 1,
+   "seconds": 2.15,
+   "peak_gb": 0.36
+  },
+  "one_response": {
+   "rows": 5000,
+   "seconds": 5.15,
+   "peak_gb": 3.55
+  },
+  "read_all_arrow_table": {
+   "rows": 100000000,
+   "seconds": 10.45,
+   "peak_gb": 10.05
+  },
+  "read_all_arrow": {
+   "rows": 100000000,
+   "seconds": 11.45,
+   "peak_gb": 11.89
+  },
+  "read_all_nanoparquet": {
+   "rows": 100000000,
+   "seconds": 12.03,
+   "peak_gb": 7.87
+  }
+ },
+ {
+  "table": "resamples",
+  "rows": 1000000,
+  "rows_per_row_group": 1000000,
+  "one_target": {
+   "rows": 10000,
+   "seconds": 10.21,
+   "peak_gb": 11.0
+  },
+  "one_pair": {
+   "rows": 1,
+   "seconds": 9.04,
+   "peak_gb": 11.0
+  },
+  "one_response": {
+   "rows": 100,
+   "seconds": 9.27,
+   "peak_gb": 10.99
+  },
+  "read_all_arrow_table": {
+   "rows": 1000000,
+   "seconds": 14.33,
+   "peak_gb": 10.95
+  },
+  "read_all_arrow": {
+   "rows": 1000000,
+   "seconds": 16.08,
+   "peak_gb": 11.24
+  },
+  "read_all_nanoparquet": {
+   "rows": 1000000,
+   "seconds": 19.25,
+   "peak_gb": 11.14
+  }
+ },
+ {
+  "table": "resamples",
+  "rows": 1000000,
+  "rows_per_row_group": 10000,
+  "one_target": {
+   "rows": 10000,
+   "seconds": 1.96,
+   "peak_gb": 0.45
+  },
+  "one_pair": {
+   "rows": 1,
+   "seconds": 1.4,
+   "peak_gb": 0.38
+  },
+  "one_response": {
+   "rows": 100,
+   "seconds": 2.82,
+   "peak_gb": 6.54
+  },
+  "read_all_arrow_table": {
+   "rows": 1000000,
+   "seconds": 14.09,
+   "peak_gb": 9.89
+  },
+  "read_all_arrow": {
+   "rows": 1000000,
+   "seconds": 19.72,
+   "peak_gb": 10.74
+  },
+  "read_all_nanoparquet": {
+   "rows": 1000000,
+   "seconds": 21.29,
+   "peak_gb": 8.82
+  }
+ },
+ {
+  "table": "resamples",
+  "rows": 10000000,
+  "rows_per_row_group": 10000,
+  "one_target": {
+   "rows": 10000,
+   "seconds": 1.82,
+   "peak_gb": 0.46
+  },
+  "one_pair": {
+   "rows": 1,
+   "seconds": 1.69,
+   "peak_gb": 0.39
+  },
+  "one_response": {
+   "rows": 1000,
+   "seconds": 30.57,
+   "peak_gb": 43.22
+  }
+ }
+]

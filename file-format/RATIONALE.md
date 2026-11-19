@@ -682,7 +682,7 @@ table of planned additions below says which additions are not safe to ignore.
 ### To settle before the freeze
 
 - **Review** (`notebook.html` says where to look).
-- **An analysis at scale.** The data file has been through one real large dataset, in both languages and disk-backed (Appendix A). No analysis larger than the 1,000-cell examples has been written or read in this format.
+- **An analysis at scale.** The data file has been through one real large dataset, in both languages and disk-backed (Appendix A). The tables of an analysis have been written and read at real size with made-up content (`scale-test/README.md`): results tables are no problem at 100 million pairs; resampled statistics take 4 GB per million pairs, and a row group of a million rows (the limit of T0.3) makes reading one pair cost 7 seconds and 11 GB where groups of 10,000 rows cost 0.1 seconds; reading the fit cache costs about 9 milliseconds a part file, so 10,000 parts take a minute and a half. What to change in T0.3, T5.5 and T6.4 because of this is open. No real analysis larger than the 1,000-cell examples has been written or read in this format.
 
 ### Planned additions to the format
 
@@ -823,7 +823,7 @@ someone who has only the specification.
 
 **The verification suite** (`verify/run.sh`) loads neither sceptre nor
 pysceptre and runs on the committed files with standard libraries only.
-*(measured, one Mac)* About 850 checks, each group in R and in Python, all
+*(measured, on macOS and on Linux)* About 850 checks, each group in R and in Python, all
 passing:
 
 - the validators and readers on the conformance set. Both validators accept
@@ -859,7 +859,7 @@ with nanoparquet.
 - *Independence of authorship.* The validators and both writers come from one
   author. The readers written elsewhere reduce that weakness and only an
   outside implementer removes it.
-- *A second platform.* Everything ran on macOS.
+- *Windows.* The suite ran on macOS and on Linux (Ubuntu 24.04), with other versions of the libraries on each.
 
 **The example files are fixed.** Nothing here regenerates them, because doing
 so needs sceptre. A format change converts them in place, with code kept
@@ -1034,8 +1034,9 @@ already held.
   about 29 GB in Python and 21 GB in R for this file. That is acceptable for a
   check run once per dataset and would need chunking for larger ones.
 
-**What this does not cover.** An analysis at this scale: only the data file and
-one table were tested, not the stage records, results or fits. A second
+**What this does not cover.** A real analysis at this scale: this run tested
+the data file and one table. The tables of an analysis were measured apart,
+with made-up content (`scale-test/README.md`). A second
 dataset. A dataset past 2³¹ − 1 nonzeros, where both index arrays are 64-bit:
 this one has 699 million. R's in-memory matrix would not fit such data.
 
@@ -1080,7 +1081,9 @@ tested, not open choices:
 - Refused with a message: a gRNA under two targets; a formula outside the
   additive subset.
 - Tested once at scale, for the data file only (Appendix A): 207,324 cells.
-  Not tested: an analysis at scale, a second platform, Zarr, the R readers
+  The tables of an analysis were measured at real size with made-up content,
+  and the suite passes on Linux as on macOS.
+  Not tested: a real analysis at scale, Zarr, the R readers
   anndataR and zellkonverter, methods other than
   those in the examples, and a file whose second modality
   is real data (the `atac` and `hashing` test reuses the RNA counts and a

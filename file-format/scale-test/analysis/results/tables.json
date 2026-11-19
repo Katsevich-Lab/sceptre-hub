@@ -1,0 +1,562 @@
+{
+ "libraries": {
+  "python": "3.12.15",
+  "pyarrow": "26.0.0",
+  "numpy": "2.5.4",
+  "r": "4.5.2",
+  "r_arrow": "26.0.1"
+ },
+ "resamples_per_pair": 499,
+ "results": [
+  {
+   "rows": 20000000,
+   "write": {
+    "rows": 20000000,
+    "seconds": 3.05,
+    "peak_gb": 0.33
+   },
+   "gb_on_disk": 0.5,
+   "read_keys": {
+    "rows": 20000000,
+    "seconds": 0.31,
+    "peak_gb": 1.17
+   },
+   "one_target": {
+    "rows": 20000,
+    "seconds": 0.06,
+    "peak_gb": 0.3
+   },
+   "one_pair": {
+    "rows": 1,
+    "seconds": 0.07,
+    "peak_gb": 0.28
+   },
+   "one_response": {
+    "rows": 1000,
+    "seconds": 0.46,
+    "peak_gb": 1.37
+   },
+   "read_all": {
+    "rows": 20000000,
+    "gb_in_memory": 1.21,
+    "seconds": 0.44,
+    "peak_gb": 2.32
+   },
+   "r_nanoparquet_read_all": {
+    "rows": 20000000,
+    "seconds": 2.45,
+    "peak_gb": 1.63
+   }
+  },
+  {
+   "rows": 100000000,
+   "write": {
+    "rows": 100000000,
+    "seconds": 15.01,
+    "peak_gb": 0.32
+   },
+   "gb_on_disk": 2.52,
+   "read_keys": {
+    "rows": 100000000,
+    "seconds": 4.94,
+    "peak_gb": 4.4
+   },
+   "one_target": {
+    "rows": 20000,
+    "seconds": 0.08,
+    "peak_gb": 0.28
+   },
+   "one_pair": {
+    "rows": 1,
+    "seconds": 0.08,
+    "peak_gb": 0.29
+   },
+   "one_response": {
+    "rows": 5000,
+    "seconds": 5.92,
+    "peak_gb": 3.35
+   },
+   "read_all": {
+    "rows": 100000000,
+    "gb_in_memory": 6.05,
+    "seconds": 16.68,
+    "peak_gb": 9.39
+   },
+   "r_nanoparquet_read_all": {
+    "rows": 100000000,
+    "seconds": 14.63,
+    "peak_gb": 7.87
+   }
+  }
+ ],
+ "resamples": [
+  {
+   "rows": 1000000,
+   "layout": "list",
+   "rows_per_row_group": 1000000,
+   "compression": "snappy",
+   "write": {
+    "rows": 1000000,
+    "seconds": 40.08,
+    "peak_gb": 10.75
+   },
+   "gb_on_disk": 3.99,
+   "read_keys": {
+    "rows": 1000000,
+    "seconds": 0.05,
+    "peak_gb": 0.2
+   },
+   "one_target": {
+    "rows": 10000,
+    "seconds": 24.6,
+    "peak_gb": 11.05
+   },
+   "one_pair": {
+    "rows": 1,
+    "seconds": 76.67,
+    "peak_gb": 11.07
+   },
+   "one_response": {
+    "rows": 100,
+    "seconds": 33.91,
+    "peak_gb": 11.06
+   },
+   "read_all": {
+    "rows": 1000000,
+    "gb_in_memory": 4.09,
+    "seconds": 22.34,
+    "peak_gb": 11.06
+   },
+   "r_nanoparquet_read_all": {
+    "rows": 1000000,
+    "seconds": 17.04,
+    "peak_gb": 11.3
+   }
+  },
+  {
+   "rows": 1000000,
+   "layout": "list",
+   "rows_per_row_group": 1000000,
+   "compression": "zstd",
+   "write": {
+    "rows": 1000000,
+    "seconds": 13.53,
+    "peak_gb": 10.76
+   },
+   "gb_on_disk": 3.83,
+   "read_keys": {
+    "rows": 1000000,
+    "seconds": 0.04,
+    "peak_gb": 0.2
+   },
+   "one_target": {
+    "rows": 10000,
+    "seconds": 6.88,
+    "peak_gb": 10.91
+   },
+   "one_pair": {
+    "rows": 1,
+    "seconds": 7.14,
+    "peak_gb": 10.91
+   },
+   "one_response": {
+    "rows": 100,
+    "seconds": 7.11,
+    "peak_gb": 10.91
+   },
+   "read_all": {
+    "rows": 1000000,
+    "gb_in_memory": 4.09,
+    "seconds": 10.01,
+    "peak_gb": 10.91
+   },
+   "r_nanoparquet_read_all": {
+    "rows": 1000000,
+    "seconds": 18.38,
+    "peak_gb": 11.14
+   }
+  },
+  {
+   "rows": 1000000,
+   "layout": "list",
+   "rows_per_row_group": 10000,
+   "compression": "zstd",
+   "write": {
+    "rows": 1000000,
+    "seconds": 14.57,
+    "peak_gb": 0.34
+   },
+   "gb_on_disk": 3.86,
+   "read_keys": {
+    "rows": 1000000,
+    "seconds": 0.02,
+    "peak_gb": 0.34
+   },
+   "one_target": {
+    "rows": 10000,
+    "seconds": 0.13,
+    "peak_gb": 0.37
+   },
+   "one_pair": {
+    "rows": 1,
+    "seconds": 0.1,
+    "peak_gb": 0.31
+   },
+   "one_response": {
+    "rows": 100,
+    "seconds": 1.22,
+    "peak_gb": 6.31
+   },
+   "read_all": {
+    "rows": 1000000,
+    "gb_in_memory": 4.09,
+    "seconds": 1.29,
+    "peak_gb": 9.6
+   },
+   "r_nanoparquet_read_all": {
+    "rows": 1000000,
+    "seconds": 21.89,
+    "peak_gb": 8.82
+   }
+  },
+  {
+   "rows": 1000000,
+   "layout": "list32",
+   "rows_per_row_group": 10000,
+   "compression": "zstd",
+   "write": {
+    "rows": 1000000,
+    "seconds": 13.05,
+    "peak_gb": 0.35
+   },
+   "gb_on_disk": 1.91,
+   "read_keys": {
+    "rows": 1000000,
+    "seconds": 0.05,
+    "peak_gb": 0.35
+   },
+   "one_target": {
+    "rows": 10000,
+    "seconds": 0.09,
+    "peak_gb": 0.28
+   },
+   "one_pair": {
+    "rows": 1,
+    "seconds": 0.08,
+    "peak_gb": 0.26
+   },
+   "one_response": {
+    "rows": 100,
+    "seconds": 0.96,
+    "peak_gb": 4.85
+   },
+   "read_all": {
+    "rows": 1000000,
+    "gb_in_memory": 2.1,
+    "seconds": 0.89,
+    "peak_gb": 5.93
+   }
+  },
+  {
+   "rows": 1000000,
+   "layout": "wide",
+   "rows_per_row_group": 10000,
+   "compression": "zstd",
+   "write": {
+    "rows": 1000000,
+    "seconds": 31.85,
+    "peak_gb": 0.34
+   },
+   "gb_on_disk": 4.69,
+   "read_keys": {
+    "rows": 1000000,
+    "seconds": 0.08,
+    "peak_gb": 0.39
+   },
+   "one_target": {
+    "rows": 10000,
+    "seconds": 0.12,
+    "peak_gb": 0.38
+   },
+   "one_pair": {
+    "rows": 1,
+    "seconds": 0.12,
+    "peak_gb": 0.34
+   },
+   "one_response": {
+    "rows": 100,
+    "seconds": 3.43,
+    "peak_gb": 7.6
+   },
+   "read_all": {
+    "rows": 1000000,
+    "gb_in_memory": 4.09,
+    "seconds": 2.47,
+    "peak_gb": 9.37
+   }
+  },
+  {
+   "rows": 10000000,
+   "layout": "list",
+   "rows_per_row_group": 1000000,
+   "compression": "zstd",
+   "write": {
+    "rows": 10000000,
+    "seconds": 138.82,
+    "peak_gb": 13.89
+   },
+   "gb_on_disk": 38.28,
+   "read_keys": {
+    "rows": 10000000,
+    "seconds": 0.11,
+    "peak_gb": 0.71
+   },
+   "one_target": {
+    "rows": 10000,
+    "seconds": 7.32,
+    "peak_gb": 10.91
+   },
+   "one_pair": {
+    "rows": 1,
+    "seconds": 7.37,
+    "peak_gb": 10.91
+   },
+   "one_response": {
+    "rows": 1000,
+    "seconds": 191.1,
+    "peak_gb": 56.64
+   },
+   "read_all": {
+    "rows": 10000000,
+    "gb_in_memory": 40.94,
+    "seconds": 144.94,
+    "peak_gb": 80.74
+   }
+  },
+  {
+   "rows": 10000000,
+   "layout": "list",
+   "rows_per_row_group": 10000,
+   "compression": "zstd",
+   "write": {
+    "rows": 10000000,
+    "seconds": 137.67,
+    "peak_gb": 0.34
+   },
+   "gb_on_disk": 38.57,
+   "read_keys": {
+    "rows": 10000000,
+    "seconds": 0.14,
+    "peak_gb": 0.77
+   },
+   "one_target": {
+    "rows": 10000,
+    "seconds": 0.16,
+    "peak_gb": 0.38
+   },
+   "one_pair": {
+    "rows": 1,
+    "seconds": 0.13,
+    "peak_gb": 0.32
+   },
+   "one_response": {
+    "rows": 1000,
+    "seconds": 14.33,
+    "peak_gb": 42.83
+   },
+   "read_all": {
+    "rows": 10000000,
+    "gb_in_memory": 40.94,
+    "seconds": 34.71,
+    "peak_gb": 82.55
+   }
+  }
+ ],
+ "fits": [
+  {
+   "parts": 1,
+   "rows_per_part": 20000,
+   "write": {
+    "parts": 1,
+    "rows": 20000,
+    "seconds": 0.04,
+    "peak_gb": 0.18
+   },
+   "mb_on_disk": 3.84,
+   "fits_identities": {
+    "parts": 1,
+    "identities": 1,
+    "seconds": 0.01,
+    "peak_gb": 0.12
+   },
+   "fits_read_each": {
+    "rows": 20000,
+    "seconds": 0.03,
+    "peak_gb": 0.16
+   },
+   "fits_read_dataset": {
+    "rows": 20000,
+    "seconds": 0.02,
+    "peak_gb": 0.16
+   },
+   "r_nanoparquet_read_each": {
+    "rows": 20000,
+    "seconds": 0.09,
+    "peak_gb": 0.09
+   },
+   "warm_fits_read_each": {
+    "rows": 20000,
+    "seconds": 0.01,
+    "peak_gb": 0.17
+   }
+  },
+  {
+   "parts": 100,
+   "rows_per_part": 200,
+   "write": {
+    "parts": 100,
+    "rows": 20000,
+    "seconds": 0.91,
+    "peak_gb": 0.13
+   },
+   "mb_on_disk": 4.29,
+   "fits_identities": {
+    "parts": 100,
+    "identities": 1,
+    "seconds": 0.27,
+    "peak_gb": 0.12
+   },
+   "fits_read_each": {
+    "rows": 20000,
+    "seconds": 0.79,
+    "peak_gb": 0.14
+   },
+   "fits_read_dataset": {
+    "rows": 20000,
+    "seconds": 0.23,
+    "peak_gb": 0.15
+   },
+   "r_nanoparquet_read_each": {
+    "rows": 20000,
+    "seconds": 0.93,
+    "peak_gb": 0.09
+   },
+   "warm_fits_read_each": {
+    "rows": 20000,
+    "seconds": 0.72,
+    "peak_gb": 0.14
+   }
+  },
+  {
+   "parts": 1000,
+   "rows_per_part": 20,
+   "write": {
+    "parts": 1000,
+    "rows": 20000,
+    "seconds": 9.64,
+    "peak_gb": 0.13
+   },
+   "mb_on_disk": 5.81,
+   "fits_identities": {
+    "parts": 1000,
+    "identities": 1,
+    "seconds": 3.45,
+    "peak_gb": 0.12
+   },
+   "fits_read_each": {
+    "rows": 20000,
+    "seconds": 8.52,
+    "peak_gb": 0.14
+   },
+   "fits_read_dataset": {
+    "rows": 20000,
+    "seconds": 2.52,
+    "peak_gb": 0.15
+   },
+   "r_nanoparquet_read_each": {
+    "rows": 20000,
+    "seconds": 9.59,
+    "peak_gb": 0.09
+   },
+   "warm_fits_read_each": {
+    "rows": 20000,
+    "seconds": 7.23,
+    "peak_gb": 0.14
+   }
+  },
+  {
+   "parts": 10000,
+   "rows_per_part": 2,
+   "write": {
+    "parts": 10000,
+    "rows": 20000,
+    "seconds": 98.75,
+    "peak_gb": 0.13
+   },
+   "mb_on_disk": 22.24,
+   "fits_identities": {
+    "parts": 10000,
+    "identities": 1,
+    "seconds": 35.84,
+    "peak_gb": 0.13
+   },
+   "fits_read_each": {
+    "rows": 20000,
+    "seconds": 89.59,
+    "peak_gb": 0.19
+   },
+   "fits_read_dataset": {
+    "rows": 20000,
+    "seconds": 28.92,
+    "peak_gb": 0.33
+   },
+   "r_nanoparquet_read_each": {
+    "rows": 20000,
+    "seconds": 95.6,
+    "peak_gb": 0.1
+   },
+   "warm_fits_read_each": {
+    "rows": 20000,
+    "seconds": 77.73,
+    "peak_gb": 0.19
+   }
+  },
+  {
+   "parts": 20000,
+   "rows_per_part": 1,
+   "write": {
+    "parts": 20000,
+    "rows": 20000,
+    "seconds": 205.94,
+    "peak_gb": 0.13
+   },
+   "mb_on_disk": 40.7,
+   "fits_identities": {
+    "parts": 20000,
+    "identities": 1,
+    "seconds": 78.23,
+    "peak_gb": 0.14
+   },
+   "fits_read_each": {
+    "rows": 20000,
+    "seconds": 176.26,
+    "peak_gb": 0.26
+   },
+   "fits_read_dataset": {
+    "rows": 20000,
+    "seconds": 55.94,
+    "peak_gb": 0.54
+   },
+   "r_nanoparquet_read_each": {
+    "rows": 20000,
+    "seconds": 187.6,
+    "peak_gb": 0.14
+   },
+   "warm_fits_read_each": {
+    "rows": 20000,
+    "seconds": 162.69,
+    "peak_gb": 0.26
+   }
+  }
+ ]
+}
