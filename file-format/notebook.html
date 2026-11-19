@@ -2360,7 +2360,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Two copies of one fact can disagree, and the file then does not say which is right.</li>
-<li><strong>What follows.</strong> There is no <code>significant</code> column and no count of gRNAs per cell, and <code>log_2_fold_change</code> may be left out (T5). The exception is a value that nearly every analysis needs and that takes a full pass over the counts to recompute: <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> are stored (S6).</li>
+<li><strong>What follows.</strong> There is no <code>significant</code> column and no count of gRNAs per cell (T5, T2). Two exceptions. A value that nearly every analysis needs and that takes a full pass over the counts to recompute is stored: <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> (S6). So is a value that cannot be rebuilt to the same number on every platform: <code>log_2_fold_change</code> (T5).</li>
 </ul>
 </details>
 <details class="fold">
@@ -3306,7 +3306,7 @@ Close all
 <li>
 <details open>
 <summary class="row folder" style="--d:0">
-<span class="name"><code>left_sided/</code></span><span class="what">one analysis of a data file</span><span class="size">92 KB</span>
+<span class="name"><code>left_sided/</code></span><span class="what">one analysis of a data file</span><span class="size">115 KB</span>
 </summary>
 <ul>
 <li>
@@ -4000,7 +4000,7 @@ non-targeting_grna1
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>results.parquet</code></span><span class="what">test results for the negative-control pairs</span><span class="size">1,406 rows × 6 columns</span>
+<span class="name"><code>results.parquet</code></span><span class="what">test results for the negative-control pairs</span><span class="size">1,406 rows × 7 columns</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
@@ -4024,6 +4024,9 @@ fold_change
 <th>
 se_fold_change
 </th>
+<th>
+log_2_fold_change
+</th>
 </tr>
 </thead>
 <tbody>
@@ -4046,6 +4049,9 @@ True
 <td>
 0.09509
 </td>
+<td>
+-0.07394
+</td>
 </tr>
 <tr>
 <td>
@@ -4065,6 +4071,9 @@ True
 </td>
 <td>
 0.1071
+</td>
+<td>
+0.2212
 </td>
 </tr>
 <tr>
@@ -4086,6 +4095,9 @@ True
 <td>
 0.09583
 </td>
+<td>
+-0.01956
+</td>
 </tr>
 <tr>
 <td>
@@ -4106,6 +4118,9 @@ True
 <td>
 0.09964
 </td>
+<td>
+0.0655
+</td>
 </tr>
 <tr>
 <td>
@@ -4125,6 +4140,9 @@ True
 </td>
 <td>
 0.2012
+</td>
+<td>
+-0.03228
 </td>
 </tr>
 </tbody>
@@ -4181,7 +4199,7 @@ True
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>results.parquet</code></span><span class="what">test results for the positive-control pairs</span><span class="size">5 rows × 6 columns</span>
+<span class="name"><code>results.parquet</code></span><span class="what">test results for the positive-control pairs</span><span class="size">5 rows × 7 columns</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
@@ -4205,6 +4223,9 @@ fold_change
 <th>
 se_fold_change
 </th>
+<th>
+log_2_fold_change
+</th>
 </tr>
 </thead>
 <tbody>
@@ -4227,6 +4248,9 @@ True
 <td>
 0.04851
 </td>
+<td>
+-1.412
+</td>
 </tr>
 <tr>
 <td>
@@ -4246,6 +4270,9 @@ True
 </td>
 <td>
 0.03462
+</td>
+<td>
+-1.649
 </td>
 </tr>
 <tr>
@@ -4267,6 +4294,9 @@ True
 <td>
 0.0481
 </td>
+<td>
+-1.321
+</td>
 </tr>
 <tr>
 <td>
@@ -4287,6 +4317,9 @@ True
 <td>
 0.03653
 </td>
+<td>
+-1.641
+</td>
 </tr>
 <tr>
 <td>
@@ -4306,6 +4339,9 @@ True
 </td>
 <td>
 0.03739
+</td>
+<td>
+-1.669
 </td>
 </tr>
 </tbody>
@@ -4350,7 +4386,7 @@ True
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>results.parquet</code></span><span class="what">test results for the discovery pairs</span><span class="size">1,406 rows × 6 columns</span>
+<span class="name"><code>results.parquet</code></span><span class="what">test results for the discovery pairs</span><span class="size">1,406 rows × 7 columns</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
@@ -4374,6 +4410,9 @@ fold_change
 <th>
 se_fold_change
 </th>
+<th>
+log_2_fold_change
+</th>
 </tr>
 </thead>
 <tbody>
@@ -4396,6 +4435,9 @@ True
 <td>
 0.1606
 </td>
+<td>
+-0.5744
+</td>
 </tr>
 <tr>
 <td>
@@ -4415,6 +4457,9 @@ True
 </td>
 <td>
 0.1238
+</td>
+<td>
+0.1578
 </td>
 </tr>
 <tr>
@@ -4436,6 +4481,9 @@ True
 <td>
 0.2854
 </td>
+<td>
+-0.08256
+</td>
 </tr>
 <tr>
 <td>
@@ -4456,6 +4504,9 @@ True
 <td>
 0.08148
 </td>
+<td>
+-0.09968
+</td>
 </tr>
 <tr>
 <td>
@@ -4475,6 +4526,9 @@ True
 </td>
 <td>
 0.09379
+</td>
+<td>
+0.01375
 </td>
 </tr>
 </tbody>
@@ -4654,10 +4708,10 @@ Functionality:
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> nanoparquet<span class="sc">::</span><span class="fu">read_parquet</span>(<span class="st">&quot;example/highmoi/analyses/left_sided/discovery/results.parquet&quot;</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(results, <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>      response_id     grna_target pass_qc     p_value fold_change se_fold_change
-1 ENSG00000040608 candidate_enh_1    TRUE 0.006887567   0.6715545      0.1606408
-2 ENSG00000099889 candidate_enh_1    TRUE 0.858000000   1.1156013      0.1237707
-3 ENSG00000099917 candidate_enh_1    TRUE 0.426000000   0.9443800      0.2854157</code></pre>
+<pre><code>      response_id     grna_target pass_qc     p_value fold_change se_fold_change log_2_fold_change
+1 ENSG00000040608 candidate_enh_1    TRUE 0.006887567   0.6715545      0.1606408       -0.57442358
+2 ENSG00000099889 candidate_enh_1    TRUE 0.858000000   1.1156013      0.1237707        0.15782154
+3 ENSG00000099917 candidate_enh_1    TRUE 0.426000000   0.9443800      0.2854157       -0.08256057</code></pre>
 </div>
 </div>
 </div>
@@ -4688,10 +4742,10 @@ Functionality:
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> pd.read_parquet(<span class="st">&quot;example/highmoi/analyses/left_sided/discovery/results.parquet&quot;</span>)</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(results.head(<span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>       response_id      grna_target  pass_qc   p_value  fold_change  se_fold_change
-0  ENSG00000040608  candidate_enh_1     True  0.006888     0.671555        0.160641
-1  ENSG00000099889  candidate_enh_1     True  0.858000     1.115601        0.123771
-2  ENSG00000099917  candidate_enh_1     True  0.426000     0.944380        0.285416</code></pre>
+<pre><code>       response_id      grna_target  pass_qc   p_value  fold_change  se_fold_change  log_2_fold_change
+0  ENSG00000040608  candidate_enh_1     True  0.006888     0.671555        0.160641          -0.574424
+1  ENSG00000099889  candidate_enh_1     True  0.858000     1.115601        0.123771           0.157822
+2  ENSG00000099917  candidate_enh_1     True  0.426000     0.944380        0.285416          -0.082561</code></pre>
 </div>
 </div>
 </div>
@@ -4805,8 +4859,8 @@ Functionality:
 <strong>Nothing is stored that follows from something else stored.</strong> <span class="where">S6, T5</span>
 </summary>
 <ul>
-<li><strong>Examples.</strong> Results have no <code>significant</code> column, and <code>log_2_fold_change</code> is stored only where there is no <code>fold_change</code> to derive it from.</li>
-<li><strong>The exception.</strong> Each cell’s total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them.</li>
+<li><strong>Examples.</strong> Results have no <code>significant</code> column, and the cell table has no count of gRNAs per cell.</li>
+<li><strong>The exceptions.</strong> Each cell’s total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them. <code>log_2_fold_change</code> is stored beside <code>fold_change</code>, because rebuilding it does not give the same number on every platform.</li>
 </ul>
 </details>
 <details class="fold">
@@ -4877,10 +4931,10 @@ Passed in Python
 Both validators report exactly the expected rules on every file of <code>conformance/</code> (files that conform, and files that each break a rule), and the standard readers read the files that must still be read
 </td>
 <td>
-97 of 97
+98 of 98
 </td>
 <td>
-97 of 97
+98 of 98
 </td>
 </tr>
 <tr>

@@ -657,13 +657,6 @@ add_significant <- function(result, threshold) {
 # `fold_change` does not store it (T5). The formula is sceptre's, to the last
 # bit: log(x) / log(2), which is not always what log2(x) returns.
 log_2_of <- function(fold_change) log(fold_change) / log(2)
-log_2_follows <- function(result) {
-    if (is.null(result$fold_change) || is.null(result$log_2_fold_change)) return(FALSE)
-    derived <- log_2_of(result$fold_change)
-    held <- result$log_2_fold_change
-    # to within rounding: the last bit of a logarithm differs between platforms (T5.2)
-    all((is.na(derived) & is.na(held)) | (!is.na(derived) & !is.na(held) & (derived == held | abs(derived - held) <= 1e-14 * abs(derived))))
-}
 add_log_2_fold_change <- function(result) {
     if (!is.null(result$log_2_fold_change) || is.null(result$fold_change)) return(result)
     after <- max(match(c("fold_change", "se_fold_change"), names(result)), na.rm = TRUE)
@@ -1183,8 +1176,18 @@ validate_analysis <- function(directory, screen_file = NULL) {
                 }
             }
         }
-        for (group in definition$one_of) {
-            if (!any(unlist(group) %in% names(parts[[1]]))) log$add("T5.1", where, "needs one of the columns ", paste(unlist(group), collapse = ", "), ".")
+        # a stored logarithm agrees with the column it is the logarithm of (T5.2)
+        agree <- definition$log_2_of
+        if (!is.null(agree) && ok && agree$of %in% names(parts[[1]])) {
+            for (part in parts) {
+                held <- part[[agree$column]]
+                derived <- log_2_of(part[[agree$of]])
+                both <- !is.na(held) & !is.na(derived)
+                if (any(held[both] != derived[both] & abs(held[both] - derived[both]) > agree$relative_tolerance * abs(derived[both]))) {
+                    log$add(agree$rule, where, "`", agree$column, "` is not the base-2 logarithm of `", agree$of, "`.")
+                    break
+                }
+            }
         }
         for (column in definition$forbidden_columns) {
             if (column$name %in% names(parts[[1]])) log$add(column$rule, where, "must not have the column `", column$name, "`.")

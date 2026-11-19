@@ -44,7 +44,8 @@ for (folder in sort(Sys.glob("verify/out/random/seed-*"))) {
     results_table <- data.frame(
         grna_target = vapply(inputs$results, function(r) r$grna_target, ""), response_id = vapply(inputs$results, function(r) r$response_id, ""),
         pass_qc = vapply(inputs$results, function(r) r$pass_qc, logical(1)), p_value = missing_to(lapply(inputs$results, `[[`, "p_value"), NA_real_),
-        fold_change = missing_to(lapply(inputs$results, `[[`, "fold_change"), NA_real_), se_fold_change = missing_to(lapply(inputs$results, `[[`, "se_fold_change"), NA_real_)
+        fold_change = missing_to(lapply(inputs$results, `[[`, "fold_change"), NA_real_), se_fold_change = missing_to(lapply(inputs$results, `[[`, "se_fold_change"), NA_real_),
+        log_2_fold_change = missing_to(lapply(inputs$results, `[[`, "log_2_fold_change"), NA_real_)
     )
     fmt_write_stage(analysis, "parameters", list(settings = settings, design = list(terms = I(c("(Intercept)", "log(rna_n_umis)", "batchb1")))),
         list("parameters/discovery_pairs" = pairs, "parameters/positive_control_pairs" = pairs[0, ]), provenance)

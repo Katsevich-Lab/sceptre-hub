@@ -539,8 +539,11 @@ broken_analysis("grna_column_in_bonferroni_discovery", ["T5.6"], "The discovery 
                 lambda p: rewrite(p / "discovery/results.parquet", with_grna_id), source="example/highmoi/analyses/bonferroni")
 broken_analysis("significant_stored", ["T5.3"], "The discovery results store a `significant` column",
                 lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.append_column("significant", pa.array([False] * t.num_rows))))
-broken_analysis("no_effect_size", ["T5.1"], "The discovery results have neither `fold_change` nor `log_2_fold_change`",
-                lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.drop_columns(["fold_change", "se_fold_change"])))
+broken_analysis("no_log_2_fold_change", ["T0.1"], "The discovery results have no `log_2_fold_change` (T5.1)",
+                lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.drop_columns(["log_2_fold_change"])))
+broken_analysis("effect_sizes_disagree", ["T5.2"], "A `log_2_fold_change` is not the base-2 logarithm of the row's `fold_change`",
+                lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.set_column(
+                    t.schema.get_field_index("log_2_fold_change"), "log_2_fold_change", pa.array([None if v is None else v + 1.0 for v in t["log_2_fold_change"].to_pylist()], type=pa.float64()))))
 broken_analysis("fit_part_without_identity", ["T6.1"], "A part of the fit cache does not say how its fits were made, as after a tool rewrote it; a reader takes no fit from it",
                 lambda p: restamp(fit_part(p), None))
 cases[-1]["fits_used"] = False

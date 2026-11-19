@@ -50,8 +50,9 @@ for seed in SEEDS:
         "assignments": [list(a) for a in assignments], "in_use": in_use,
         "pairs": [list(p) for p in pairs],
         "results": [{"grna_target": t, "response_id": g, "pass_qc": p is not None, "p_value": p,
-                     "fold_change": None if p is None else float(rng.lognormal()), "se_fold_change": None if p is None else float(rng.random())}
-                    for (t, g), p in zip(pairs, p_values)],
+                     "fold_change": fc, "se_fold_change": None if p is None else float(rng.random()),
+                     "log_2_fold_change": None if fc is None else float(np.log(fc) / np.log(2.0))}
+                    for (t, g), p in zip(pairs, p_values) for fc in [None if p is None else float(rng.lognormal())]],
         "fits": [{"response_id": g, "coefficients": [float(v) for v in rng.normal(size=3)], "theta": float(rng.lognormal())} for g in genes],
     }
     folder = ROOT / f"seed-{seed}"

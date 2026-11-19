@@ -797,17 +797,6 @@ def log_2_of(fold_change) -> np.ndarray:
         return np.log(np.asarray(fold_change, dtype=float)) / np.log(2.0)
 
 
-def log_2_follows(result: pd.DataFrame) -> bool:
-    """Whether `log_2_fold_change` follows from `fold_change`; a results table then
-    does not store it (T5)."""
-    if "fold_change" not in result or "log_2_fold_change" not in result:
-        return False
-    derived = log_2_of(result["fold_change"])
-    held = result["log_2_fold_change"].to_numpy(dtype=float)
-    # to within rounding: the last bit of a logarithm differs between platforms (T5.2)
-    return bool(np.allclose(held, derived, rtol=1e-14, atol=0, equal_nan=True))
-
-
 def add_log_2_fold_change(result: pd.DataFrame) -> pd.DataFrame:
     if "log_2_fold_change" in result or "fold_change" not in result:
         return result
@@ -1333,9 +1322,15 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
                 elif not column.get("nullable") and column["type"] != "list<double>" and part[column["name"]].null_count:
                     log.add("T0.1", where, f"The column `{column['name']}` has missing values.")
                     ok = False
-        for group in definition.get("one_of", []):
-            if not any(c in parts[0].column_names for c in group):
-                log.add("T5.1", where, f"needs one of the columns {', '.join(group)}.")
+        # a stored logarithm agrees with the column it is the logarithm of (T5.2)
+        agree = definition.get("log_2_of")
+        if agree and ok and agree["of"] in parts[0].column_names:
+            for part in parts:
+                held, source = (part[agree[k]].to_numpy(zero_copy_only=False).astype(float) for k in ("column", "of"))
+                both = ~np.isnan(held) & ~np.isnan(source)
+                if not np.allclose(held[both], log_2_of(source[both]), rtol=agree["relative_tolerance"], atol=0):
+                    log.add(agree["rule"], where, f"`{agree['column']}` is not the base-2 logarithm of `{agree['of']}`.")
+                    break
         for column in definition.get("forbidden_columns", []):
             if column["name"] in parts[0].column_names:
                 log.add(column["rule"], where, f"must not have the column `{column['name']}`.")

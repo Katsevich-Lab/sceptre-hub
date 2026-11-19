@@ -83,10 +83,10 @@ final; the sorting into kinds is.
 - **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 122 statements, 82 are file rules, 29 behaviour rules and 11
-guidance. The validators check 80 of the file rules (T0.9 in part), a test covers 1 more
+Of the 122 statements, 83 are file rules, 28 behaviour rules and 11
+guidance. The validators check 81 of the file rules (T0.9 in part), a test covers 1 more
 (T4.3), and 1 has no test (A3.2). Tests or the conformance run
-cover 19 of the behaviour rules; 10 have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A1.5, A3.5, A6.2, T1.3, T7.3.
+cover 18 of the behaviour rules; 10 have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A1.5, A3.5, A6.2, T1.3, T7.3.
 Five of the untested rules (A1.5, A3.2, A3.5, T1.3, T7.3) can only be
 tested with a package that fits models or builds its own object.
 
@@ -452,8 +452,8 @@ analysis's strategy and the table's stage; `spec/tables.json` records it as
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T5.1 | file | A results table has the key columns, `pass_qc`, `p_value`, and at least one of `fold_change` and `log_2_fold_change`. `se_fold_change` and diagnostic columns MAY follow. | V |
-| T5.2 | behaviour | A reader that finds no `log_2_fold_change` MUST compute it as `log(fold_change) / log(2)` with natural logarithms, in that form. A writer MUST NOT omit the column unless it equals that expression for every row, to within rounding (a relative difference of at most 10^-14): the last bit of a logarithm differs between platforms. | tests (every example row) |
+| T5.1 | file | A results table has the key columns, `pass_qc`, `p_value` and `log_2_fold_change`. `fold_change`, `se_fold_change` and diagnostic columns MAY follow. | V (through T0.1) |
+| T5.2 | file | In a table that has `fold_change`, a row's `log_2_fold_change` MUST equal `log(fold_change) / log(2)` to a relative difference of at most 10^-9, wherever neither is missing. A reader takes the stored value and does not recompute it. | V |
 | T5.3 | file | `significant` MUST NOT be stored. The record of the `calibration` and `discovery` stages has `significance_threshold`: the largest p-value called significant, or `null` if none was. A row is significant when its `p_value` is at most the threshold. | V |
 | T5.4 | file | Rows are sorted by key (T0.2), not by p-value. | V (through T0.2) |
 | T5.5 | file | `<stage>/resamples.parquet` is optional: the key columns and `z_null`, a list of the pair's resampled statistics. | V (through T0) |

@@ -76,7 +76,7 @@ def write_all(inputs, folder, language):
                     "qc/positive_control_pair_qc": results[["grna_target", "response_id", "pass_qc"]].iloc[:0]}, provenance)
     called = [r["p_value"] for r in inputs["results"] if r["p_value"] is not None and r["p_value"] < 0.2]
     sf.write_stage(analysis, "discovery", {"settings": {}, "significance_threshold": max(called) if called else None},
-                   {"discovery/results": results.astype({"p_value": float, "fold_change": float, "se_fold_change": float})}, provenance)
+                   {"discovery/results": results.astype({"p_value": float, "fold_change": float, "se_fold_change": float, "log_2_fold_change": float})}, provenance)
     in_use = [c for c, keep in zip(cells, inputs["in_use"]) if keep]
     sf.write_fits(analysis, pd.DataFrame(inputs["fits"]), {"screen_id": inputs["id"], "formula": FORMULA, "cells_in_use_sha256": sf.sha256_ids(in_use),
                                                            "response_fit_method": "batched", "control_group": "complement"})
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         want = pd.DataFrame(inputs["results"]).sort_values(["grna_target", "response_id"], key=lambda s: s.map(lambda v: v.encode())).reset_index(drop=True)
         equal = all(
             [None if pd.isna(v) else v for v in got[c]] == [None if v is None or (isinstance(v, float) and np.isnan(v)) else v for v in want[c]]
-            for c in ("grna_target", "response_id", "pass_qc", "p_value", "fold_change", "se_fold_change"))
+            for c in ("grna_target", "response_id", "pass_qc", "p_value", "fold_change", "se_fold_change", "log_2_fold_change"))
         results.add(f"{seed}: results read from {A}'s analysis equal the source, to the last bit", bool(equal))
         results.add(f"{seed}: assignments read from {A}'s analysis equal the source",
                     sorted(map(list, saved["tables"]["assignment/assignments"][["grna_id", "cell_id"]].itertuples(index=False))) == sorted(inputs["assignments"]))

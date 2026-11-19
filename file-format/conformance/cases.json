@@ -911,14 +911,25 @@
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
-    "name": "invalid/analyses/no_effect_size",
+    "name": "invalid/analyses/no_log_2_fold_change",
     "kind": "analysis",
-    "path": "conformance/invalid/analyses/no_effect_size",
+    "path": "conformance/invalid/analyses/no_log_2_fold_change",
     "expect": [
-      "T5.1"
+      "T0.1"
     ],
     "conforms": false,
-    "what": "The discovery results have neither `fold_change` nor `log_2_fold_change`",
+    "what": "The discovery results have no `log_2_fold_change` (T5.1)",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/effect_sizes_disagree",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/effect_sizes_disagree",
+    "expect": [
+      "T5.2"
+    ],
+    "conforms": false,
+    "what": "A `log_2_fold_change` is not the base-2 logarithm of the row's `fold_change`",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {

@@ -443,8 +443,8 @@ is the section of `RATIONALE.md` (and of `SPEC.md`) with the detail.
 <details class="fold">
 <summary><strong>Nothing is stored that follows from something else stored.</strong> <span class="where">S6, T5</span></summary>
 
-- **Examples.** Results have no `significant` column, and `log_2_fold_change` is stored only where there is no `fold_change` to derive it from.
-- **The exception.** Each cell's total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them.
+- **Examples.** Results have no `significant` column, and the cell table has no count of gRNAs per cell.
+- **The exceptions.** Each cell's total count and number of nonzero features are stored, because recomputing them is a full pass over the counts and nearly every analysis needs them. `log_2_fold_change` is stored beside `fold_change`, because rebuilding it does not give the same number on every platform.
 
 </details>
 
