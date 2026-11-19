@@ -258,6 +258,25 @@ function treeAll(button, open) {
 </script>
 ```
 
+## The principles
+
+Every choice in the format follows from these eight. Where two of them pull
+apart, the earlier one wins. Open one for its reason and what follows from it.
+
+```{python}
+#| echo: false
+#| output: asis
+# read from the table of section 2 of RATIONALE.md, so the two cannot differ
+lines = Path("RATIONALE.md").read_text().split("## 2. The eight principles")[1].split("\n---")[0].splitlines()
+for line in lines:
+    cells = [c.strip() for c in line.strip().strip("|").split(" | ")]
+    if len(cells) == 4 and cells[0].isdigit():
+        number, principle, why, follows = cells
+        follows = follows.replace("](#", "](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/file-format/RATIONALE.md#")
+        print(f'<details class="fold">\n<summary><strong>{number}. {html.escape(principle.strip("*"))}</strong></summary>\n')
+        print(f"- **Why.** {why}\n- **What follows.** {follows}\n\n</details>\n")
+```
+
 ## What is on disk
 
 A screen is **one file**. An analysis of it is **one folder**, kept apart from

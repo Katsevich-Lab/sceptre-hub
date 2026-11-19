@@ -2207,7 +2207,8 @@ vertical-align: -.125em;
     <h2 id="toc-title">Table of contents</h2>
    
   <ul class="collapse">
-  <li><a href="#what-is-on-disk" id="toc-what-is-on-disk" class="nav-link active" data-scroll-target="#what-is-on-disk">What is on disk</a></li>
+  <li><a href="#the-principles" id="toc-the-principles" class="nav-link active" data-scroll-target="#the-principles">The principles</a></li>
+  <li><a href="#what-is-on-disk" id="toc-what-is-on-disk" class="nav-link" data-scroll-target="#what-is-on-disk">What is on disk</a></li>
   <li><a href="#open-these-files-yourself" id="toc-open-these-files-yourself" class="nav-link" data-scroll-target="#open-these-files-yourself">Open these files yourself</a></li>
   <li><a href="#the-choices-to-review" id="toc-the-choices-to-review" class="nav-link" data-scroll-target="#the-choices-to-review">The choices to review</a></li>
   <li><a href="#questions-for-reviewers" id="toc-questions-for-reviewers" class="nav-link" data-scroll-target="#questions-for-reviewers">Questions for reviewers</a></li>
@@ -2296,6 +2297,82 @@ function treeAll(button, open) {
   if (!open) tree.querySelector("details").open = true;
 }
 </script>
+<section id="the-principles" class="level2">
+<h2 class="anchored" data-anchor-id="the-principles">The principles</h2>
+<p>Every choice in the format follows from these eight. Where two of them pull apart, the earlier one wins. Open one for its reason and what follows from it.</p>
+<details class="fold">
+<summary>
+<strong>1. The same files from R and Python.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> Screens are analysed in both languages, and what a file means should not depend on which language wrote or read it.</li>
+<li><strong>What follows.</strong> Only encodings that both languages read <em>and</em> write correctly today are allowed; that subset was measured, not assumed (Appendix A). Both languages read the files with standard libraries, so the format has no reader of its own.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>2. Data and analysis are separate.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. Anything in the data file that depended on an analysis choice would fit one analysis only, or force the file to be rewritten.</li>
+<li><strong>What follows.</strong> The data file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis, where sceptre sums them at import today. An analysis is a folder of its own, which names its data file by identifier (A1).</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>3. Every file is written once.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> A file edited in place can be left half-written, cannot be written safely by parallel jobs, and no longer shows which step produced what.</li>
+<li><strong>What follows.</strong> No stage edits a file an earlier stage wrote: stages add files. Rerunning a stage deletes its files and those of later stages. Parallel jobs write part files. A stage’s record is written last, so an unfinished stage can be told from a finished one (A2). <code>significant</code> is not stored, because it depends on the whole table (T5.3).</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>4. Identifiers, never positions in a table or matrix.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> A row number means something only for one file in one order, and R counts from 1 where Python counts from 0.</li>
+<li><strong>What follows.</strong> Tables name cells, gRNAs and responses by identifier, and every identifier exists in the data file (T0.5). Tables survive subsetting, reordering and being written in pieces.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>5. Existing conventions before invented ones.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> An existing format comes with readers, tools and users. An invented encoding needs code in two languages and has no other reader.</li>
+<li><strong>What follows.</strong> AnnData, MuData and Parquet encodings are used as specified. sceptre adds names and rules, not encodings. Target positions follow the convention of GTF files (S8.10).</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>6. Readers ignore what they do not know.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> The format will grow, and files outlive the code that wrote them. Older software has to keep working on newer files where it can, and fail cleanly where it cannot.</li>
+<li><strong>What follows.</strong> Columns, keys and files that do not change the meaning of what is already there can be added with a minor version (S10). Software refuses a file of a major version it does not know (S10.3).</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>7. What follows from other stored values is not stored.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> Two copies of one fact can disagree, and the file then does not say which is right.</li>
+<li><strong>What follows.</strong> There is no <code>significant</code> column and no count of gRNAs per cell, and <code>log_2_fold_change</code> may be left out (T5). The exception is a value that nearly every analysis needs and that takes a full pass over the counts to recompute: <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> are stored (S6).</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
+<strong>8. Files are harder to change than code.</strong>
+</summary>
+<ul>
+<li><strong>Why.</strong> Code is corrected in the next release. A file already written stays as it is for years.</li>
+<li><strong>What follows.</strong> How today’s code reads data is evidence when the pattern is sound. Where it is not, the format is chosen on its merits and the code change is listed in <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/file-format/RATIONALE.md#7-code-changes-this-implies">section 7</a>: the members of a control group are a table, not text inside the group’s name (T4).</li>
+</ul>
+</details>
+</section>
 <section id="what-is-on-disk" class="level2">
 <h2 class="anchored" data-anchor-id="what-is-on-disk">What is on disk</h2>
 <p>A screen is <strong>one file</strong>. An analysis of it is <strong>one folder</strong>, kept apart from the data, and one screen can have any number of analyses. Both trees below are read from the example in <code>example/highmoi/</code>. Open a folder to see its files, and a file to see what it holds.</p>

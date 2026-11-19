@@ -87,16 +87,16 @@ data file is read on its own and the two parts can change independently.
 Every choice below follows from these. Where a choice needed a trade-off, the
 earlier principle wins.
 
-| # | Principle | Consequence |
-|---|---|---|
-| 1 | **The same files from R and Python.** | Only encodings that both languages read *and* write correctly today are allowed. That subset was measured, not assumed (Appendix A). |
-| 2 | **Data and analysis are separate.** One dataset, many analyses. | Nothing that depends on an analysis choice is in the data file. |
-| 3 | **Every file is written once.** No stage edits a file an earlier stage wrote. | Stages add files. Rerunning a stage deletes its files and those of later stages. Parallel jobs write part files. |
-| 4 | **Identifiers, never positions.** | Tables survive subsetting, reordering and being written in pieces. There is no 0-versus-1 question. |
-| 5 | **Existing conventions before invented ones.** | AnnData, MuData and Parquet encodings are used as specified. sceptre adds names and rules, not encodings. |
-| 6 | **Readers ignore what they do not know.** | Columns, keys and files that do not change the meaning of what is already there can be added with a minor version (S10). |
-| 7 | **What follows from other stored values is not stored.** | Unless recomputing it needs a full pass over the counts and nearly every analysis needs it. |
-| 8 | **Files are harder to change than code.** | How today's code reads data is evidence when the pattern is sound. Where it is not, the format is chosen on its merits and the code change is listed in [section 7](#7-code-changes-this-implies). |
+| # | Principle | Why | What follows |
+|---|---|---|---|
+| 1 | **The same files from R and Python.** | Screens are analysed in both languages, and what a file means should not depend on which language wrote or read it. | Only encodings that both languages read *and* write correctly today are allowed; that subset was measured, not assumed (Appendix A). Both languages read the files with standard libraries, so the format has no reader of its own. |
+| 2 | **Data and analysis are separate.** | One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. Anything in the data file that depended on an analysis choice would fit one analysis only, or force the file to be rewritten. | The data file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis, where sceptre sums them at import today. An analysis is a folder of its own, which names its data file by identifier (A1). |
+| 3 | **Every file is written once.** | A file edited in place can be left half-written, cannot be written safely by parallel jobs, and no longer shows which step produced what. | No stage edits a file an earlier stage wrote: stages add files. Rerunning a stage deletes its files and those of later stages. Parallel jobs write part files. A stage's record is written last, so an unfinished stage can be told from a finished one (A2). `significant` is not stored, because it depends on the whole table (T5.3). |
+| 4 | **Identifiers, never positions in a table or matrix.** | A row number means something only for one file in one order, and R counts from 1 where Python counts from 0. | Tables name cells, gRNAs and responses by identifier, and every identifier exists in the data file (T0.5). Tables survive subsetting, reordering and being written in pieces. |
+| 5 | **Existing conventions before invented ones.** | An existing format comes with readers, tools and users. An invented encoding needs code in two languages and has no other reader. | AnnData, MuData and Parquet encodings are used as specified. sceptre adds names and rules, not encodings. Target positions follow the convention of GTF files (S8.10). |
+| 6 | **Readers ignore what they do not know.** | The format will grow, and files outlive the code that wrote them. Older software has to keep working on newer files where it can, and fail cleanly where it cannot. | Columns, keys and files that do not change the meaning of what is already there can be added with a minor version (S10). Software refuses a file of a major version it does not know (S10.3). |
+| 7 | **What follows from other stored values is not stored.** | Two copies of one fact can disagree, and the file then does not say which is right. | There is no `significant` column and no count of gRNAs per cell, and `log_2_fold_change` may be left out (T5). The exception is a value that nearly every analysis needs and that takes a full pass over the counts to recompute: `n_umis`, `n_nonzero` and `p_mito` are stored (S6). |
+| 8 | **Files are harder to change than code.** | Code is corrected in the next release. A file already written stays as it is for years. | How today's code reads data is evidence when the pattern is sound. Where it is not, the format is chosen on its merits and the code change is listed in [section 7](#7-code-changes-this-implies): the members of a control group are a table, not text inside the group's name (T4). |
 
 ---
 
