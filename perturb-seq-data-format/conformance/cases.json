@@ -57,6 +57,14 @@
     "copy_keeps_modalities": "rna"
   },
   {
+    "name": "valid/highmoi_without_count_summaries.h5mu",
+    "kind": "screen",
+    "path": "conformance/valid/highmoi_without_count_summaries.h5mu",
+    "expect": [],
+    "conforms": true,
+    "what": "No cell table has `n_umis` or `n_nonzero`, which are optional (S6.1)"
+  },
+  {
     "name": "valid/highmoi_with_grna_types.h5mu",
     "kind": "screen",
     "path": "conformance/valid/highmoi_with_grna_types.h5mu",
@@ -228,16 +236,6 @@
     ],
     "conforms": false,
     "what": "A cell column named `donor-age`, which no formula can use"
-  },
-  {
-    "name": "invalid/screens/no_n_nonzero.h5mu",
-    "kind": "screen",
-    "path": "conformance/invalid/screens/no_n_nonzero.h5mu",
-    "expect": [
-      "S6.1"
-    ],
-    "conforms": false,
-    "what": "The gRNA modality's cell table has no `n_nonzero`"
   },
   {
     "name": "invalid/screens/n_umis_as_labels.h5mu",

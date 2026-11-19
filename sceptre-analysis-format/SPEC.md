@@ -80,12 +80,12 @@ final; the sorting into kinds is.
 - **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 66 statements, 44 are file rules, 18 behaviour rules and 4
-guidance. The validators check 42 of the file rules (T0.9 in part), a test covers 1 more
+Of the 70 statements, 47 are file rules, 19 behaviour rules and 4
+guidance. The validators check 45 of the file rules (T0.9 in part), a test covers 1 more
 (T4.3), and 1 has no test (A3.2). Tests or the conformance run
-cover 11 of the behaviour rules (A1.8 in part, T7.4 in R only); 7 have no
-test: A1.5, A1.9, A3.5, A6.2, T1.3, T7.3, T7.5. Seven of the untested rules
-(A1.5, A1.9, A3.2, A3.5, T1.3, T7.3, T7.5) can only be tested with a package
+cover 11 of the behaviour rules (A1.8 in part, T7.4 in R only); 8 have no
+test: A1.5, A1.9, A3.5, A6.2, T1.3, T7.3, T7.5, T7.9. Eight of the untested rules
+(A1.5, A1.9, A3.2, A3.5, T1.3, T7.3, T7.5, T7.9) can only be tested with a package
 that fits models or builds its own object.
 
 **The machine-readable parts** are in [`spec/`](spec/), and both validators and
@@ -153,7 +153,8 @@ my_analysis/                          one analysis
 ├── parameters/                       one folder per completed stage:
 │   ├── record.json                   the stage's record, written last
 │   ├── discovery_pairs.parquet
-│   └── positive_control_pairs.parquet
+│   ├── positive_control_pairs.parquet
+│   └── cell_covariates.parquet       optional: covariates the analysis brings
 ├── assignment/
 │   ├── record.json
 │   ├── assignments.parquet
@@ -348,8 +349,12 @@ and QC stages have run.
 | T7.1 | file | The formula in the parameters record MUST be additive, each term one of: a covariate name (T7.4), `log(x)`, `log(x + 1)`, or `0` or `1` for the intercept. | V |
 | T7.2 | file | The design matrix is not stored. The parameters record has `design.terms` (the names of the matrix's columns, with covariates named as in T7.4). | V (through A2.1) |
 | T7.3 | behaviour | A reader that fits models MUST rebuild the matrix from the formula and the covariates and refuse the analysis if the term names differ. | none (testing it needs a package) |
-| T7.4 | behaviour | The covariate table of a model is the columns of the data file's shared cell table together with the columns of the cell tables of `grna` and of the response modality, each modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. The data file's column names (S5.1, S5.3) keep these names distinct and usable in a formula. | tests in R (the data file format's R writer splits such a table and the checks join it again: every R copy in `verify/` here and in that format's `verify/`). In Python: none (testing it needs a package) |
+| T7.4 | behaviour | The covariate table of a model is the columns of the data file's shared cell table together with the columns of the cell tables of `grna` and of the response modality, each modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. To these are added the columns of `parameters/cell_covariates.parquet` (T7.6), under their own names. The data file's column names (S5.1, S5.3) keep these names distinct and usable in a formula. | tests in R (the data file format's R writer splits such a table and the checks join it again: every R copy in `verify/` here and in that format's `verify/`). In Python: none (testing it needs a package) |
 | T7.5 | behaviour | The baseline of a categorical covariate in the design matrix is its first stored category (S7.6). | none (testing it needs a package) |
+| T7.6 | file | `parameters/cell_covariates.parquet` is optional. It holds covariates that the analysis brings beside those of the data file: a value some method computed (a score, a cluster, a cell-type label), or one the data file does not store. It has `cell_id` and one column per covariate, and one row per cell of the data file. A covariate is a `double`, which may be missing, or text, which may not. Its name starts with a letter and contains only letters, digits, underscores and dots. | V |
+| T7.7 | file | A covariate of `parameters/cell_covariates.parquet` MUST NOT have the name of a covariate that the data file provides (T7.4). | V |
+| T7.8 | file | Every covariate that the formula names MUST be a column of the model's covariate table (T7.4): a covariate of the data file, or one of `parameters/cell_covariates.parquet`. | V |
+| T7.9 | behaviour | The levels of a text covariate of `parameters/cell_covariates.parquet` are its distinct values, sorted as UTF-8 bytes. The first is its baseline in the design matrix. | none (testing it needs a package) |
 
 ---
 

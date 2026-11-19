@@ -235,6 +235,7 @@ def unit_key(table) -> list[str]:
 TABLE_DEFINITIONS = {t["name"]: t for t in TABLE_SPEC["tables"]}
 
 
+COVARIATES = "parameters/cell_covariates"
 TABLES = {
     name: (t["stage"], list(t["key"]), [c["name"] for c in t["columns"]] if t["extra_columns"] == "ignored" else None)
     for name, t in TABLE_DEFINITIONS.items()
@@ -673,6 +674,13 @@ def formula_in_subset(text: str) -> bool:
     return all(re.fullmatch(rf"0|1|{name}|log\({name}\)|log\({name}\+1\)", t) for t in terms)
 
 
+def formula_covariates(text: str) -> list[str]:
+    """The covariates an additive formula names (T7.8)."""
+    rhs = re.sub(r"\s", "", text.split("~", 1)[1])
+    names = re.findall(r"[A-Za-z][A-Za-z0-9_.]*", re.sub(r"log\(", "(", rhs))
+    return sorted(set(names))
+
+
 # ---------------------------------------------------------------- comparing and describing
 
 
@@ -725,6 +733,11 @@ def _screen_identity(file, response_modality) -> dict:
             out["targets"] = _text(target[()])
         if response_modality in f["mod"]:
             out["responses"] = _index_of(f[f"mod/{response_modality}/var"])
+        # the covariates the data file provides to a model, named as in T7.4
+        def columns(table):
+            return [k for k in f[table] if k != f[table].attrs.get("_index", "_index")]
+
+        out["covariates"] = columns("obs") + [f"{m}_{c}" for m in ("grna", response_modality) if m in f["mod"] for c in columns(f"mod/{m}/obs")]
     return out
 
 
@@ -917,6 +930,17 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
             log.add("T0.4", where, f"Two rows have the same {', '.join(key)}.")
         contents[name] = whole
 
+    # covariates the analysis brings (T7.6): numbers or text, named like a data file's columns
+    brought = contents.get(COVARIATES)
+    if brought is not None:
+        definition = TABLE_DEFINITIONS[COVARIATES]
+        for name in [c for c in brought.columns if c != "cell_id"]:
+            column = brought[name]
+            is_text = column.map(lambda v: isinstance(v, str)).all()
+            if not re.fullmatch(definition["covariate_name_pattern"], str(name)):
+                log.add("T7.6", f"{COVARIATES}.parquet", f"`{name}` is not a valid covariate name.")
+            elif not (pd.api.types.is_float_dtype(column.dtype) or is_text):
+                log.add("T7.6", f"{COVARIATES}.parquet", f"The covariate `{name}` must be a double, or text with no missing values.")
     parameters = records.get("parameters")
     if parameters is not None:
         if not formula_in_subset(parameters["settings"]["formula"]):
@@ -962,6 +986,17 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
             for name in ("parameters/discovery_pairs", "parameters/positive_control_pairs"):
                 if name in contents and not set(contents[name]["grna_target"]) <= set(screen["targets"]):
                     log.add("T0.5", f"{name}.parquet", "`grna_target` names something the data file does not have.")
+            # covariates: one row per cell, no name the data file already provides, and
+            # every covariate of the formula found in one of the two places (T7.6 to T7.8)
+            own = [] if brought is None else [c for c in brought.columns if c != "cell_id"]
+            if brought is not None and set(brought["cell_id"]) != set(screen["cells"]):
+                log.add("T7.6", f"{COVARIATES}.parquet", "does not have one row per cell of the data file.")
+            for name in sorted(set(own) & set(screen["covariates"])):
+                log.add("T7.7", f"{COVARIATES}.parquet", f"The covariate `{name}` is already provided by the data file.")
+            if parameters is not None and formula_in_subset(parameters["settings"]["formula"]):
+                for name in formula_covariates(parameters["settings"]["formula"]):
+                    if name not in set(own) | set(screen["covariates"]):
+                        log.add("T7.8", "parameters/record.json", f"The formula names `{name}`, which is neither a covariate of the data file nor one the analysis brings.")
             kept = contents.get("qc/cells")
             if kept is not None and set(kept["cell_id"]) != set(screen["cells"]):
                 log.add("T2.1", "qc/cells.parquet", "does not have one row per cell of the data file.")

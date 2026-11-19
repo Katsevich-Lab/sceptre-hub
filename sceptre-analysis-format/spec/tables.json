@@ -44,7 +44,7 @@
   "stage": "the stage that writes the table, which is also the folder it is in; null for the fit cache, which no stage owns",
   "required": "whether the table must exist once its stage has run",
   "key": "the key columns, in sort order; a key column that is not required is part of the key when it is present",
-  "extra_columns": "`ignored`: a reader takes only the columns listed. `kept`: a reader keeps further columns (diagnostics)",
+  "extra_columns": "`ignored`: a reader takes only the columns listed. `kept`: a reader keeps further columns (diagnostics). `covariates`: every further column is a covariate, a `double` or a `string`",
   "log_2_of": "a column that must equal the base-2 logarithm of another, computed as log(x) / log(2), to the relative tolerance given, wherever the table has both and neither is missing",
   "present_under": "on a column: the gRNA integration strategies under which the column is present; under any other strategy it is absent",
   "forbidden_columns": "columns the table must not have",
@@ -92,6 +92,28 @@
     },
     {
      "name": "response_id",
+     "type": "string",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "parameters/cell_covariates",
+   "description": "covariates of the cells that this analysis brings, beside those of the data file",
+   "stage": "parameters",
+   "required": false,
+   "key": [
+    "cell_id"
+   ],
+   "extra_columns": "covariates",
+   "covariate_types": [
+    "double",
+    "string"
+   ],
+   "covariate_name_pattern": "^[A-Za-z][A-Za-z0-9_.]*$",
+   "columns": [
+    {
+     "name": "cell_id",
      "type": "string",
      "required": true
     }

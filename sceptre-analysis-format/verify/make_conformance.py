@@ -191,6 +191,50 @@ broken_analysis("response_modality_grna", ["A1.1"], "`analysis.json` names `grna
                 lambda p: edit_json(p / "analysis.json", lambda v: v.__setitem__("response_modality", "grna")))
 broken_analysis("response_modality_not_in_file", ["A1.2"], "The response modality is `protein`, which the data file does not have",
                 lambda p: edit_json(p / "analysis.json", lambda v: v.__setitem__("response_modality", "protein")))
+# covariates an analysis brings itself (T7.6 to T7.8): here the count summaries of a
+# data file that does not store them, and a label that some method computed
+BARE = DATA / "highmoi_without_count_summaries.h5mu"
+
+
+def with_covariates(folder, change=None):
+    """The left_sided analysis with its own covariate table: the four count
+    summaries its formula names, taken from the data file that has them, and a label."""
+    shutil.copytree("example/highmoi/analyses/left_sided", folder)
+    with h5py.File(high_py) as f:
+        cells = [v.decode() for v in f["mod/rna/obs/_index"][()]]
+        table = {"cell_id": cells}
+        for modality in ("rna", "grna"):
+            for name in ("n_nonzero", "n_umis"):
+                table[f"{modality}_{name}"] = f[f"mod/{modality}/obs/{name}"][()].astype(float)
+    table["cell_cycle"] = [("G1", "S", "G2M")[i % 3] for i in range(len(cells))]
+    table = pa.table(table)
+    table = table.take(pa.array(sorted(range(len(cells)), key=lambda i: cells[i].encode())))
+    if change is not None:
+        table = change(table)
+    pq.write_table(table, folder / "parameters/cell_covariates.parquet")
+    edit_json(folder / "parameters/record.json", lambda v: v["files"].append({"path": "cell_covariates.parquet", "rows": table.num_rows}))
+
+
+brought = VALID / "analyses" / "covariates_brought_by_the_analysis"
+with_covariates(brought)
+case("analysis", brought, [], "The data file stores no count summaries; the analysis brings them, and a computed label, in its own covariate table", BARE)
+
+named_twice = INVALID / "analyses" / "covariate_the_data_file_already_has"
+with_covariates(named_twice)
+case("analysis", named_twice, ["T7.7"], "The analysis brings covariates under names the data file already provides", high_r)
+
+unknown = INVALID / "analyses" / "formula_names_an_unknown_covariate"
+shutil.copytree("example/highmoi/analyses/left_sided", unknown)
+case("analysis", unknown, ["T7.8"], "The formula names count summaries that neither the data file nor the analysis provides", BARE)
+
+wrong_type = INVALID / "analyses" / "covariate_of_the_wrong_type"
+with_covariates(wrong_type, lambda t: t.append_column("flag", pa.array([True] * t.num_rows)))
+case("analysis", wrong_type, ["T7.6"], "A covariate the analysis brings is a boolean, not a number or text", BARE)
+
+too_few = INVALID / "analyses" / "covariates_for_some_cells_only"
+with_covariates(too_few, lambda t: t.slice(0, t.num_rows - 10))
+case("analysis", too_few, ["T7.6"], "The analysis's covariate table lacks some cells of the data file", BARE)
+
 broken_analysis("analysis_format_from_the_future", ["A1.1"], "The analysis's format version is 9.0",
                 lambda p: edit_json(p / "analysis.json", lambda v: v.__setitem__("format", "9.0")))
 broken_analysis("absolute_path_to_the_data", ["A1.4"], "The hint to the data file is an absolute local path",

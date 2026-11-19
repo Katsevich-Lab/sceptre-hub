@@ -2316,7 +2316,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone.</li>
-<li><strong>What follows.</strong> An analysis is a folder of its own. It names its data file by identifier and by hashes of the identifier lists (A1), never modifies it, can be stored anywhere, and can be read for its results without it. Every analysis choice lives here: which modality is the response (A1), the low or high MOI preset (A3.6), the assignments (T1), the cells in use (T2) and the grouping of gRNAs (T4).</li>
+<li><strong>What follows.</strong> An analysis is a folder of its own. It names its data file by identifier and by hashes of the identifier lists (A1), never modifies it, can be stored anywhere, and can be read for its results without it. Every analysis choice lives here: which modality is the response (A1), the low or high MOI preset (A3.6), the assignments (T1), the cells in use (T2), the grouping of gRNAs (T4), and any covariate that a method computed (T7.6).</li>
 </ul>
 </details>
 <details class="fold">
@@ -3861,6 +3861,16 @@ ENSG00000099949
 </details>
 <details class="fold">
 <summary>
+<strong>An analysis can bring covariates of its own.</strong> <span class="where">T7</span>
+</summary>
+<ul>
+<li><strong>The choice.</strong> An optional table, <code>parameters/cell_covariates.parquet</code>, with one row per cell and one column per covariate. A formula may name its columns beside the data file’s.</li>
+<li><strong>Why.</strong> The data file holds nothing a method computed. A cell-cycle score, a cluster or a cell-type label is kept with the analysis that uses it. The table also carries the count summaries when a data file does not store them.</li>
+<li><strong>The rule.</strong> Every covariate of a formula is found in exactly one place: the data file or this table.</li>
+</ul>
+</details>
+<details class="fold">
+<summary>
 <strong>Nothing is stored that follows from something else stored.</strong> <span class="where">T2, T5</span>
 </summary>
 <ul>
@@ -3963,10 +3973,10 @@ Passed in Python
 Both validators report exactly the expected rules on every analysis folder of <code>conformance/</code> (folders that conform, and folders that each break a rule), each checked against its data file
 </td>
 <td>
-50 of 50
+55 of 55
 </td>
 <td>
-50 of 50
+55 of 55
 </td>
 </tr>
 <tr>

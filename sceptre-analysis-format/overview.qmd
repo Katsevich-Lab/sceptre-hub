@@ -167,6 +167,15 @@ is the section of `RATIONALE.md` (and of `SPEC.md`) with the detail.
 </details>
 
 <details class="fold">
+<summary><strong>An analysis can bring covariates of its own.</strong> <span class="where">T7</span></summary>
+
+- **The choice.** An optional table, `parameters/cell_covariates.parquet`, with one row per cell and one column per covariate. A formula may name its columns beside the data file's.
+- **Why.** The data file holds nothing a method computed. A cell-cycle score, a cluster or a cell-type label is kept with the analysis that uses it. The table also carries the count summaries when a data file does not store them.
+- **The rule.** Every covariate of a formula is found in exactly one place: the data file or this table.
+
+</details>
+
+<details class="fold">
 <summary><strong>Nothing is stored that follows from something else stored.</strong> <span class="where">T2, T5</span></summary>
 
 - **Examples.** Results have no `significant` column, and the cell table has no count of gRNAs per cell.

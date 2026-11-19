@@ -185,7 +185,7 @@ Names are as hard to change as structure: the modality names `rna` and `grna`, a
 2. **Coordinates.** Target positions are 1-based with both ends included, as in GTF files, and a file with positions has to say which genome build they are in. Is that the right convention?
 3. **Limits.** A gRNA has one target, and so does a vector carrying several gRNAs; combinatorial screens are refused. DNA-targeting is assumed. Are those limits acceptable for now?
 4. **The matrix layout.** Counts are stored by feature, which suits fitting one gene at a time. Files from mapping pipelines and from scanpy are stored by cell. Should the format allow both and recommend one?
-5. **The required columns.** Every modality's cell table must have `n_umis` and `n_nonzero`. Is that the right minimum for software other than sceptre?
+5. **Nothing a method computed is in the file.** A cell-type label, a cluster or a score is kept with the analysis that uses it, and the two count summaries `n_umis` and `n_nonzero` are optional. Other formats keep such annotations in the cell table. Is this boundary the right one?
 6. **The names.** Would you use `rna` and `grna`, `grna_target`, and the entry names at the top level of `uns`, or do the names of another format serve better?
 
 <details class="fold">

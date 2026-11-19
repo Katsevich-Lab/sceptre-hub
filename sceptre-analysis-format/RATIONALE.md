@@ -44,7 +44,7 @@ principles](../perturb-seq-data-format/RATIONALE.md#2-the-eight-principles), app
 | # | Principle | Why | What follows |
 |---|---|---|---|
 | 1 | **The same files from R and Python.** | An analysis is started in one language and continued or read in the other, and what a file means should not depend on which wrote it. | Tables are Parquet, with the few column types both languages read and write correctly (T0.1). A real number in a record is written with 17 significant digits, so the number read is the number written (A3.4). Nothing depends on arithmetic giving the same bits on two platforms: a stored value is read, never rebuilt (`log_2_fold_change`, T5), and the design matrix has no hash (T7). Saved fits cross languages only where the fitting method is the same (T6.5). |
-| 2 | **An analysis is kept apart from its data.** | One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. | An analysis is a folder of its own. It names its data file by identifier and by hashes of the identifier lists (A1), never modifies it, can be stored anywhere, and can be read for its results without it. Every analysis choice lives here: which modality is the response (A1), the low or high MOI preset (A3.6), the assignments (T1), the cells in use (T2) and the grouping of gRNAs (T4). |
+| 2 | **An analysis is kept apart from its data.** | One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. | An analysis is a folder of its own. It names its data file by identifier and by hashes of the identifier lists (A1), never modifies it, can be stored anywhere, and can be read for its results without it. Every analysis choice lives here: which modality is the response (A1), the low or high MOI preset (A3.6), the assignments (T1), the cells in use (T2), the grouping of gRNAs (T4), and any covariate that a method computed (T7.6). |
 | 3 | **Every file is written once.** | A file edited in place can be left half-written, cannot be written safely by parallel jobs, and no longer shows which step produced what. | No stage edits a file an earlier stage wrote: stages add files (A6.2). Rerunning a stage deletes its files and those of later stages (A4.2). Parallel jobs write part files. A stage's record is written last, so an unfinished stage can be told from a finished one (A2). `significant` is not stored, because it depends on the whole table (T5.3). |
 | 4 | **Identifiers, never positions.** | A row number means something only for one file in one order, and R counts from 1 where Python counts from 0. | Tables name cells, gRNAs and responses by identifier, and every identifier exists in the data file (T0.5). Tables survive subsetting, reordering and being written in pieces. |
 | 5 | **Existing conventions before invented ones.** | An existing format comes with readers, tools and users. An invented encoding needs code in two languages and has no other reader. | Parquet and JSON are used as specified, and the records are defined by JSON Schemas. How a part of the fit cache was made is stored in Parquet's own key-value metadata (T6.1). The data is a file of the Perturb-seq data file format, not something redefined here. |
@@ -359,6 +359,11 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
   - *Locks in.* The prefix rule and the underscore. MuData's own `rna:n_umis` colon style is not used, because a colon is not valid in a formula.
 - **The baseline of a factor.** The data file stores a categorical's levels in order (S7). The first stored category is the baseline of the model. This is R's default contrasts; nothing is invented.
 - **Evidence.** *(measured)* On the example, R's `model.matrix()` and pysceptre's `model_matrix()` give bitwise-equal matrices on one machine.
+- **Covariates the analysis brings: `parameters/cell_covariates.parquet`** *(Decided)*.
+  - *What it is for.* The data file holds data and nothing a method computed from it. A covariate such as a cell-cycle score, a cluster or a cell-type label is such a value, so it is stored with the analysis that uses it: one row per cell, one column per covariate. The same table carries `rna_n_umis` and the other count summaries when the data file does not store them, since the data file format leaves them optional and a data file is written once.
+  - *One source for each name* (T7.7, T7.8). A formula names a covariate of the data file or one of this table, never one that both provide. The validators check, against the data file, that every covariate of the formula is found.
+  - *Types.* A number or text. Parquet text has no level order, so the levels of a text covariate are its distinct values in byte order (T7.9); a covariate that needs another baseline is recoded before it is stored.
+  - *What sceptre does today.* `import_data()` takes `extra_covariates` and keeps them with the data *(verified, `R/check_functions.R`)*. Under this format, covariates recorded with the experiment go into the data file and computed ones into this table.
 - **What a reader checks.** The rebuilt matrix's term names. The names (`batchbatch_2`) encode the factor levels, the baseline and the term order, which are the ways two languages can really disagree. That the data is the same data is the job of the link to the data file (A1).
 - **IGVF.** The design is recorded as a list of covariate options in the file's `uns`, and each method builds its own design from them. There is no check that two methods, or two languages, built the same matrix.
 - **No hash of the matrix.** A hash of exact values fails on a correct matrix, because a logarithm's last bit differs between platforms: the natural logarithms of the whole numbers 1 to 200,000 differ in 16 values between macOS and Linux *(measured, numpy on both)*. With a logarithm in the default formula, an analysis written on one would be refused on the other. A check that survives this, such as a hash of the covariates before any arithmetic, can be added later ([section 7](#7-fixed-now-free-to-grow)).
@@ -526,7 +531,7 @@ the code lives. This section gives what is particular to analyses.
 | The reasons | this document | Why each rule is what it is |
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
 | Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json`, `spec/fits.schema.json` | JSON Schemas (draft 7) for `analysis.json`, the six stage records, and the identity each part of the fit cache carries |
-| Conformance files | `conformance/`, built by `verify/make_conformance.py` | 16 conforming analysis folders, written by R and by Python, and 34 that each break a rule, with the rules a validator must report. Each names its data file, which is among the data file format's files |
+| Conformance files | `conformance/`, built by `verify/make_conformance.py` | 17 conforming analysis folders, written by R and by Python, and 38 that each break a rule, with the rules a validator must report. Each names its data file, which is among the data file format's files |
 | Validator | `validate_analysis()` in `format/sceptre_analysis.R` and `format/sceptre_analysis.py` | Checks an analysis folder, with its data file when one is given, without building a package object, and reports every problem, not only the first |
 
 **What the specification leaves out.** It fixes the form of results and not
@@ -560,9 +565,9 @@ pysceptre and runs on the committed files with standard libraries only.
 *(measured, on macOS, Linux and Windows)* Each group of checks runs in R and in
 Python, all passing:
 
-- the validators on the conformance set. Both validators accept all 16
-  conforming analyses and report exactly the expected rules for all 34 broken
-  ones, the same in both languages. 22 rules are exercised by at least one
+- the validators on the conformance set. Both validators accept all 17
+  conforming analyses and report exactly the expected rules for all 38 broken
+  ones, the same in both languages. 25 rules are exercised by at least one
   broken analysis. One more is checked with no file: T0.3 (row groups of at
   most a million rows), because the file would be large;
 - two writers on seeded random content, a data file and an analysis of it,

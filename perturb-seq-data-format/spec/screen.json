@@ -64,7 +64,7 @@
           "double",
           "int32"
         ],
-        "required": true
+        "required": false
       },
       {
         "name": "n_nonzero",
@@ -73,7 +73,7 @@
           "double",
           "int32"
         ],
-        "required": true
+        "required": false
       },
       {
         "name": "p_mito",

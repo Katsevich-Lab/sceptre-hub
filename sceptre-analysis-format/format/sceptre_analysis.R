@@ -107,6 +107,7 @@ read_table <- function(path, columns = NULL) {
 # its key, and the columns a reader takes (NULL: all of them).
 unit_key <- function(table) intersect(c("grna_target", "grna_id", "response_id"), names(table))
 
+COVARIATES <- "parameters/cell_covariates"
 TABLES <- stats::setNames(lapply(TABLE_SPEC$tables, function(definition) {
     columns <- vapply(definition$columns, function(column) column$name, character(1))
     list(
@@ -491,6 +492,12 @@ formula_in_subset <- function(text) {
     all(grepl(paste0("^(0|1|", name, "|log\\(", name, "\\)|log\\(", name, "\\+1\\))$"), terms))
 }
 
+# The covariates an additive formula names (T7.8).
+formula_covariates <- function(text) {
+    rhs <- gsub("log\\(", "(", gsub("[[:space:]]", "", sub("^[^~]*~", "", text)))
+    sort(unique(regmatches(rhs, gregexpr("[A-Za-z][A-Za-z0-9_.]*", rhs))[[1]]), method = "radix")
+}
+
 # ---------------------------------------------------------------- comparing and describing
 
 rows_sorted <- function(table) {
@@ -523,6 +530,12 @@ screen_identity <- function(file, response_modality) {
         read(target)
     }
     if (response_modality %in% modalities) out$responses <- index(paste0("mod/", response_modality, "/var"))
+    # the covariates the data file provides to a model, named as in T7.4
+    listing <- rhdf5::h5ls(file, recursive = 4L)
+    columns <- function(table) setdiff(listing$name[listing$group == paste0("/", table)], as.vector(rhdf5::h5readAttributes(file, table)[["_index"]]))
+    out$covariates <- c(columns("obs"), unlist(lapply(intersect(c("grna", response_modality), modalities), function(modality) {
+        paste0(modality, "_", columns(paste0("mod/", modality, "/obs")))
+    })))
     out
 }
 
@@ -732,6 +745,19 @@ validate_analysis <- function(directory, screen_file = NULL) {
     parameters <- records$parameters
     if (!is.null(parameters)) {
         if (!formula_in_subset(parameters$settings$formula)) log$add("T7.1", "parameters/record.json", "The formula is outside the additive subset.")
+    }
+    # covariates the analysis brings (T7.6): numbers or text, named like a data file's columns
+    brought <- contents[[COVARIATES]]
+    own <- as.character(setdiff(names(brought), "cell_id"))
+    for (name in own) {
+        column <- brought[[name]]
+        if (!grepl(TABLES[[COVARIATES]]$definition$covariate_name_pattern, name)) {
+            log$add("T7.6", paste0(COVARIATES, ".parquet"), "`", name, "` is not a valid covariate name.")
+        } else if (!(is.double(column) || ((is.character(column) || is.factor(column)) && !anyNA(column)))) {
+            log$add("T7.6", paste0(COVARIATES, ".parquet"), "The covariate `", name, "` must be a double, or text with no missing values.")
+        }
+    }
+    if (!is.null(parameters)) {
         # A part made for this analysis's parameters has one coefficient per term of its
         # design (T6.2). A part made otherwise is allowed and unused, and is not
         # reported: nothing depends on it, and clearing it is housekeeping (T6.3, T6.6).
@@ -774,6 +800,19 @@ validate_analysis <- function(directory, screen_file = NULL) {
             }
             for (name in intersect(c("parameters/discovery_pairs", "parameters/positive_control_pairs"), names(contents))) {
                 if (!all(contents[[name]]$grna_target %in% screen$targets)) log$add("T0.5", paste0(name, ".parquet"), "`grna_target` names something the data file does not have.")
+            }
+            # covariates: one row per cell, no name the data file already provides, and
+            # every covariate of the formula found in one of the two places (T7.6 to T7.8)
+            if (!is.null(brought) && !setequal(brought$cell_id, screen$cells)) {
+                log$add("T7.6", paste0(COVARIATES, ".parquet"), "does not have one row per cell of the data file.")
+            }
+            for (name in sort(as.character(intersect(own, screen$covariates)), method = "radix")) {
+                log$add("T7.7", paste0(COVARIATES, ".parquet"), "The covariate `", name, "` is already provided by the data file.")
+            }
+            if (!is.null(parameters) && formula_in_subset(parameters$settings$formula)) {
+                for (name in setdiff(formula_covariates(parameters$settings$formula), c(own, screen$covariates))) {
+                    log$add("T7.8", "parameters/record.json", "The formula names `", name, "`, which is neither a covariate of the data file nor one the analysis brings.")
+                }
             }
             kept <- contents[["qc/cells"]]
             if (!is.null(kept) && !setequal(kept$cell_id, screen$cells)) {

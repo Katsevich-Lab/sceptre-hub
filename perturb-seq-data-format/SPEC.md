@@ -87,7 +87,7 @@ final; the sorting into kinds is.
 - **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 62 statements, 42 are file rules, 12 behaviour rules and 8
+Of the 64 statements, 42 are file rules, 12 behaviour rules and 10
 guidance. The validators check all 42 file rules. Tests or the conformance
 run cover 6 of the behaviour rules; 6 have no test: S6.4, S8.3, S8.4, S9.3,
 S12.1, S12.2.
@@ -212,17 +212,18 @@ from each other, does not conform; a reader still reads it (S4.4).
 | Rule | Kind | | Check |
 |---|---|---|---|
 | S5.1 | file | A column of the shared cell table MUST NOT be named with a modality's name followed by an underscore. | V |
-| S5.2 | guidance | Facts about the cell (batch, donor, anything the user supplies) MUST be in the shared cell table. Measurements of one modality MUST be in that modality's cell table, without a prefix. | — |
+| S5.2 | guidance | Facts about the cell that are recorded with the experiment (batch, donor, sample, treatment) MUST be in the shared cell table. Measurements of one modality MUST be in that modality's cell table, without a prefix. | — |
 | S5.3 | file | The name of a column of a cell table MUST start with a letter and contain only letters, digits, underscores and dots. | V |
 
 ### S6. Computed columns
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| S6.1 | file | Every modality's cell table MUST have `n_umis` (the cell's total count) and `n_nonzero` (its number of features with a nonzero count). A writer computes them when they are absent. | V |
+| S6.1 | file | A modality's cell table MAY have `n_umis` (the cell's total count) and `n_nonzero` (its number of features with a nonzero count). | V (a valid conformance case without them) |
 | S6.2 | file | `n_umis`, `n_nonzero` and `p_mito` MUST be numbers. | V |
 | S6.3 | guidance | A modality that has mitochondrial genes MAY have `p_mito`: the proportion, from 0 to 1, of the cell's counts from them. | — |
 | S6.4 | behaviour | No other value that follows from stored values may be required by a reader. | none |
+| S6.5 | guidance | A writer SHOULD store `n_umis` and `n_nonzero`, computing them when they are absent. Most analyses use them, and recomputing them is a full pass over the counts. | — |
 
 ### S7. Column kinds
 
@@ -297,6 +298,7 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 |---|---|---|---|
 | S12.1 | behaviour | The data file MUST NOT hold anything an analysis produces: assignments, which cells were kept, gRNA groups, pairs, or results. | none |
 | S12.2 | behaviour | A data file is written once. Software that analyses it MUST NOT modify it. | none |
+| S12.3 | guidance | A value that a method computed from the data (a score, a cluster, a cell-type label) is not a fact recorded with the experiment and SHOULD NOT be stored in the data file. It belongs with the analysis that uses it. The count summaries of S6 are the exception. | — |
 
 ---
 

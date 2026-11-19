@@ -127,6 +127,20 @@ def types_of(f):
     return ["targeting" if t != "non-targeting" else next(controls) for t in targets]
 
 
+def drop_column(f, table, name):
+    del f[f"{table}/{name}"]
+    order = [c.decode() if isinstance(c, bytes) else c for c in f[table].attrs["column-order"]]
+    f[table].attrs["column-order"] = np.array([c for c in order if c != name], dtype=h5py.string_dtype())
+
+
+without_summaries = VALID / "highmoi_without_count_summaries.h5mu"
+shutil.copy(high_py, without_summaries)
+with h5py.File(without_summaries, "r+") as f:
+    for modality in f["mod"]:
+        for name in ("n_umis", "n_nonzero"):
+            drop_column(f, f"mod/{modality}/obs", name)
+case("screen", without_summaries, [], "No cell table has `n_umis` or `n_nonzero`, which are optional (S6.1)")
+
 with_types = VALID / "highmoi_with_grna_types.h5mu"
 shutil.copy(high_py, with_types)
 with h5py.File(with_types, "r+") as f:
@@ -236,7 +250,6 @@ broken_screen("shared_column_named_like_a_modality", ["S5.1"], "A shared cell co
               lambda f: add_column(f, "obs", "rna_quality", np.arange(6, dtype=np.float64)))
 broken_screen("covariate_name_with_a_dash", ["S5.3"], "A cell column named `donor-age`, which no formula can use",
               lambda f: add_column(f, "obs", "donor-age", np.arange(6, dtype=np.float64)))
-broken_screen("no_n_nonzero", ["S6.1"], "The gRNA modality's cell table has no `n_nonzero`", lambda f: f["mod/grna/obs"].__delitem__("n_nonzero"))
 
 
 def n_umis_as_labels(f):

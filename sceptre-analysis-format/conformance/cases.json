@@ -200,6 +200,59 @@
     "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
+    "name": "valid/analyses/covariates_brought_by_the_analysis",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/covariates_brought_by_the_analysis",
+    "expect": [],
+    "conforms": true,
+    "what": "The data file stores no count summaries; the analysis brings them, and a computed label, in its own covariate table",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_without_count_summaries.h5mu"
+  },
+  {
+    "name": "invalid/analyses/covariate_the_data_file_already_has",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/covariate_the_data_file_already_has",
+    "expect": [
+      "T7.7"
+    ],
+    "conforms": false,
+    "what": "The analysis brings covariates under names the data file already provides",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/formula_names_an_unknown_covariate",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/formula_names_an_unknown_covariate",
+    "expect": [
+      "T7.8"
+    ],
+    "conforms": false,
+    "what": "The formula names count summaries that neither the data file nor the analysis provides",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_without_count_summaries.h5mu"
+  },
+  {
+    "name": "invalid/analyses/covariate_of_the_wrong_type",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/covariate_of_the_wrong_type",
+    "expect": [
+      "T7.6"
+    ],
+    "conforms": false,
+    "what": "A covariate the analysis brings is a boolean, not a number or text",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_without_count_summaries.h5mu"
+  },
+  {
+    "name": "invalid/analyses/covariates_for_some_cells_only",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/covariates_for_some_cells_only",
+    "expect": [
+      "T7.6"
+    ],
+    "conforms": false,
+    "what": "The analysis's covariate table lacks some cells of the data file",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_without_count_summaries.h5mu"
+  },
+  {
     "name": "invalid/analyses/analysis_format_from_the_future",
     "kind": "analysis",
     "path": "conformance/invalid/analyses/analysis_format_from_the_future",

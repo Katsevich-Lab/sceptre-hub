@@ -1,0 +1,39 @@
+{
+  "stage": "parameters",
+  "settings": {
+    "moi": "high",
+    "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch",
+    "side": "left",
+    "resampling_mechanism": "crt",
+    "resampling_approximation": "spa",
+    "control_group": "complement",
+    "grna_integration_strategy": "union",
+    "B1": 499,
+    "B2": 4999,
+    "B3": 0,
+    "multiple_testing_method": "BH",
+    "multiple_testing_alpha": 0.10000000000000001,
+    "seed": 4,
+    "response_fit_method": "batched",
+    "grna_fit_method": "pysceptre"
+  },
+  "design": {
+    "terms": ["(Intercept)", "log(rna_n_nonzero)", "log(rna_n_umis)", "log(grna_n_nonzero)", "log(grna_n_umis)", "batchbatch_2"]
+  },
+  "provenance": {
+    "package": "sceptre",
+    "version": "0.99.1",
+    "language": "R",
+    "written_at": "2026-11-18T19:26:04Z"
+  },
+  "files": [
+    {
+      "path": "discovery_pairs.parquet",
+      "rows": 1406
+    },
+    {
+      "path": "positive_control_pairs.parquet",
+      "rows": 5
+    }
+  ]
+}

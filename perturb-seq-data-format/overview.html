@@ -2316,7 +2316,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. Anything in the file that depended on an analysis choice would fit one analysis only, or force the file to be rewritten.</li>
-<li><strong>What follows.</strong> The file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis. There is no label for low or high multiplicity of infection, which is a choice about how to analyse a screen (S10). No modality is named for a role such as “response”: which one an analysis tests is that analysis’s choice (S2). The file is written once and software that analyses it does not modify it (S12.2).</li>
+<li><strong>What follows.</strong> The file holds no assignments, no quality-control flags and no grouping of gRNAs (S8.5, S12). Counts are stored per gRNA and never summed over the gRNAs of a vector (S8.9): combining them is a step of an analysis. There is no label for low or high multiplicity of infection, which is a choice about how to analyse a screen (S10). No modality is named for a role such as “response”: which one an analysis tests is that analysis’s choice (S2). A value that a method computed from the data, such as a score, a cluster or a cell-type label, is kept with the analysis that uses it (S12.3). The file is written once and software that analyses it does not modify it (S12.2).</li>
 </ul>
 </details>
 <details class="fold">
@@ -2361,7 +2361,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Two copies of one fact can disagree, and the file then does not say which is right.</li>
-<li><strong>What follows.</strong> There are no logarithms or percentages of stored columns, and no per-cell top gRNA (S6). The exception is a value that nearly every analysis needs and that takes a full pass over the counts to recompute: <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> are stored (S6).</li>
+<li><strong>What follows.</strong> There are no logarithms or percentages of stored columns, and no per-cell top gRNA (S6). The exception is a value that nearly every analysis needs and that takes a full pass over the counts to recompute: <code>n_umis</code>, <code>n_nonzero</code> and <code>p_mito</code> may be stored, and a writer should store the first two (S6).</li>
 </ul>
 </details>
 <details class="fold">
@@ -3416,7 +3416,7 @@ Functionality:
 <li><strong>Coordinates.</strong> Target positions are 1-based with both ends included, as in GTF files, and a file with positions has to say which genome build they are in. Is that the right convention?</li>
 <li><strong>Limits.</strong> A gRNA has one target, and so does a vector carrying several gRNAs; combinatorial screens are refused. DNA-targeting is assumed. Are those limits acceptable for now?</li>
 <li><strong>The matrix layout.</strong> Counts are stored by feature, which suits fitting one gene at a time. Files from mapping pipelines and from scanpy are stored by cell. Should the format allow both and recommend one?</li>
-<li><strong>The required columns.</strong> Every modality’s cell table must have <code>n_umis</code> and <code>n_nonzero</code>. Is that the right minimum for software other than sceptre?</li>
+<li><strong>Nothing a method computed is in the file.</strong> A cell-type label, a cluster or a score is kept with the analysis that uses it, and the two count summaries <code>n_umis</code> and <code>n_nonzero</code> are optional. Other formats keep such annotations in the cell table. Is this boundary the right one?</li>
 <li><strong>The names.</strong> Would you use <code>rna</code> and <code>grna</code>, <code>grna_target</code>, and the entry names at the top level of <code>uns</code>, or do the names of another format serve better?</li>
 </ol>
 <details class="fold">
