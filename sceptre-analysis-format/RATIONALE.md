@@ -43,13 +43,13 @@ principles](../perturb-seq-data-format/RATIONALE.md#2-the-eight-principles), app
 
 | # | Principle | Why | What follows |
 |---|---|---|---|
-| 1 | **The same files from R and Python.** | An analysis is started in one language and continued or read in the other, and what a file means should not depend on which wrote it. | Tables are Parquet, with the few column types both languages read and write correctly (T0.1). A real number in a record is written with 17 significant digits, so the number read is the number written (A3.4). Nothing depends on arithmetic giving the same bits on two platforms: a stored value is read, never rebuilt (`log_2_fold_change`, T5). A model fit saved by one language is used by the other only where both fit it by the same method (T6.5). |
+| 1 | **The same files from R and Python.** | An analysis is started in one language and continued or read in the other, and what a file means should not depend on which wrote it. | Tables are Parquet, with the few column types both languages read and write correctly (T0.1). A real number in a record is written with 17 significant digits, so the number read is the number written (A3.4). Nothing depends on arithmetic giving the same bits on two platforms: a stored value is read, never rebuilt (`log_2_fold_change`, T5). |
 | 2 | **An analysis is kept apart from its data.** | One dataset is analysed many times, with different settings. The data is large and fixed at import; an analysis is small and gets redone. | An analysis is a folder of its own. It names its data file by identifier and by hashes of the identifier lists (A1), never modifies it, can be stored anywhere, and can be read for its results without it. Every analysis choice lives here: which modality is the response (A1), the low or high MOI preset (A3.6), the assignments (T1), the cells in use (T2) and the grouping of gRNAs (T4). Extra covariates that a user supplies for an analysis are part of it and are saved with it, in its own covariate table (T7.6), so that the data file stays data only. |
 | 3 | **Every file is written once.** | A file edited in place can be left half-written, cannot be written safely by parallel jobs, and no longer shows which step produced what. | No stage edits a file an earlier stage wrote: stages add files (A6.2). Rerunning a stage deletes its files and those of the stages that come after it; the three testing stages are peers, so rerunning one of them deletes only its own (A4.2). Parallel jobs each write a part file of their own. A stage's record is written last, so an unfinished stage can be told from a finished one (A2). A column that could only be filled in once every job had finished, such as `significant`, is not stored (T5.3). |
 | 4 | **Identifiers, never positions.** | A row number means something only for one file in one order, and R counts from 1 where Python counts from 0. | Tables name cells, gRNAs and responses by identifier, and every identifier exists in the data file (T0.5). Tables survive subsetting, reordering and being written in pieces. |
 | 5 | **Existing conventions before invented ones.** | An existing format comes with readers, tools and users. An invented encoding needs code in two languages and has no other reader. | Parquet and JSON are used as specified, and the records are defined by JSON Schemas. How a part of the cache of saved model fits was made is stored in Parquet's own key-value metadata (T6.1). The data is a file of the Perturb-seq data file format, not something redefined here. |
 | 6 | **Readers ignore what they do not know.** | The format will grow, and files outlive the code that wrote them. Older software has to keep working on newer files where it can, and fail cleanly where it cannot. | Columns and files the format does not define are ignored, or kept where a table says so (T0.8). They can be added with a minor version. Software refuses an analysis of a major version it does not know (A1.1). |
-| 7 | **What follows from other stored values is not stored.** | Two copies of one fact can disagree, and the file then does not say which is right. | There is no `significant` column (T5.3) and no count of gRNAs per cell (T2). The exception is a value that cannot be rebuilt to the same number on every platform: `log_2_fold_change` is stored beside `fold_change`, and the validators check that the two agree (T5.2). |
+| 7 | **What follows from other stored values is not stored.** | Two copies of one fact can disagree, and the file then does not say which is right. | There is no `significant` column (T5.3) and no count of gRNAs per cell (T2). The exception is a value that cannot be rebuilt to the same number on every platform: `log_2_fold_change` is stored beside `fold_change`, and the validators check that the two agree (T5.2). `pass_qc` is stored beside the two counts it follows from, as sceptre reports it, and the validators check it against them and the QC record's thresholds (T3.4). |
 | 8 | **Files are harder to change than code.** | Code is corrected in the next release. A file already written stays as it is for years. | How today's code reads data is evidence when the pattern is sound. Where it is not, the format is chosen on its merits and the code change is listed under [Code changes this implies](#5-code-changes-this-implies): the members of a control group are a table, not text inside the group's name (T4). |
 
 ---
@@ -123,7 +123,7 @@ one rule, and no rounding between what a package computed and what it reads back
 
   A reader refuses a dataset whose `id` or hashes differ, or that has no modality of that name.
 - **The response modality is found here, never by a fixed name** *(Decided)*. The data file names its modalities for what was measured and marks none as the one to test (S2). So a reader takes the response modality from `analysis.json`, and ignores the modalities the analysis does not name: a file may carry a hashing modality, for instance.
-- **In the packages.** Both packages call the response modality `response` in memory today, and users write `response_n_umis` in formulas. The packages' own readers and writers translate between that and the file's names, so no package behaviour changes *(measured: every round trip in [Appendix B](#appendix-b-what-the-prototype-implements) passed)*.
+- **In the packages.** Both packages call the response modality `response` in memory today, and users write `response_n_umis` in formulas. The packages' own readers and writers translate between that and the file's names, so no package behaviour changes *(measured for sceptre: every round trip in [Appendix B](#appendix-b-what-the-prototype-implements) passed)*.
 - **Not in this format.** Testing two modalities in one analysis. Under this naming it is two analyses of one file.
 - **Why the response modality is here and not in the parameters record.** The link's response count and hash are those of the response modality, so the two belong together, and nothing in an analysis survives a change of response modality.
 - **Alternatives for the link.**
@@ -165,7 +165,7 @@ one rule, and no rounding between what a package computed and what it reads back
   - *Cost.* Results are in three folders, not one `results/` folder.
   - *One name chosen with care:* the QC verdicts are `discovery_pair_qc.parquet` and `positive_control_pair_qc.parquet`, not `discovery_pairs.parquet`, so that a file copied out of its folder is not mistaken for the pairs-to-test table of `parameters/`.
 - **Stage names.** `parameters`, `assignment`, `qc`, `calibration`, `power`, `discovery`: neutral words, not R function names.
-- **`provenance.language` is free text** *(Adopted)*. The two libraries here write `R` and `Python`. A list of allowed values would shut out a third implementation. A saved fit is reused only between languages that share the fitting method (T6), so a fit from an unknown language is simply not reused.
+- **`provenance.language` is free text** *(Adopted)*. The two libraries here write `R` and `Python`. A list of allowed values would shut out a third implementation.
 - **IGVF.** Settings are spread over several places: a resolved run configuration (`full_run_config.json`), the resolved control regime (`inference_mode.json`), a list of covariate options in the file's `uns`, and per-step JSON files in the work folders. They describe one pipeline run. This format's stage records describe one analysis stage and are what a reader in either language needs to continue it.
 
 ### A3. What a stage record contains — *Adopted*
@@ -177,15 +177,14 @@ one rule, and no rounding between what a package computed and what it reads back
   | `side` | `left`, `both`, `right` | `side_code` −1, 0, 1 |
   | `control_group` | `complement`, `nt_cells` | `control_group_complement` true/false |
   | `resampling_mechanism` | `crt`, `permutations` | `run_permutations` true/false |
-  | `resampling_approximation` | the user-facing name | internal names such as `crt_spa_fast` |
   | `formula` | text | an R formula with its environment |
 
-- **Names inside settings.** A formula names covariates by the modality's name (`rna_n_umis`, T7). What stays in role words: table columns (`response_id`, `grna_id`, `grna_target`) and setting names (`response_fit_method`, `response_n_umis_range`). A pair is a target and a response whatever was measured.
+- **Names inside settings.** A formula names covariates by the modality's name (`rna_n_umis`, T7), including the formula among the "mixture" assignment method's hyperparameters. What stays in role words: table columns (`response_id`, `grna_id`, `grna_target`) and setting names (`response_n_umis_range`, `response_n_nonzero_range`). A pair is a target and a response whatever was measured.
 - **`moi`** *(Decided)*. Whether a screen is treated as low or high multiplicity of infection selects an analysis's defaults: the control group, and what is done with cells that carry several gRNAs. The same data can reasonably be analysed either way, and real screens are not all one or the other. So it is a setting of the parameters record, and the data file has no such entry.
 - **Summaries** are small derived counts kept for display (cells removed by each rule). A reader must not need them.
 - **Not included.** R-only values: the design matrix's `assign` and `contrasts` attributes, table classes, and the old pipeline flags (`nuclear`, `nf_pipeline`, `integer_id`, `elements_to_analyze`).
 - **JSON rules.** UTF-8. Missing is `null`. No NaN or infinity. Each field's type is fixed by `SPEC.md` and its schemas; a reader does not infer integer-versus-double from how a number is printed. Doubles are written with 17 significant digits, so that the number read is the number written. *(measured)* With 15 digits, the stored significance threshold (T5) came back a hair smaller and misclassified the boundary pair.
-- **The resampling budget** (`B1`, `B2`, `B3`) is in the parameters record. QC and the calibration check may reset `B3` *(verified, `R/s4_analysis_functs_1.R`)*, so their records carry `B3` too, and the latest stage's value is the one in force.
+- **The resampling budget** (`B1`, `B2`, `B3`) is in the parameters record. QC and the calibration check reset `B3` when `resampling_approximation` is `no_approximation` *(verified, `R/s4_analysis_functs_1.R`, `R/s4_analysis_functs_2.R`)*, so their records carry `B3` too, and the value in force is that of the latest record carrying one (A3.5).
 - **IGVF.** The control group is recorded with the same two words, `complement` and `nt_cells` (`bin/inference_sceptre.R`). The formats agree.
 
 ### A4. Which stages have run, and rerunning — *Adopted*
@@ -257,7 +256,8 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 
 ### T3. The pairs to test, and their QC — *Adopted*
 
-- **Decision.** The pairs to test are inputs, written once by the parameters stage: `parameters/discovery_pairs.parquet` and `parameters/positive_control_pairs.parquet`, columns `grna_target`, `response_id`. Pairwise QC writes its verdict separately: `qc/discovery_pair_qc.parquet` and `qc/positive_control_pair_qc.parquet`, the same columns plus `pass_qc`.
+- **Decision.** The pairs to test are inputs, written once by the parameters stage: `parameters/discovery_pairs.parquet` and `parameters/positive_control_pairs.parquet`, columns `grna_target`, `response_id`. Pairwise QC writes its verdict separately: `qc/discovery_pair_qc.parquet` and `qc/positive_control_pair_qc.parquet`, the same columns plus `n_nonzero_trt`, `n_nonzero_cntrl` and `pass_qc`.
+- **The counts behind the verdict.** sceptre's pairwise QC passes a pair when the number of treated cells with a nonzero count of the response reaches `n_nonzero_trt_thresh` and the number of control cells with a nonzero count reaches `n_nonzero_cntrl_thresh` *(verified, `R/pairwise_qc_functs.R`)*. The two counts are stored as 32-bit integers, the two thresholds are settings of the QC record, and the validators check that `pass_qc` is true exactly when both counts reach them (T3.4).
 - **Under the singleton and bonferroni strategies** each gRNA is tested on its own *(verified, `R/preprocessing_functions.R`)*, so the QC verdict is per gRNA and the pair-QC tables have a `grna_id` column as well. The pairs themselves stay as the user gave them, per target; a reader expands them through the gRNA table.
 - **The `grna_id` column is a rule, not an option** *(Adopted)*. Whether a pair-QC or results table has the column follows from the strategy and the stage: never under `union`; always under `singleton`; under `bonferroni` in pair QC and calibration, and not in power or discovery, whose results sceptre reports per target. A reader can therefore know a table's key without opening it. The bonferroni irregularity is sceptre's, and the rule changes when sceptre's output does ([section 7](#suggested-changes-to-what-the-packages-produce)).
 - **Alternative.** One table with a `pair_type` column and a `pass_qc` column filled in later (the first draft). That makes the QC stage rewrite a file from the parameters stage, against principle 3.
@@ -277,7 +277,7 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 
 ### T5. Results: `<stage>/results.parquet` — *Adopted*
 
-- **Decision.** Three tables, one per testing stage. Key: `grna_target`, `response_id` (and `grna_id` under the singleton strategy). Columns as sceptre reports them, less what follows from others: `pass_qc`, `p_value`, `fold_change`, `se_fold_change`. Diagnostic columns may follow (rule 6).
+- **Decision.** Three tables, one per testing stage. Key: `grna_target`, `response_id` (and `grna_id` under the singleton strategy). Columns as sceptre reports them, less what follows from others: `n_nonzero_trt`, `n_nonzero_cntrl`, `pass_qc`, `p_value`, `log_2_fold_change`, and, where sceptre produces them, `fold_change` and `se_fold_change`. The diagnostic columns sceptre writes at `output_amount = 2` (`stage`, `z_orig`, `xi`, `omega`, `alpha`) are optional, and other columns may follow (rule 6).
 - **`log_2_fold_change` is always stored** *(Decided)*.
   - It follows from `fold_change`, and principle 7 would leave it out. It is stored because rebuilding it does not give the same number everywhere: the last bit of a logarithm differs between platforms. On the example, 136 of 15,768 values rebuilt on Linux differ from those computed on macOS, by at most 3 parts in 10^16 *(measured)*; and `log2(x)` differs from `log(x) / log(2)`, sceptre's expression *(verified, `R/aux_functions.R`)*, in the last bit of about 30% of rows *(measured)*. Stored, the value a user sees is the one the writer computed, in both languages and on every platform.
   - Under the bonferroni strategy, sceptre's discovery and power results have no `fold_change` and no `se_fold_change`, only `log_2_fold_change` *(verified, `R/s4_analysis_functs_2.R`)*. So it is the one effect size every results table has, and the required one.
@@ -285,7 +285,7 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
   - **Rejected.** Storing it only where there is no `fold_change`, and having readers rebuild it: that needs a named expression, a tolerance and an equality test in every writer, to save 8 bytes a row. Storing only `log_2_fold_change`: the standard error sceptre reports is on the fold-change scale.
 - **Sorted by key, not by p-value.** Sorting by key lets parts be written independently and lets a reader find one target's rows. Packages sort by p-value when they hand the table to a user. This also removes a dependence on job order among tied rows *(inferred from `bin/process_association_analysis_results.R`)*.
 - **Size.** *(measured, synthetic, before `log_2_fold_change` was always stored, which adds 8 bytes)* 33 bytes per row, so about 11 GB at 339 million pairs. Reading two columns of 20 million rows takes 0.05 s in Python and 0.8 s in R; as 20 part files, 1.7 s in R.
-- **Resampled statistics** (the largest output setting) go in `<stage>/resamples.parquet`: the key columns and one list column, `z_null`. Today packages hold them as thousands of columns `z_null_1`, `z_null_2`, ..., padded with missing values *(verified, both codebases)*. *(measured)* Asked to keep them for the example's 1,406 pairs, the R build used here failed outright; the example keeps them for 40 pairs.
+- **Resampled statistics** (the largest output setting, `output_amount = 3`) go in `<stage>/resamples.parquet`: the key columns and one list column, `z_null`. Today packages hold them as thousands of columns `z_null_1`, `z_null_2`, ..., padded with missing values *(verified, both codebases)*. *(measured)* Asked to keep them for the example's 1,406 pairs, the R build used here failed outright; the example keeps them for 40 pairs.
   - *Row groups of at most 10,000 rows* (T5.7) *(Decided)*. Software that wants one pair reads the pair's whole row group. *(measured, made-up tables, `scale-test/`)* With 499 statistics per pair and row groups of a million rows, reading one pair of a million takes 7 seconds and 11 GB of memory; with row groups of 10,000 rows it takes 0.1 seconds and 0.3 GB. Writing 10 million pairs needs 14 GB of memory with the large groups and 0.3 GB with the small ones.
   - *Kept as 64-bit numbers.* They take 4 GB per million pairs, and compression does not help; 32-bit numbers would halve that *(measured)*. They stay 64-bit because they are then exactly what the package computed.
 - **The `significant` column is not stored.** It depends on the whole table, so parallel jobs could not write it. The stage record stores `significance_threshold`, the largest p-value called significant (or `null` if none was), and a reader computes `significant` as `p_value <= threshold`. This is exact for every correction sceptre offers, because each calls significant exactly the pairs up to some p-value. *(measured)* It reproduces R's column for every pair of every example.
@@ -301,11 +301,11 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 ### T6. The fit cache: `fits/response/` — *Decided (placement; where the identity lives), Adopted (details)*
 
 - **What it is.** A cache of fitted response models. A reader may ignore it, and deleting it changes no result beyond numerical tolerance.
-- **Columns.** `response_id`, `coefficients` (a list of doubles, in the order of the design's terms), `theta`. Key: `response_id`.
+- **Columns.** `response_id`, `coefficients` (a list of doubles, in the order of the design's terms), `theta`. Key: `response_id`. This is what sceptre keeps for each response: one coefficient per column of the design matrix, and `theta`.
 - **Alternatives for the columns.**
   - One row per coefficient, with the dispersion as the row whose term is missing: a trick.
   - One column per term: a covariate named `theta` would collide, and the columns change with the formula.
-- **Outside the stages** *(Decided)*. A response fit depends on the data, the formula, the fitting method, the control group and which cells passed QC. All of that is fixed once the parameters and QC stages have run. Which testing stage happens to compute a fit first is an accident. Keeping fits in the folder of the stage that first made them would:
+- **Outside the stages** *(Decided)*. A response fit depends on the data, the formula, the control group and which cells passed QC. All of that is fixed once the parameters and QC stages have run. Which testing stage happens to compute a fit first is an accident. Keeping fits in the folder of the stage that first made them would:
   - delete still-valid fits when that stage was rerun;
   - stop stages running in parallel from sharing them;
   - name them after a stage that does not own them.
@@ -313,10 +313,10 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 - **How the cache works.**
   - It is a folder of part files. Each job adds a part of its own and never modifies another's, which keeps "every file is written once" and uses the rule that a table may be a folder of parts.
   - Two parts may hold the same response, when two parallel jobs fitted it. A reader takes either. So the rule that a key is unique does not hold across the parts of this table, and the specification says so.
-  - Fits are listed in no stage's record. What makes them valid is their **identity**: the dataset `id`, the formula, a hash of the identifiers of the cells in use, the fitting method and the control group. Each part carries the identity of its own fits, inside the file (next point).
+  - Fits are listed in no stage's record. What makes them valid is their **identity**: the dataset `id`, the formula, a hash of the identifiers of the cells in use, and the control group. Each part carries the identity of its own fits, inside the file (next point).
   - The cache is deleted when the QC stage or an earlier one is rerun, and kept when a testing stage is rerun. *(measured)* Both libraries do this, and a conformance case covers it. Since the identity moved into the parts, deleting is housekeeping (SHOULD): correctness does not depend on it. It is kept because a plain read of the whole folder would otherwise mix old parts with current ones.
 - **The identity is inside each part** *(Decided)*. It is JSON text under the key `sceptre_fit_identity` in the Parquet file's own key-value metadata. There is no `identity.json`, neither in the folder nor beside it; the folder holds part files and nothing else.
-  - **Why.** The identity exists to stop a fit being reused when it was computed for other cells, another formula or another method. If that check passes wrongly, the result is wrong p-values with no error. With a separate file, the check reads one file and trusts that it describes the others, and they can come apart: QC rerun with the clearing interrupted; a job adding parts without checking the file; two parallel jobs both finding a stale cache and both clearing and rewriting it. Each is unlikely, and the failure is silent. With the identity inside each part there is nothing to keep in step, a stale part is harmless, and no file is shared between writers, which fits "every file is written once". No writer has to write a shared record or verify one.
+  - **Why.** The identity exists to stop a fit being reused when it was computed for other cells, another formula or another control group. If that check passes wrongly, the result is wrong p-values with no error. With a separate file, the check reads one file and trusts that it describes the others, and they can come apart: QC rerun with the clearing interrupted; a job adding parts without checking the file; two parallel jobs both finding a stale cache and both clearing and rewriting it. Each is unlikely, and the failure is silent. With the identity inside each part there is nothing to keep in step, a stale part is harmless, and no file is shared between writers, which fits "every file is written once". No writer has to write a shared record or verify one.
   - **Why the other tables do not need this.** A stage finishes. Its record, written last, lists its files with their row counts and so marks the stage as complete, and rerunning the stage deletes the folder first. A record written last cannot work for something open-ended that jobs keep adding to. That structural difference is the whole reason the cache is treated differently.
   - **Alternatives.** A record file inside the folder (`fits/response/identity.json`), or beside it (`fits/response.json`). Both leave one file describing many, which is the weakness above; the first also breaks folder readers, as measured next.
   - **Evidence** *(measured; the first and third lines are repeated in the suite on every run)*:
@@ -329,27 +329,13 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
     - It is a mechanism the format uses nowhere else.
     - A tool that rewrites a part may drop the metadata. The part is then ignored, which is the safe direction. *(measured)* pyarrow's `read_table` exposes only the metadata that Arrow's own schema record holds, so a part written by R, read and written back with pyarrow, loses the key unless the code copies it from the file's metadata. A reader must take the key from the file's metadata, not from the table.
   - **Parts that are not the analysis's are not reported.** A part with another identity is legal and unused, so the validators say nothing about it. They do report a part with no identity, or one that does not conform, and anything in the folder that is not a part file.
-  - **One limit of reading the folder alone.** Four of the five identity fields can be read from the analysis folder. The fifth, the hash of the cells in use, needs the data file's order of cells. So a reader given only the folder returns the fits made for the analysis's parameters when all such parts agree on the cells, and nothing when they do not (parts left by an earlier QC beside current ones). A reader that has the data file gives the full identity and gets exactly its parts. Both libraries work this way.
+  - **One limit of reading the folder alone.** Three of the four identity fields can be read from the analysis folder. The fourth, the hash of the cells in use, needs the data file's order of cells. So a reader given only the folder returns the fits made for the analysis's parameters when all such parts agree on the cells, and nothing when they do not (parts left by an earlier QC beside current ones). A reader that has the data file gives the full identity and gets exactly its parts. Both libraries work this way.
   - *(not verified)* GeoParquet is believed to keep its metadata the same way, as JSON under one key.
-- **When a cached fit is reused.** Only from a part whose identity equals, field by field, what the reader would use itself, and only if the fitting method is one the reader's language shares. Identities are compared as parsed values, with white space in the formula ignored. The identity does not name the language that made a fit: a method name means the same estimator in every language that lists it, and parts may come from several languages.
+- **When a cached fit is reused.** Only from a part whose identity equals, field by field, what the reader would use itself. Identities are compared as parsed values, with white space in the formula ignored. The identity does not name the language that made a fit, and parts may come from several languages.
 - **It is the part of the layout a new reader is most likely to misunderstand**, because it looks like a seventh stage and is not: no record, it fills gradually, and it is cleared at a different moment. The specification says so at the head of its section.
 - **Room for gRNA fits** *(Decided)*. These will be wanted eventually, and this version must not step on them. The folder is named for its kind, `fits/response/`, and `fits/grna/` is reserved. The two would not be one table with a kind column: they have different keys (a response, against a target or a gRNA depending on the strategy), different columns (no dispersion for a gRNA fit) and different dependencies. A gRNA fit would also depend on the assignments, so its cache would be cleared when assignment is rerun *(inferred from how conditional resampling works, not read in the code; to verify before the folder is specified)*.
 - **`response` is unambiguous** because an analysis names one response modality (A1). The folder is not named for the modality (`fits/rna/`), which would put a user-chosen name beside the reserved `grna`.
 - **Few parts, and merging** (T6.4, T6.8) *(Decided)*. *(measured, made-up tables, `scale-test/`)* Reading the cache costs about 9 milliseconds for each part file, whether or not the file was read just before: 20,000 fits take 0.03 seconds in one part and a minute and a half in 10,000 parts. So a job writes one part for all its fits, and a writer that knows no job is still adding to the cache may merge the parts of one identity into one. A part is still never edited: merging writes a new part and deletes the old ones.
-- **Fitting methods are shared, named definitions** *(Decided in principle)*. The methods are meant to be consistent across R and Python.
-  - A method name means the same estimator in both languages, and the names written to files come from one shared list.
-  - A method that exists in one language only (glmGamPoi, in R) is marked as such in that list, and its fits are never reused by the other language.
-  - How closely two implementations of one method must agree belongs in the hub's parity contract. The format's part is to make it checkable, by recording the method with every saved fit.
-- **This closes a gap in both codebases.** Neither compares a saved fit's method with the one about to be used at the moment of reuse. R clears its cache when the method is changed through `set_analysis_parameters()` *(verified, `R/s4_analysis_functs_1.R`)*, but at test time it reuses any saved entry for the response *(verified, `R/medium_level_functs_v2.R`)*, so fits loaded from files are trusted. The fork's reuse depends on a global setting, not on the method the analysis recorded *(verified, `pipeline/discovery.py`)*.
-- **How far the methods differ today** *(measured on the example: 100 responses, 1,406 pairs)*:
-
-  | Compared | Dispersion (theta) | p-values | Discoveries |
-  |---|---|---|---|
-  | R `sceptre` vs R `pysceptre` | agree to 1e-9 | agree to 2.5e-8 | same 11 |
-  | R `batched` vs Python's default (`batched`) | identical | agree to 8e-12 | same 11 |
-  | R `batched` vs R `sceptre` | 98 responses agree to within 1e-6 (median difference 4e-14). **Two differ completely:** `batched` gives 1000 (its upper bound) where `sceptre` gives 0.07 and 0.03 | 22 pairs differ, all in those two responses; 9 by more than 10%, the largest by a factor of 2 | same 11 |
-
-  So there are two families: `sceptre` and `pysceptre` agree, and `batched` (the current default in both languages) agrees with itself across languages but treats some responses differently. glmGamPoi was not installed and was not measured. Which estimator is the default is a scientific decision, outside the format ([section 7](#suggested-changes-to-what-the-packages-produce)).
 - **Not adopted.** Public pysceptre's cache also keys on library versions and CPU features, for bit-exact reuse *(verified, `pipeline/fingerprint.py`)*. That is stricter than a cross-language cache needs.
 
 ### T7. The design matrix — *Decided*
@@ -387,7 +373,6 @@ writers already do the file side of each.
 | R sceptre | Check at import that counts are integers | S4 |
 | Both | Convert text and true/false covariates to categoricals at import | S7 |
 | Both | Keep control-group membership as data instead of splitting names on `&` | T4 |
-| Both | Check a saved fit's recorded method before reusing it; keep one shared list of fitting-method names | T6 |
 | Both | Sort results by p-value when returning them, not when storing them | T5 |
 | Both | Hold resampled statistics as one list per pair, not thousands of columns | T5 |
 | R sceptre | Clear later stages' values when a stage is rerun, not only their flags | A4 |
@@ -486,7 +471,7 @@ reader can safely ignore it, **major** if it could misread the file.
 | An assignment score (posterior probability or p-value) | `assignment/assignments.parquet` | Depends on the assignment method | minor |
 | Per-gRNA values an assignment method computes, such as fitted thresholds | A new optional table of the assignment stage, keyed by `grna_id` | They are computed by an analysis, so they are not data and not settings. Nothing needs them now: sceptre's thresholding uses one threshold, stored as a setting | minor |
 | `log_p_value`, for p-values below a double's range | Results tables | No method needs it today | minor |
-| Per-pair counts: cells carrying the perturbation, and cells with a nonzero count in each group | Results or pair-QC tables | The development builds do not put them in the result tables | minor |
+| A per-pair count of the cells carrying the perturbation | Results tables | sceptre does not report it | minor |
 | A SHA-256 per file, and one of the data file | Stage records, `analysis.json` | For those who want IGVF's stronger integrity check | minor |
 | Cached fits of the gRNA models | `fits/grna/`, a reserved folder | Not needed yet; its key, columns and clearing rule differ from the response cache's (T6) | minor |
 | Two measured modalities tested in one analysis | Analysis folder | No dataset needs it yet | major: it changes what `response_modality` means |
@@ -507,8 +492,6 @@ rationale](../perturb-seq-data-format/RATIONALE.md#suggested-changes-to-what-the
 | Record which QC rule removed each cell | The summaries-only QC record (T2) | `R/cellwise_qc_functs.R` |
 | Hold resampled statistics as one list per pair | Thousands of padded columns; the failure when keeping them for 1,406 pairs (T5) | *(measured)* |
 | Sort results by p-value when showing them, not when storing them | Order depending on job order among ties (T5) | *(inferred)* |
-| Check a saved fit's recorded method before reusing it; keep one shared list of method names | Fits trusted without a check (T6) | Both codebases |
-| Decide the shared default fitting method | `batched` gives a dispersion of 1000 on 2 of 100 responses where the other two methods give 0.03 to 0.07 (T6) | *(measured)* |
 | Clear later stages' values when a stage is rerun | Stale values behind a "not run" flag in R (A4) | `R/s4_helpers.R` |
 | Resolve a dataset's `id` to a location from the user's configuration (a search path or a small registry) | Passing the data file's path by hand every time (A1) | Not built |
 | Accept modality-name covariates (`rna_n_umis`), keeping `response_n_umis` as an alias; add a response-modality argument and a modality name at import | The translation layer in the readers and writers (A1, T7) | — |
@@ -534,7 +517,7 @@ the code lives. This section gives what is particular to analyses.
 | The reasons | this document | Why each rule is what it is |
 | Table definitions | `spec/tables.json` | Every table's stage, key, columns and types. Both prototype libraries and both validators read this one file, so the two languages cannot drift apart |
 | Record schemas | `spec/analysis.schema.json`, `spec/stage.schema.json`, `spec/fits.schema.json` | JSON Schemas (draft 7) for `analysis.json`, the six stage records, and the identity each part of the fit cache carries |
-| Conformance files | `conformance/`, built by `verify/make_conformance.py` | 17 conforming analysis folders, written by R and by Python, and 38 that each break a rule, with the rules a validator must report. Each names its data file, which is among the data file format's files |
+| Conformance files | `conformance/`, built by `verify/make_conformance.py` | 17 conforming analysis folders, written by R and by Python, and 44 that each break a rule, with the rules a validator must report. Each names its data file, which is among the data file format's files |
 | Validator | `validate_analysis()` in `format/sceptre_analysis.R` and `format/sceptre_analysis.py` | Checks an analysis folder, with its data file when one is given, without building a package object, and reports every problem, not only the first |
 
 **What the specification leaves out.** It fixes the form of results and not
@@ -551,8 +534,7 @@ Beyond the points in the data file format's rationale:
 1. **Whether sceptre and pysceptre compute the same thing from the same files
    is not the format's job.** That is parity between the packages. The
    format's part is to make the comparison possible: it records the formula,
-   the methods, the seed, the settings and the writer; it stores the design's
-   term names; and it stops fits crossing where the method differs.
+   the settings and the writer, and it stores the design's term names.
 2. **Sufficiency is the format's job, and needs a package.** Whether the files
    hold everything an analysis needs can only be tested by rebuilding a
    package's object from them.
@@ -569,8 +551,8 @@ pysceptre and runs on the committed files with standard libraries only.
 Python, all passing:
 
 - the validators on the conformance set. Both validators accept all 17
-  conforming analyses and report exactly the expected rules for all 38 broken
-  ones, the same in both languages. 25 rules are exercised by at least one
+  conforming analyses and report exactly the expected rules for all 44 broken
+  ones, the same in both languages. 26 rules are exercised by at least one
   broken analysis. One more is checked with no file: T0.3 (row groups of at
   most a million rows), because the file would be large;
 - two writers on seeded random content, a data file and an analysis of it,
@@ -592,15 +574,13 @@ process, so its R side reads Parquet with nanoparquet.
 
 **What these cannot show.**
 
-- *Sufficiency.* Appendix B records the one time it was checked, with both
-  packages. Nothing here repeats that check, so a change to the format is
-  covered only when the packages test it.
+- *Sufficiency.* Appendix B records how it was checked, with sceptre 0.99.1.
+  Nothing here repeats that check, so a change to the format is covered only
+  when the packages test it.
 - *Anything about results.*
 
 **The example files are fixed.** Nothing here regenerates them, because doing
-so needs sceptre. A format change converts them in place, with code kept
-beside the change, which is also a direct test that old files can be carried
-forward.
+so needs sceptre (Appendix C).
 
 ### How adoption would go
 
@@ -645,10 +625,9 @@ measurements](../perturb-seq-data-format/RATIONALE.md#appendix-a-measurements).
 | Test | Result |
 |---|---|
 | Design matrix, R against pysceptre, on the example | bitwise equal |
-| Fitting methods on the example (real data, 500 cells) | see the table in T6 |
 | A double written to JSON with 15 significant digits | the significance threshold came back smaller; 1 pair misclassified. With 17 digits: exact |
 | R sceptre keeping resampled statistics as columns | fails for 1,406 pairs; works for 40 (4,999 columns) |
-| `log_2_fold_change` recomputed as `log(x) / log(2)`, 17,219 result rows of the examples | identical to the stored value on every row, in R and in Python |
+| `log_2_fold_change` recomputed as `log(x) / log(2)`, the 16,347 result rows of the examples that have both values | identical to the stored value on every row, in R and in Python |
 | The same recomputed with `log2(x)` | a different last bit on about 30% of rows |
 | `fold_change` recomputed from the log2 value | a different last bit on a few rows per table |
 
@@ -671,27 +650,20 @@ Everything in sections 2 to 4, and the validator of section 8. The code is
 `format/sceptre_analysis.R` and `format/sceptre_analysis.py`, which load the
 data file format's code; `example/` holds analyses in the format.
 
-**Sufficiency, checked once with both packages.** Each example analysis was
-rebuilt as a sceptre object and as a pysceptre `Analysis` from the files. The
-code that did so needed development builds of both packages and is not in this
-folder (commit `7e10af4` holds it). Nothing here reruns these checks:
+**Sufficiency, checked with sceptre 0.99.1.** For each of the eight example
+analyses, a `sceptre_object` produced by sceptre 0.99.1 was written to files
+and rebuilt from them, in R on macOS. The code that did so reads the object's
+internal slots and is not in this folder. Nothing here reruns these checks:
 
 | What | Result |
 |---|---|
-| R writes, R reads back as a `sceptre_object` | Every field identical or equal for every example analysis, on high MOI and low MOI |
-| R writes, Python reads into pysceptre's `Analysis` | Equal, part by part, to what pysceptre's own reader gives for the same analyses in its own layout |
-| Python rewrites everything, R reads the Python copy | Objects as above; all stage records equal; all tables identical; same number types in the data file |
-| Python continues an analysis R stopped after QC (parity between the packages, not evidence about the format) | p-values agree with R's to a relative 8e-12; same discoveries |
-| R resumes from Python-written files | Results identical to an analysis that was never saved |
-| Per-target unions, per-control lists, gRNAs per cell derived from assignments | Equal to what the packages hold |
-| Design matrix rebuilt from the formula | Same term names and the same hash in R and Python |
-| Resampled statistics as a list column | 40 pairs, 499 to 4,999 statistics each, restored as the packages' columns |
-| The three gRNA strategies, and low MOI with the "maximum" method, flagged cells and NT cells as controls | All round-trip |
-| A table as a folder of part files, with an unknown column and dictionary-encoded identifiers | Read to the same object, from parts written by either language |
-| The same data under the modality name `atac`, with a `hashing` modality beside it | Read to the same object by both; without an analysis, a reader asks which modality is the response |
-| A subset data file, and a re-imported one | Refused |
-| A table with fewer rows than its stage wrote | Refused |
-| A covariate with a dot in its name | R and Python build the same design matrix (Python through an alias) |
+| sceptre object written to files, then validated | Conforms, for all eight |
+| sceptre object rebuilt from the data file and the analysis folder: the data through `import_data()`, the parameters through `set_analysis_parameters()` from the recorded settings, the rest from the tables | Every slot the format stores comes back identical, or identical up to row order or integer-versus-double storage of a whole number. `cells_w_zero_or_twoplus_grnas` comes back as the same set of cells in a different order |
+| Slots the format does not store | `M_matrix` and `n_nonzero_tot_vector`, intermediates that sceptre recomputes; they are not rebuilt |
+| The whole pipeline rerun from only the data file and the settings recorded in the files, for `left_sided`, `singleton`, `bonferroni`, `mixture_assignment` and the low-MOI `default` | Calibration, power and discovery results equal the original's (every p-value identical for the 1,406 discovery pairs of `left_sided`), apart from the order of tied rows, which follows the order the pairs were given in and which the format does not keep (T3.1) |
+
+No round trip through pysceptre, in either direction, has been done for this
+version of the format.
 
 **Limits that remain.** These are limits of the prototype or of what was
 tested, not open choices:
@@ -702,8 +674,7 @@ tested, not open choices:
   as a threshold of `5` is an integer in JSON.
 - Refused with a message: a formula outside the additive subset.
 - The packages call the response modality `response`; a package's reader and
-  writer translate. The check of a response modality under another name
-  (`atac`) reused the RNA counts.
+  writer translate.
 - The tables of an analysis were measured at real size with made-up content,
   and the suite passes on Linux as on macOS. Not tested: a real analysis at
   scale, and methods other than those in the examples.
@@ -712,10 +683,12 @@ tested, not open choices:
 
 | Dataset | Analyses |
 |---|---|
-| `example/highmoi` | Of sceptre's built-in high-MOI data (500 cells, 100 responses, 60 gRNAs): `left_sided`, `two_sided`, `singleton`, `bonferroni`, `stopped_after_qc` (through QC only), and `with_resamples` (discovery only, 40 pairs, every resampled statistic) |
+| `example/highmoi` | Of sceptre's built-in high-MOI data (500 cells, 100 responses, 60 gRNAs): `left_sided`, `two_sided`, `singleton`, `bonferroni`, `stopped_after_qc` (through QC only), `with_resamples` (40 discovery pairs, every resampled statistic of each testing stage), and `mixture_assignment` (the "mixture" assignment method) |
 | `example/lowmoi` | Of sceptre's built-in low-MOI data (1,000 cells, 100 responses, 50 gRNAs): `default`: the "maximum" assignment method and the NT cells as controls |
 
 The data files are the examples of the data file format, under
-`../perturb-seq-data-format/example/`. These files are fixed: nothing here
-regenerates them, and `example/*/expected/` holds values sceptre computed for
-each analysis.
+`../perturb-seq-data-format/example/`. Each analysis was written from a
+`sceptre_object` produced by sceptre 0.99.1, by a converter that reads the
+object's internal slots and is not in this folder. These files are fixed:
+nothing here regenerates them, and `example/*/expected/` holds what sceptre
+itself held for each analysis, for the checks that load no package.

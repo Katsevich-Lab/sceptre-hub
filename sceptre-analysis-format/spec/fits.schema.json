@@ -6,7 +6,6 @@
     "screen_id",
     "formula",
     "cells_in_use_sha256",
-    "response_fit_method",
     "control_group"
   ],
   "properties": {
@@ -21,9 +20,6 @@
     "cells_in_use_sha256": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
-    },
-    "response_fit_method": {
-      "type": "string"
     },
     "control_group": {
       "enum": [

@@ -2,15 +2,15 @@
   "stage": "calibration",
   "settings": {
     "calibration_group_size": 2,
-    "n_calibration_pairs": 1980,
-    "B3": 0
+    "n_calibration_pairs": 1911,
+    "B3": 24999
   },
   "significance_threshold": null,
   "provenance": {
     "package": "sceptre",
     "version": "0.99.1",
     "language": "R",
-    "written_at": "2026-11-18T19:26:06Z"
+    "written_at": "2026-11-19T00:00:00Z"
   },
   "files": [
     {
@@ -19,7 +19,7 @@
     },
     {
       "path": "results.parquet",
-      "rows": 1980
+      "rows": 1911
     }
   ]
 }

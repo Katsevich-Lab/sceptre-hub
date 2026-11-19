@@ -2242,7 +2242,7 @@ vertical-align: -.125em;
 
 
 <p>This page introduces a format for storing a sceptre analysis on disk: the settings, the gRNA assignments, the quality control and the results, stage by stage. It is written for someone who has not seen the format before.</p>
-<p>The purpose is that an analysis written by sceptre (the R package) can be read, checked and continued by pysceptre (the Python package) or by the Nextflow pipeline, and the other way round, with the same files meaning the same thing in each.</p>
+<p>The format stores exactly what sceptre, the R package, computes today (version 0.99.1): the same stages, the same settings under the same names, and the same columns in the results. The purpose is that an analysis written by sceptre can be read, checked and continued by pysceptre (the Python package) or by the Nextflow pipeline, and the other way round, with the same files meaning the same thing in each.</p>
 <p>An analysis is always an analysis of one data file, and the data has a format of its own: the <a href="https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/perturb-seq-data-format/overview.html">Perturb-seq data file format</a>. That format holds the counts and what is known about the cells and gRNAs. It is separate, has its own version, and knows nothing about analyses. This format builds on it, so that page is worth reading first.</p>
 <p><strong>If you are reviewing.</strong> Comments are wanted most on the <a href="#open-questions">open questions</a> at the end, and this page is meant to be enough to answer them. The rules themselves, numbered, are in <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/SPEC.md"><code>SPEC.md</code></a>, and the reasons for each, with evidence, are in <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/sceptre-analysis-format/RATIONALE.md"><code>RATIONALE.md</code></a>; read those to check a detail. A label such as A1 or T5 on this page is the number of a group of rules, the same in both documents. Labels starting with S are rules of the data file format.</p>
 <div class="callout callout-style-simple callout-note">
@@ -2347,7 +2347,7 @@ function treeAll(button, open) {
 </tr>
 <tr class="odd">
 <td><code>run_qc()</code></td>
-<td><code>qc/</code>: which cells passed, and which pairs passed</td>
+<td><code>qc/</code>: which cells passed; and for each pair <code>n_nonzero_trt</code>, <code>n_nonzero_cntrl</code> and <code>pass_qc</code></td>
 </tr>
 <tr class="even">
 <td><code>run_calibration_check()</code></td>
@@ -2363,7 +2363,7 @@ function treeAll(button, open) {
 </tr>
 <tr class="odd">
 <td>The result data frame</td>
-<td><code>results.parquet</code>: the pair (<code>grna_target</code> and <code>response_id</code>), <code>pass_qc</code>, <code>p_value</code>, <code>log_2_fold_change</code>, and <code>fold_change</code> with its standard error where the method reports them</td>
+<td><code>results.parquet</code>, with sceptre’s columns under sceptre’s names: the pair (<code>grna_target</code> and <code>response_id</code>), <code>n_nonzero_trt</code>, <code>n_nonzero_cntrl</code>, <code>pass_qc</code>, <code>p_value</code>, <code>log_2_fold_change</code>, and <code>fold_change</code> with <code>se_fold_change</code> where sceptre reports them</td>
 </tr>
 <tr class="even">
 <td>The <code>significant</code> column</td>
@@ -2390,6 +2390,10 @@ function treeAll(button, open) {
 <td>A setting: <code>union</code>, <code>singleton</code> or <code>bonferroni</code>. It decides whether the pair and results tables are per target or per gRNA, and so whether they have a <code>grna_id</code> column (see the notes under the list of tables)</td>
 </tr>
 <tr class="even">
+<td>The extra columns of <code>output_amount = 2</code> and <code>3</code></td>
+<td><code>stage</code>, <code>z_orig</code>, <code>xi</code>, <code>omega</code> and <code>alpha</code> are further columns of <code>results.parquet</code>. The resampled statistics <code>z_null_1</code>, <code>z_null_2</code>, … are one list per pair in <code>resamples.parquet</code></td>
+</tr>
+<tr class="odd">
 <td>The <code>sceptre_object</code> saved to disk</td>
 <td>The folder itself. Each stage can be read without those after it</td>
 </tr>
@@ -2406,7 +2410,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> An analysis is started in one language and continued or read in the other, and what a file means should not depend on which wrote it.</li>
-<li><strong>What follows.</strong> Tables are Parquet, with the few column types both languages read and write correctly. A real number in a record is written with 17 significant digits, so the number read is the number written. Nothing depends on arithmetic giving the same bits on two platforms: a stored value is read, never rebuilt (<code>log_2_fold_change</code>, T5). A model fit saved by one language is used by the other only where both fit it by the same method.</li>
+<li><strong>What follows.</strong> Tables are Parquet, with the few column types both languages read and write correctly. A real number in a record is written with 17 significant digits, so the number read is the number written. Nothing depends on arithmetic giving the same bits on two platforms: a stored value is read, never rebuilt (<code>log_2_fold_change</code>, T5).</li>
 </ul>
 </details>
 <details class="fold">
@@ -2460,7 +2464,7 @@ function treeAll(button, open) {
 </summary>
 <ul>
 <li><strong>Why.</strong> Two copies of one fact can disagree, and the file then does not say which is right.</li>
-<li><strong>What follows.</strong> There is no <code>significant</code> column and no count of gRNAs per cell. The exception is a value that cannot be rebuilt to the same number on every platform: <code>log_2_fold_change</code> is stored beside <code>fold_change</code>, and the validators check that the two agree.</li>
+<li><strong>What follows.</strong> There is no <code>significant</code> column and no count of gRNAs per cell. The exception is a value that cannot be rebuilt to the same number on every platform: <code>log_2_fold_change</code> is stored beside <code>fold_change</code>, and the validators check that the two agree. <code>pass_qc</code> is stored beside the two counts it follows from, as sceptre reports it, and the validators check it against them and the QC record’s thresholds.</li>
 </ul>
 </details>
 <details class="fold">
@@ -2517,7 +2521,7 @@ function treeAll(button, open) {
 <tr class="even">
 <td>Saved fits</td>
 <td>T6</td>
-<td><code>fits/response/</code> holds the fitted response models as part files, so that a later stage or a rerun need not fit them again: for each response, one coefficient per column of the design matrix, and the dispersion. Each part carries a short description of how its fits were made, called its <strong>identity</strong>: the dataset, the formula, the cells in use, the fitting routine and the control group. Software uses a part only if that is how it would fit them itself. It is a cache: a fit that is not found is fitted again. It is kept when a testing stage is rerun and deleted when <code>qc</code> or an earlier stage is</td>
+<td><code>fits/response/</code> holds the fitted response models as part files, so that a later stage or a rerun need not fit them again: for each response, one coefficient per column of the design matrix, and the dispersion. Each part carries a short description of how its fits were made, called its <strong>identity</strong>: the dataset, the formula, the cells in use and the control group. Software uses a part only if that is how it would fit them itself. It is a cache: a fit that is not found is fitted again. It is kept when a testing stage is rerun and deleted when <code>qc</code> or an earlier stage is</td>
 </tr>
 <tr class="odd">
 <td>Formulas and covariates</td>
@@ -2660,7 +2664,7 @@ required
 every discovery pair, and whether it passed quality control
 </td>
 <td>
-<code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>, <code>pass_qc</code>
+<code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>, <code>n_nonzero_trt</code>, <code>n_nonzero_cntrl</code>, <code>pass_qc</code>
 </td>
 <td>
 <code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>
@@ -2677,7 +2681,7 @@ required
 every positive-control pair, and whether it passed quality control
 </td>
 <td>
-<code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>, <code>pass_qc</code>
+<code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>, <code>n_nonzero_trt</code>, <code>n_nonzero_cntrl</code>, <code>pass_qc</code>
 </td>
 <td>
 <code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>
@@ -2711,7 +2715,7 @@ required
 test results for the negative-control pairs
 </td>
 <td>
-<code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>, <code>pass_qc</code>, <code>p_value</code>, <code>fold_change</code>, <code>se_fold_change</code>, <code>log_2_fold_change</code>
+<code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>, <code>n_nonzero_trt</code>, <code>n_nonzero_cntrl</code>, <code>pass_qc</code>, <code>p_value</code>, <code>fold_change</code>, <code>se_fold_change</code>, <code>log_2_fold_change</code>, <code>stage</code>, <code>z_orig</code>, <code>xi</code>, <code>omega</code>, <code>alpha</code>
 </td>
 <td>
 <code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>
@@ -2728,7 +2732,7 @@ required
 test results for the positive-control pairs
 </td>
 <td>
-<code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>, <code>pass_qc</code>, <code>p_value</code>, <code>fold_change</code>, <code>se_fold_change</code>, <code>log_2_fold_change</code>
+<code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>, <code>n_nonzero_trt</code>, <code>n_nonzero_cntrl</code>, <code>pass_qc</code>, <code>p_value</code>, <code>fold_change</code>, <code>se_fold_change</code>, <code>log_2_fold_change</code>, <code>stage</code>, <code>z_orig</code>, <code>xi</code>, <code>omega</code>, <code>alpha</code>
 </td>
 <td>
 <code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>
@@ -2745,7 +2749,7 @@ required
 test results for the discovery pairs
 </td>
 <td>
-<code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>, <code>pass_qc</code>, <code>p_value</code>, <code>fold_change</code>, <code>se_fold_change</code>, <code>log_2_fold_change</code>
+<code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>, <code>n_nonzero_trt</code>, <code>n_nonzero_cntrl</code>, <code>pass_qc</code>, <code>p_value</code>, <code>fold_change</code>, <code>se_fold_change</code>, <code>log_2_fold_change</code>, <code>stage</code>, <code>z_orig</code>, <code>xi</code>, <code>omega</code>, <code>alpha</code>
 </td>
 <td>
 <code>grna_target</code>, <code>grna_id</code>, <code>response_id</code>
@@ -2828,64 +2832,23 @@ saved regression fits, one row per response
 <li>In the calibration results the tested unit is a group of negative-control gRNAs, not a real target. The group’s name stands in the column that names the tested unit, which is <code>grna_target</code> under <code>union</code> and <code>grna_id</code> otherwise. It looks like <code>non-targeting_grna1&amp;non-targeting_grna10</code>, and it is the <code>grna_group</code> of the groups table. Which gRNAs are in a group is read from <code>calibration/negative_control_groups.parquet</code>, never worked out from the name.</li>
 <li>A required table exists even when it has no rows, as <code>positive_control_pairs.parquet</code> does for an analysis without positive controls.</li>
 <li><code>qc/cells.parquet</code> has every cell of the data file, with <code>in_use</code> true for the cells that passed quality control and are used by the stages after it.</li>
-<li>A table may have further columns, which software ignores if it does not know them. sceptre’s <code>n_nonzero_trt</code> and <code>n_nonzero_cntrl</code>, for instance, are not defined by the format and would be such columns.</li>
+<li><code>n_nonzero_trt</code> and <code>n_nonzero_cntrl</code> are sceptre’s two counts for a pair: the number of treated cells and of control cells in which the response has a nonzero count. A pair passes pairwise quality control exactly when both reach the thresholds in the <code>qc</code> record, and the validator checks that.</li>
+<li>A pair that failed quality control keeps its row in the results, with <code>pass_qc</code> false and no p-value or effect size.</li>
+<li>A table may have further columns, which software ignores if it does not know them.</li>
 </ul>
 <details class="fold">
 <summary>
 The settings in a record
 </summary>
-<p>The settings of each stage and their allowed values are defined in <code>spec/stage.schema.json</code>. They are those of the development version of sceptre, so some are newer than the arguments of the released package.</p>
+<p>The settings of each stage and their allowed values are defined in <code>spec/stage.schema.json</code>. They are the arguments of sceptre’s functions, under the same names and with the same allowed values.</p>
 <ul>
-<li><strong><code>parameters</code></strong>: <code>moi</code>, <code>formula</code>, <code>side</code>, <code>grna_integration_strategy</code>, <code>control_group</code>, <code>resampling_mechanism</code>, <code>resampling_approximation</code>, <code>multiple_testing_method</code> and <code>multiple_testing_alpha</code>; the resampling budgets <code>B1</code>, <code>B2</code> and <code>B3</code>; <code>seed</code>; and <code>response_fit_method</code> and <code>grna_fit_method</code>. The last two name the routine that fits each regression. The development versions have three, called <code>sceptre</code>, <code>pysceptre</code> and <code>batched</code>, which give nearly but not exactly the same fits; <code>RATIONALE.md</code>, T6, compares them.</li>
-<li><strong><code>assignment</code></strong>: the <code>method</code> and its <code>hyperparameters</code>.</li>
-<li><strong><code>qc</code></strong>: the thresholds for cells and whether pairs are checked. Its record also has <code>summaries</code>: how many cells were removed, and why.</li>
-<li><strong><code>calibration</code></strong>: the size and number of the negative-control groups.</li>
-<li><strong><code>B3</code> appears in three records</strong> because in sceptre quality control and the calibration check may each change it. The rule today is that the value in the latest record is the one in force. With the testing stages as peers that rule is not precise enough, and it is one of the open questions.</li>
+<li><strong><code>parameters</code></strong>: the arguments of <code>set_analysis_parameters()</code>: <code>formula</code>, <code>side</code>, <code>grna_integration_strategy</code>, <code>control_group</code>, <code>resampling_mechanism</code>, <code>resampling_approximation</code>, <code>multiple_testing_method</code> and <code>multiple_testing_alpha</code>. With them are <code>moi</code>, which sceptre takes in <code>import_data()</code>, and the resampling budgets <code>B1</code>, <code>B2</code> and <code>B3</code>, which sceptre sets itself.</li>
+<li><strong><code>assignment</code></strong>: the <code>method</code> of <code>assign_grnas()</code>, which is <code>maximum</code>, <code>mixture</code> or <code>thresholding</code>, and its <code>hyperparameters</code> as sceptre holds them.</li>
+<li><strong><code>qc</code></strong>: the arguments of <code>run_qc()</code>: <code>n_nonzero_trt_thresh</code> and <code>n_nonzero_cntrl_thresh</code>, the two thresholds of pairwise quality control; <code>response_n_umis_range</code>, <code>response_n_nonzero_range</code> and <code>p_mito_threshold</code> for cells. Its record also has <code>summaries</code>: how many cells were removed, and why.</li>
+<li><strong><code>calibration</code></strong>: <code>calibration_group_size</code> and <code>n_calibration_pairs</code>.</li>
+<li><strong><code>B3</code> appears in three records</strong> because in sceptre <code>run_qc()</code> and <code>run_calibration_check()</code> may each change it. The value in the latest record that has one is the one in force.</li>
 </ul>
 <p>The records of the <code>calibration</code> and <code>discovery</code> stages also have <code>significance_threshold</code>. It is <code>null</code> when no pair was called significant, which for a calibration check is the expected outcome.</p>
-</details>
-<details class="fold">
-<summary>
-The three fitting routines
-</summary>
-<p>The development versions of sceptre and pysceptre can fit the response regressions, including each gene’s dispersion, by one of three routines: <code>sceptre</code>, <code>pysceptre</code> and <code>batched</code>. The name is recorded with the analysis and with every saved fit. <code>batched</code> is the default in both languages today. What each routine does is documented with the packages, not here; what matters for the format is how far they agree. On the example (100 genes, 1,406 pairs):</p>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Compared</th>
-<th>Dispersion</th>
-<th>p-values</th>
-<th>Discoveries</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>sceptre</code> and <code>pysceptre</code>, both run in R</td>
-<td>Agree to within 1e-9</td>
-<td>Agree to within 2.5e-8</td>
-<td>The same 11</td>
-</tr>
-<tr class="even">
-<td><code>batched</code> in R and <code>batched</code> in Python</td>
-<td>Identical</td>
-<td>Agree to within 8e-12</td>
-<td>The same 11</td>
-</tr>
-<tr class="odd">
-<td><code>batched</code> and <code>sceptre</code>, both in R</td>
-<td>98 genes agree to within 1e-6. For 2 genes <code>batched</code> gives 1000, its upper limit, where <code>sceptre</code> gives 0.07 and 0.03</td>
-<td>22 pairs differ, all in those 2 genes, the largest by a factor of 2</td>
-<td>The same 11</td>
-</tr>
-</tbody>
-</table>
-<p>So a fit saved by one language can be reused by the other when both use the same routine, and fits from different routines must not be mixed.</p>
 </details>
 <details class="fold">
 <summary>
@@ -2999,7 +2962,7 @@ What <code>analysis.json</code> says about the data file
 </summary>
 <ul>
 <li><strong>The choice.</strong> <code>fits/response/</code> holds part files. Each part says, inside the file, how its fits were made, and software uses a part only when that matches what it would do itself. Deleting the folder changes no result beyond rounding: a fit that is not found is fitted again by the same routine.</li>
-<li><strong>Why.</strong> A fit depends on the data, the formula, the fitting method, the control group and the cells that passed QC, all fixed once QC has run. Which testing stage computes it first is an accident, so a stage’s folder is the wrong home: rerunning that stage would delete fits that are still valid.</li>
+<li><strong>Why.</strong> A fit depends on the data, the formula, the control group and the cells that passed QC, all fixed once QC has run. Which testing stage computes it first is an accident, so a stage’s folder is the wrong home: rerunning that stage would delete fits that are still valid.</li>
 </ul>
 </details>
 <details class="fold">
@@ -3012,7 +2975,7 @@ What <code>analysis.json</code> says about the data file
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
-<p>The tree below is a real analysis folder, <code>example/highmoi/analyses/left_sided/</code>: a left-sided analysis of sceptre’s high-MOI example data. It was computed by a development version of sceptre and written with the prototype writer in <code>format/</code>. Open a folder to see its files, and a file to see its first rows or its contents. The descriptions are read from the specification’s own files.</p>
+<p>The tree below is a real analysis folder, <code>example/highmoi/analyses/left_sided/</code>: a left-sided analysis of sceptre’s high-MOI example data. It was computed by sceptre 0.99.1, and its <code>sceptre_object</code> was then written out with the prototype writer in <code>format/</code>. Open a folder to see its files, and a file to see its first rows or its contents. The descriptions are read from the specification’s own files.</p>
 <div class="tree">
 <div class="bar">
 <button onclick="treeAll(this, true)">
@@ -3026,7 +2989,7 @@ Close all
 <li>
 <details open>
 <summary class="row folder" style="--d:0">
-<span class="name"><code>left_sided/</code></span><span class="what">one analysis of a data file</span><span class="size">115 KB</span>
+<span class="name"><code>left_sided/</code></span><span class="what">one analysis of a data file</span><span class="size">128 KB</span>
 </summary>
 <ul>
 <li>
@@ -3200,18 +3163,15 @@ ENSG00000286326
     &quot;moi&quot;: &quot;high&quot;,
     &quot;formula&quot;: &quot;~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch&quot;,
     &quot;side&quot;: &quot;left&quot;,
-    &quot;resampling_mechanism&quot;: &quot;crt&quot;,
-    &quot;resampling_approximation&quot;: &quot;spa&quot;,
-    &quot;control_group&quot;: &quot;complement&quot;,
     &quot;grna_integration_strategy&quot;: &quot;union&quot;,
-    &quot;B1&quot;: 499,
-    &quot;B2&quot;: 4999,
-    &quot;B3&quot;: 0,
+    &quot;control_group&quot;: &quot;complement&quot;,
+    &quot;resampling_mechanism&quot;: &quot;crt&quot;,
+    &quot;resampling_approximation&quot;: &quot;skew_normal&quot;,
     &quot;multiple_testing_method&quot;: &quot;BH&quot;,
     &quot;multiple_testing_alpha&quot;: 0.1,
-    &quot;seed&quot;: 4,
-    &quot;response_fit_method&quot;: &quot;batched&quot;,
-    &quot;grna_fit_method&quot;: &quot;pysceptre&quot;
+    &quot;B1&quot;: 499,
+    &quot;B2&quot;: 4999,
+    &quot;B3&quot;: 0
   },
   &quot;design&quot;: {
     &quot;terms&quot;: [
@@ -3227,7 +3187,7 @@ ENSG00000286326
     &quot;package&quot;: &quot;sceptre&quot;,
     &quot;version&quot;: &quot;0.99.1&quot;,
     &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
+    &quot;written_at&quot;: &quot;2026-11-19T00:00:00Z&quot;
   },
   &quot;files&quot;: [
     {
@@ -3336,7 +3296,7 @@ Cell_138
     &quot;package&quot;: &quot;sceptre&quot;,
     &quot;version&quot;: &quot;0.99.1&quot;,
     &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
+    &quot;written_at&quot;: &quot;2026-11-19T00:00:00Z&quot;
   },
   &quot;files&quot;: [
     {
@@ -3426,7 +3386,7 @@ True
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>discovery_pair_qc.parquet</code></span><span class="what">every discovery pair, and whether it passed quality control</span><span class="size">1,406 rows × 3 columns</span>
+<span class="name"><code>discovery_pair_qc.parquet</code></span><span class="what">every discovery pair, and whether it passed quality control</span><span class="size">1,406 rows × 5 columns</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
@@ -3437,6 +3397,12 @@ grna_target
 </th>
 <th>
 response_id
+</th>
+<th>
+n_nonzero_trt
+</th>
+<th>
+n_nonzero_cntrl
 </th>
 <th>
 pass_qc
@@ -3452,6 +3418,12 @@ candidate_enh_1
 ENSG00000040608
 </td>
 <td>
+21
+</td>
+<td>
+98
+</td>
+<td>
 True
 </td>
 </tr>
@@ -3461,6 +3433,12 @@ candidate_enh_1
 </td>
 <td>
 ENSG00000099889
+</td>
+<td>
+102
+</td>
+<td>
+227
 </td>
 <td>
 True
@@ -3474,6 +3452,12 @@ candidate_enh_1
 ENSG00000099917
 </td>
 <td>
+11
+</td>
+<td>
+30
+</td>
+<td>
 True
 </td>
 </tr>
@@ -3485,6 +3469,12 @@ candidate_enh_1
 ENSG00000099937
 </td>
 <td>
+120
+</td>
+<td>
+279
+</td>
+<td>
 True
 </td>
 </tr>
@@ -3494,6 +3484,12 @@ candidate_enh_1
 </td>
 <td>
 ENSG00000099949
+</td>
+<td>
+111
+</td>
+<td>
+263
 </td>
 <td>
 True
@@ -3510,7 +3506,7 @@ True
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>positive_control_pair_qc.parquet</code></span><span class="what">every positive-control pair, and whether it passed quality control</span><span class="size">5 rows × 3 columns</span>
+<span class="name"><code>positive_control_pair_qc.parquet</code></span><span class="what">every positive-control pair, and whether it passed quality control</span><span class="size">5 rows × 5 columns</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
@@ -3521,6 +3517,12 @@ grna_target
 </th>
 <th>
 response_id
+</th>
+<th>
+n_nonzero_trt
+</th>
+<th>
+n_nonzero_cntrl
 </th>
 <th>
 pass_qc
@@ -3536,6 +3538,12 @@ ENSG00000224277
 ENSG00000224277
 </td>
 <td>
+67
+</td>
+<td>
+266
+</td>
+<td>
 True
 </td>
 </tr>
@@ -3545,6 +3553,12 @@ ENSG00000226772
 </td>
 <td>
 ENSG00000226772
+</td>
+<td>
+69
+</td>
+<td>
+267
 </td>
 <td>
 True
@@ -3558,6 +3572,12 @@ ENSG00000233521
 ENSG00000233521
 </td>
 <td>
+69
+</td>
+<td>
+267
+</td>
+<td>
 True
 </td>
 </tr>
@@ -3569,6 +3589,12 @@ ENSG00000234503
 ENSG00000234503
 </td>
 <td>
+67
+</td>
+<td>
+266
+</td>
+<td>
 True
 </td>
 </tr>
@@ -3578,6 +3604,12 @@ ENSG00000286326
 </td>
 <td>
 ENSG00000286326
+</td>
+<td>
+70
+</td>
+<td>
+251
 </td>
 <td>
 True
@@ -3597,6 +3629,8 @@ True
 <pre>{
   &quot;stage&quot;: &quot;qc&quot;,
   &quot;settings&quot;: {
+    &quot;n_nonzero_trt_thresh&quot;: 7,
+    &quot;n_nonzero_cntrl_thresh&quot;: 7,
     &quot;response_n_umis_range&quot;: [
       0.01,
       0.99
@@ -3606,7 +3640,6 @@ True
       0.99
     ],
     &quot;p_mito_threshold&quot;: 0.2,
-    &quot;pairwise_qc&quot;: true,
     &quot;B3&quot;: 0
   },
   &quot;summaries&quot;: {
@@ -3623,7 +3656,7 @@ True
     &quot;package&quot;: &quot;sceptre&quot;,
     &quot;version&quot;: &quot;0.99.1&quot;,
     &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
+    &quot;written_at&quot;: &quot;2026-11-19T00:00:00Z&quot;
   },
   &quot;files&quot;: [
     {
@@ -3721,7 +3754,7 @@ non-targeting_grna1
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>results.parquet</code></span><span class="what">test results for the negative-control pairs</span><span class="size">1,406 rows × 7 columns</span>
+<span class="name"><code>results.parquet</code></span><span class="what">test results for the negative-control pairs</span><span class="size">1,343 rows × 9 columns</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
@@ -3732,6 +3765,12 @@ response_id
 </th>
 <th>
 grna_target
+</th>
+<th>
+n_nonzero_trt
+</th>
+<th>
+n_nonzero_cntrl
 </th>
 <th>
 pass_qc
@@ -3753,48 +3792,31 @@ log_2_fold_change
 <tbody>
 <tr>
 <td>
-ENSG00000099889
+ENSG00000099917
 </td>
 <td>
 non-targeting_grna1&amp;non-targeting_grna10
 </td>
 <td>
-True
+13
 </td>
 <td>
-0.402
-</td>
-<td>
-0.95
-</td>
-<td>
-0.09509
-</td>
-<td>
--0.07394
-</td>
-</tr>
-<tr>
-<td>
-ENSG00000099937
-</td>
-<td>
-non-targeting_grna1&amp;non-targeting_grna10
+28
 </td>
 <td>
 True
 </td>
 <td>
-0.988
+0.726
 </td>
 <td>
-1.166
+1.122
 </td>
 <td>
-0.1071
+0.2976
 </td>
 <td>
-0.2212
+0.1664
 </td>
 </tr>
 <tr>
@@ -3805,10 +3827,16 @@ ENSG00000099949
 non-targeting_grna1&amp;non-targeting_grna10
 </td>
 <td>
+106
+</td>
+<td>
+268
+</td>
+<td>
 True
 </td>
 <td>
-0.376
+0.42
 </td>
 <td>
 0.9865
@@ -3822,39 +3850,22 @@ True
 </tr>
 <tr>
 <td>
-ENSG00000099956
-</td>
-<td>
-non-targeting_grna1&amp;non-targeting_grna10
-</td>
-<td>
-True
-</td>
-<td>
-0.774
-</td>
-<td>
-1.046
-</td>
-<td>
-0.09964
-</td>
-<td>
-0.0655
-</td>
-</tr>
-<tr>
-<td>
 ENSG00000099957
 </td>
 <td>
 non-targeting_grna1&amp;non-targeting_grna10
 </td>
 <td>
+21
+</td>
+<td>
+54
+</td>
+<td>
 True
 </td>
 <td>
-0.508
+0.516
 </td>
 <td>
 0.9779
@@ -3866,10 +3877,68 @@ True
 -0.03228
 </td>
 </tr>
+<tr>
+<td>
+ENSG00000100276
+</td>
+<td>
+non-targeting_grna1&amp;non-targeting_grna10
+</td>
+<td>
+64
+</td>
+<td>
+174
+</td>
+<td>
+True
+</td>
+<td>
+0.636
+</td>
+<td>
+1.037
+</td>
+<td>
+0.1332
+</td>
+<td>
+0.0522
+</td>
+</tr>
+<tr>
+<td>
+ENSG00000100285
+</td>
+<td>
+non-targeting_grna1&amp;non-targeting_grna10
+</td>
+<td>
+88
+</td>
+<td>
+212
+</td>
+<td>
+True
+</td>
+<td>
+0.886
+</td>
+<td>
+1.102
+</td>
+<td>
+0.1083
+</td>
+<td>
+0.1398
+</td>
+</tr>
 </tbody>
 </table>
 <p class="more">
-… 1,401 more rows
+… 1,338 more rows
 </p>
 </div>
 </details>
@@ -3884,7 +3953,7 @@ True
   &quot;stage&quot;: &quot;calibration&quot;,
   &quot;settings&quot;: {
     &quot;calibration_group_size&quot;: 2,
-    &quot;n_calibration_pairs&quot;: 1406,
+    &quot;n_calibration_pairs&quot;: 1343,
     &quot;B3&quot;: 0
   },
   &quot;significance_threshold&quot;: null,
@@ -3892,7 +3961,7 @@ True
     &quot;package&quot;: &quot;sceptre&quot;,
     &quot;version&quot;: &quot;0.99.1&quot;,
     &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
+    &quot;written_at&quot;: &quot;2026-11-19T00:00:00Z&quot;
   },
   &quot;files&quot;: [
     {
@@ -3901,7 +3970,7 @@ True
     },
     {
       &quot;path&quot;: &quot;results.parquet&quot;,
-      &quot;rows&quot;: 1406
+      &quot;rows&quot;: 1343
     }
   ]
 }</pre>
@@ -3920,7 +3989,7 @@ True
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>results.parquet</code></span><span class="what">test results for the positive-control pairs</span><span class="size">5 rows × 7 columns</span>
+<span class="name"><code>results.parquet</code></span><span class="what">test results for the positive-control pairs</span><span class="size">5 rows × 9 columns</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
@@ -3931,6 +4000,12 @@ response_id
 </th>
 <th>
 grna_target
+</th>
+<th>
+n_nonzero_trt
+</th>
+<th>
+n_nonzero_cntrl
 </th>
 <th>
 pass_qc
@@ -3958,10 +4033,16 @@ ENSG00000224277
 ENSG00000224277
 </td>
 <td>
+67
+</td>
+<td>
+266
+</td>
+<td>
 True
 </td>
 <td>
-4.659e-14
+5.832e-12
 </td>
 <td>
 0.3759
@@ -3981,10 +4062,16 @@ ENSG00000226772
 ENSG00000226772
 </td>
 <td>
+69
+</td>
+<td>
+267
+</td>
+<td>
 True
 </td>
 <td>
-4.402e-22
+9.055e-17
 </td>
 <td>
 0.3188
@@ -4004,10 +4091,16 @@ ENSG00000233521
 ENSG00000233521
 </td>
 <td>
+69
+</td>
+<td>
+267
+</td>
+<td>
 True
 </td>
 <td>
-4.266e-17
+2.286e-14
 </td>
 <td>
 0.4002
@@ -4027,10 +4120,16 @@ ENSG00000234503
 ENSG00000234503
 </td>
 <td>
+67
+</td>
+<td>
+266
+</td>
+<td>
 True
 </td>
 <td>
-1.062e-22
+3.556e-16
 </td>
 <td>
 0.3206
@@ -4050,10 +4149,16 @@ ENSG00000286326
 ENSG00000286326
 </td>
 <td>
+70
+</td>
+<td>
+251
+</td>
+<td>
 True
 </td>
 <td>
-1.473e-21
+1.437e-14
 </td>
 <td>
 0.3146
@@ -4083,7 +4188,7 @@ True
     &quot;package&quot;: &quot;sceptre&quot;,
     &quot;version&quot;: &quot;0.99.1&quot;,
     &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
+    &quot;written_at&quot;: &quot;2026-11-19T00:00:00Z&quot;
   },
   &quot;files&quot;: [
     {
@@ -4107,7 +4212,7 @@ True
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>results.parquet</code></span><span class="what">test results for the discovery pairs</span><span class="size">1,406 rows × 7 columns</span>
+<span class="name"><code>results.parquet</code></span><span class="what">test results for the discovery pairs</span><span class="size">1,406 rows × 9 columns</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
@@ -4118,6 +4223,12 @@ response_id
 </th>
 <th>
 grna_target
+</th>
+<th>
+n_nonzero_trt
+</th>
+<th>
+n_nonzero_cntrl
 </th>
 <th>
 pass_qc
@@ -4145,10 +4256,16 @@ ENSG00000040608
 candidate_enh_1
 </td>
 <td>
+21
+</td>
+<td>
+98
+</td>
+<td>
 True
 </td>
 <td>
-0.006888
+0.006907
 </td>
 <td>
 0.6716
@@ -4168,10 +4285,16 @@ ENSG00000099889
 candidate_enh_1
 </td>
 <td>
+102
+</td>
+<td>
+227
+</td>
+<td>
 True
 </td>
 <td>
-0.858
+0.842
 </td>
 <td>
 1.116
@@ -4191,10 +4314,16 @@ ENSG00000099917
 candidate_enh_1
 </td>
 <td>
+11
+</td>
+<td>
+30
+</td>
+<td>
 True
 </td>
 <td>
-0.426
+0.466
 </td>
 <td>
 0.9444
@@ -4214,10 +4343,16 @@ ENSG00000099937
 candidate_enh_1
 </td>
 <td>
+120
+</td>
+<td>
+279
+</td>
+<td>
 True
 </td>
 <td>
-0.134
+0.168
 </td>
 <td>
 0.9332
@@ -4237,10 +4372,16 @@ ENSG00000099949
 candidate_enh_1
 </td>
 <td>
+111
+</td>
+<td>
+263
+</td>
+<td>
 True
 </td>
 <td>
-0.58
+0.54
 </td>
 <td>
 1.01
@@ -4269,12 +4410,12 @@ True
 <pre>{
   &quot;stage&quot;: &quot;discovery&quot;,
   &quot;settings&quot;: {},
-  &quot;significance_threshold&quot;: 0.00043745806418632634,
+  &quot;significance_threshold&quot;: 0.0006345714771868946,
   &quot;provenance&quot;: {
     &quot;package&quot;: &quot;sceptre&quot;,
     &quot;version&quot;: &quot;0.99.1&quot;,
     &quot;language&quot;: &quot;R&quot;,
-    &quot;written_at&quot;: &quot;2026-11-18T19:26:04Z&quot;
+    &quot;written_at&quot;: &quot;2026-11-19T00:00:00Z&quot;
   },
   &quot;files&quot;: [
     {
@@ -4298,7 +4439,7 @@ True
 <li>
 <details>
 <summary class="row" style="--d:2">
-<span class="name"><code>part-5ebcbd4c5826.parquet</code></span><span class="what">the fits one job added; the file says inside how they were made</span><span class="size">100 rows × 3 columns</span>
+<span class="name"><code>part-a9c9eb4de76d.parquet</code></span><span class="what">the fits one job added; the file says inside how they were made</span><span class="size">98 rows × 3 columns</span>
 </summary>
 <div class="body">
 <p class="more">
@@ -4308,7 +4449,6 @@ How these fits were made, stored inside the file:
   &quot;cells_in_use_sha256&quot;: &quot;d6040e7cdff5a1918e3869873f780155e192eab3e824d3e6662defe383852231&quot;,
   &quot;control_group&quot;: &quot;complement&quot;,
   &quot;formula&quot;: &quot;~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch&quot;,
-  &quot;response_fit_method&quot;: &quot;batched&quot;,
   &quot;screen_id&quot;: &quot;b907fd1b151fd398b78ff993ae9e86d6&quot;
 }</pre>
 <table class="dataframe rows table table-sm table-striped small">
@@ -4384,7 +4524,7 @@ ENSG00000099949
 </tbody>
 </table>
 <p class="more">
-… 95 more rows
+… 93 more rows
 </p>
 </div>
 </details>
@@ -4397,7 +4537,8 @@ ENSG00000099949
 </li>
 </ul>
 </div>
-<p>This analysis has no <code>cell_covariates.parquet</code> and no <code>resamples.parquet</code>, which are optional, and it uses the <code>union</code> strategy, so its tables have no <code>grna_id</code>. Six more example analyses are in <code>example/</code>, among them one under the <code>singleton</code> strategy, one of sceptre’s low-MOI example data, one that stopped after quality control, and one that kept its resampled statistics.</p>
+<p>This analysis has no <code>cell_covariates.parquet</code> and no <code>resamples.parquet</code>, which are optional, and it uses the <code>union</code> strategy, so its tables have no <code>grna_id</code>. Seven more example analyses are in <code>example/</code>, among them one under the <code>singleton</code> strategy, one that assigned gRNAs with the <code>mixture</code> method, one of sceptre’s low-MOI example data, one that stopped after quality control, and one that kept its resampled statistics.</p>
+<p>Each example was also taken the other way. A <code>sceptre_object</code> rebuilt from the data file and the folder alone has the same content, slot by slot, as the object the folder was written from, except for two intermediate quantities that sceptre computes again. And running sceptre again from only the settings in the records gives the same results. The code that did this reads the inside of a <code>sceptre_object</code> and is not part of the format; <code>RATIONALE.md</code>, Appendix B, has the details.</p>
 </section>
 <section id="native-reading" class="level2">
 <h2 class="anchored" data-anchor-id="native-reading">Native reading</h2>
@@ -4415,14 +4556,14 @@ ENSG00000099949
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>results<span class="sc">$</span>significant <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">is.null</span>(threshold)) <span class="cn">FALSE</span> <span class="cf">else</span> <span class="sc">!</span><span class="fu">is.na</span>(results<span class="sc">$</span>p_value) <span class="sc">&amp;</span> results<span class="sc">$</span>p_value <span class="sc">&lt;=</span> threshold</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(results[<span class="fu">order</span>(results<span class="sc">$</span>p_value), ], <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>        response_id      grna_target pass_qc      p_value fold_change se_fold_change
-552 ENSG00000220891 candidate_enh_17    TRUE 5.353740e-09   0.3978358     0.07043777
-462 ENSG00000211641 candidate_enh_16    TRUE 1.837742e-08   0.5768150     0.06137019
-381 ENSG00000211641 candidate_enh_15    TRUE 2.298605e-08   0.6094868     0.06158008
-    log_2_fold_change significant
-552        -1.3297550        TRUE
-462        -0.7938195        TRUE
-381        -0.7143332        TRUE</code></pre>
+<pre><code>        response_id      grna_target n_nonzero_trt n_nonzero_cntrl pass_qc      p_value fold_change
+381 ENSG00000211641 candidate_enh_15           100             278    TRUE 1.552955e-07   0.6094868
+462 ENSG00000211641 candidate_enh_16            99             279    TRUE 1.562311e-07   0.5768150
+552 ENSG00000220891 candidate_enh_17            30             159    TRUE 1.645399e-07   0.3978358
+    se_fold_change log_2_fold_change significant
+381     0.06158008        -0.7143332        TRUE
+462     0.06137019        -0.7938195        TRUE
+552     0.07043777        -1.3297550        TRUE</code></pre>
 </div>
 </div>
 </div>
@@ -4439,15 +4580,15 @@ ENSG00000099949
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>results[<span class="st">&quot;significant&quot;</span>] <span class="op">=</span> <span class="va">False</span> <span class="cf">if</span> threshold <span class="kw">is</span> <span class="va">None</span> <span class="cf">else</span> results[<span class="st">&quot;p_value&quot;</span>] <span class="op">&lt;=</span> threshold</span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(results.sort_values(<span class="st">&quot;p_value&quot;</span>).head(<span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>         response_id       grna_target  pass_qc       p_value  fold_change  se_fold_change  log_2_fold_change  \
-551  ENSG00000220891  candidate_enh_17     True  5.353740e-09     0.397836        0.070438          -1.329755   
-461  ENSG00000211641  candidate_enh_16     True  1.837742e-08     0.576815        0.061370          -0.793820   
-380  ENSG00000211641  candidate_enh_15     True  2.298605e-08     0.609487        0.061580          -0.714333   
+<pre><code>         response_id       grna_target  n_nonzero_trt  n_nonzero_cntrl  pass_qc       p_value  fold_change  \
+380  ENSG00000211641  candidate_enh_15            100              278     True  1.552955e-07     0.609487   
+461  ENSG00000211641  candidate_enh_16             99              279     True  1.562311e-07     0.576815   
+551  ENSG00000220891  candidate_enh_17             30              159     True  1.645399e-07     0.397836   
 
-     significant  
-551         True  
-461         True  
-380         True  </code></pre>
+     se_fold_change  log_2_fold_change  significant  
+380        0.061580          -0.714333         True  
+461        0.061370          -0.793820         True  
+551        0.070438          -1.329755         True  </code></pre>
 </div>
 </div>
 </div>
@@ -4460,7 +4601,7 @@ ENSG00000099949
 <p>Four things check the format: a validator, a set of test folders, a suite of checks, and automatic runs of that suite on every change.</p>
 <section id="what-conforms-means" class="level3">
 <h3 class="anchored" data-anchor-id="what-conforms-means">What “conforms” means</h3>
-<p>The specification has 72 numbered statements of three kinds.</p>
+<p>The specification has 73 numbered statements of three kinds.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 25%">
@@ -4480,8 +4621,8 @@ ENSG00000099949
 <tr class="odd">
 <td>File rule</td>
 <td>What a folder contains</td>
-<td>48</td>
-<td>By the validator. The validators check 46 of them</td>
+<td>49</td>
+<td>By the validator. The validators check 47 of them</td>
 </tr>
 <tr class="even">
 <td>Behaviour rule</td>
@@ -4524,7 +4665,7 @@ T7.8 parameters/record.json     The formula names `rna_n_umis`, which is neither
 </section>
 <section id="the-conformance-folders" class="level3">
 <h3 class="anchored" data-anchor-id="the-conformance-folders">The conformance folders</h3>
-<p><code>conformance/</code> holds 17 cases that conform and 38 that each break one rule or a few. A case is an analysis folder together with the data file it is checked against. <code>conformance/cases.json</code> says, for every case, which rules a validator must report. Both validators must report exactly those, no more and no fewer. Someone writing another implementation tests it against the same cases.</p>
+<p><code>conformance/</code> holds 18 cases that conform and 44 that each break one rule or a few. A case is an analysis folder together with the data file it is checked against. <code>conformance/cases.json</code> says, for every case, which rules a validator must report. Both validators must report exactly those, no more and no fewer. Someone writing another implementation tests it against the same cases.</p>
 <details class="fold">
 <summary>
 The cases that conform
@@ -4583,6 +4724,14 @@ The <code>with_resamples</code> example analysis, written by R
 </tr>
 <tr>
 <td>
+<code>mixture_assignment_written_by_r</code>
+</td>
+<td>
+The <code>mixture_assignment</code> example analysis, written by R
+</td>
+</tr>
+<tr>
+<td>
 <code>left_sided_written_by_python</code>
 </td>
 <td>
@@ -4631,10 +4780,10 @@ A part of the fit cache records the analysis&#39;s formula with other spacing; i
 </tr>
 <tr>
 <td>
-<code>fits_made_with_another_method</code>
+<code>fits_made_for_another_control_group</code>
 </td>
 <td>
-The one part of the fit cache was made with a method other than the analysis&#39;s: allowed, and a reader takes no fit from it
+The one part of the fit cache was made for a control group other than the analysis&#39;s: allowed, and a reader takes no fit from it
 </td>
 </tr>
 <tr>
@@ -4855,13 +5004,79 @@ A2.1
 </tr>
 <tr>
 <td>
-<code>no_seed</code>
+<code>no_resampling_budget</code>
 </td>
 <td>
-The parameters record has no <code>seed</code>
+The parameters record has no <code>B1</code>
 </td>
 <td>
 A2.1
+</td>
+</tr>
+<tr>
+<td>
+<code>approximation_unknown</code>
+</td>
+<td>
+The parameters record has <code>resampling_approximation</code> set to a value sceptre does not have
+</td>
+<td>
+A2.1
+</td>
+</tr>
+<tr>
+<td>
+<code>assignment_method_unknown</code>
+</td>
+<td>
+The assignment record names a method sceptre does not have
+</td>
+<td>
+A2.1
+</td>
+</tr>
+<tr>
+<td>
+<code>no_pairwise_qc_thresholds</code>
+</td>
+<td>
+The QC record lacks the two thresholds of pairwise QC
+</td>
+<td>
+A2.1
+</td>
+</tr>
+<tr>
+<td>
+<code>pair_qc_without_counts</code>
+</td>
+<td>
+A pair-QC table lacks <code>n_nonzero_trt</code> (T3.2)
+</td>
+<td>
+T0.1
+</td>
+</tr>
+<tr>
+<td>
+<code>pair_qc_verdict_against_the_counts</code>
+</td>
+<td>
+Pairs are marked as passing pairwise QC although a count is below its threshold
+</td>
+<td>
+T3.4
+</td>
+</tr>
+<tr>
+<td>
+<code>results_without_counts</code>
+</td>
+<td>
+The discovery results lack <code>n_nonzero_cntrl</code> (T5.1)
+</td>
+<td>
+T0.1
 </td>
 </tr>
 <tr>
@@ -5150,10 +5365,10 @@ Passed in Python
 Both validators report exactly the expected rules on every conformance case
 </td>
 <td>
-55 of 55
+62 of 62
 </td>
 <td>
-55 of 55
+62 of 62
 </td>
 </tr>
 <tr>
@@ -5192,10 +5407,10 @@ Every kind of table column, written by each language&#39;s standard Parquet libr
 What software works out from the files (cells per gRNA and per target, cells in use, pairs passing quality control, significance, control groups) equals what sceptre computed for the same analysis. sceptre&#39;s values were recorded once, in <code>example/*/expected/</code>, and the check compares against that record
 </td>
 <td>
-118 of 118
+147 of 147
 </td>
 <td>
-118 of 118
+147 of 147
 </td>
 </tr>
 <tr>
@@ -5242,15 +5457,15 @@ What a writer must do beyond producing a conforming folder: a stage written agai
 <p>The example analyses are small: 500 or 1,000 cells. Once, by hand, the tables were written and read at the size of a large screen, with made-up content (<code>scale-test/</code>).</p>
 <ul>
 <li><strong>Results tables</strong> are no problem: 100 million pairs take 2.5 GB, and one pair is read in a tenth of a second.</li>
-<li><strong>Resampled statistics</strong> are large: 4 GB per million pairs. A Parquet file is written in blocks of rows, and reading one pair means reading its whole block: a tenth of a second with blocks of 10,000 rows, 7 seconds with blocks of a million, which is the limit the format sets today.</li>
-<li><strong>Saved fits</strong> take time to read in proportion to the number of part files: 10,000 parts take a minute and a half.</li>
+<li><strong>Resampled statistics</strong> are large: 4 GB per million pairs. A Parquet file is written in blocks of rows, and reading one pair means reading its whole block: a tenth of a second with blocks of 10,000 rows, 7 seconds with blocks of a million. The format therefore limits a block of this table to 10,000 rows.</li>
+<li><strong>Saved fits</strong> take time to read in proportion to the number of part files: 10,000 parts take a minute and a half. The format therefore advises one part per job, and allows parts to be merged once no job is writing.</li>
 </ul>
-<p>The last two are open questions below.</p>
 </section>
 <section id="what-is-not-tested" class="level3">
 <h3 class="anchored" data-anchor-id="what-is-not-tested">What is not tested</h3>
 <ul>
 <li>A real analysis of more than 1,000 cells, written by a package.</li>
+<li>pysceptre. The examples come from sceptre, and no pysceptre analysis has been written to or rebuilt from these files in this version.</li>
 <li>The rules about what a package that fits models must do.</li>
 <li>The pipeline. Part files are meant for its parallel jobs, and no pipeline has written them yet.</li>
 <li>An implementation by someone else. One author wrote the specification and both prototypes.</li>
@@ -5262,13 +5477,10 @@ What a writer must do beyond producing a conforming folder: a stage written agai
 <p>Review is wanted on these most.</p>
 <ol type="1">
 <li><strong>Does the folder hold everything a sceptre analysis needs, and nothing it should not?</strong> A stage’s settings, tables and results are stored. Not stored is whatever can be computed again from the data file and the folder, such as intermediate quantities held in a <code>sceptre_object</code>. What a result means, such as which test a p-value comes from, is left to sceptre’s documentation.</li>
-<li><strong>Columns of the results.</strong> The format defines <code>pass_qc</code>, <code>p_value</code>, <code>log_2_fold_change</code>, <code>fold_change</code> and <code>se_fold_change</code>. It does not define <code>n_nonzero_trt</code> and <code>n_nonzero_cntrl</code>, which a writer may add as further columns. Should they be defined?</li>
-<li><strong>Which fitting routine should be the default?</strong> The development versions fit the response regressions by one of three routines. Saved fits are shared between R and Python only when both use the same routine. On the example, the routine that is the default today gives a clearly different dispersion from the other two for 2 of 100 genes. The format cannot settle this, but it decides how often fits can be shared.</li>
 <li><strong>Additive formulas only.</strong> A formula can use covariates, <code>log(x)</code> and <code>log(x + 1)</code>. Is it acceptable that an analysis with an interaction or a spline cannot be saved?</li>
 <li><strong>Covariates.</strong> Covariates given for an analysis are stored with it, not in the data file. Is that the right place?</li>
-<li><strong><code>B3</code>.</strong> Which record’s <code>B3</code> should a testing stage use: the one in <code>parameters</code>, the one in <code>qc</code>, or its own?</li>
-<li><strong>Resampled statistics.</strong> They are stored as 64-bit numbers, 499 or more per pair. Should they be stored as they are, or as 32-bit numbers at half the size? And should this table have a smaller limit on the size of a block of rows, so that one pair can be read quickly?</li>
-<li><strong>Saved fits.</strong> Reading them takes about 9 milliseconds per part file. Should a job write one part for all its fits, and may parts be merged afterwards? Today a part, once written, is never modified.</li>
+<li><strong><code>B3</code>.</strong> In sceptre the budget a testing stage uses depends on which functions were called before it. The format records <code>B3</code> wherever sceptre may change it and takes the latest. Should a testing stage record the value it used instead?</li>
+<li><strong>Resampled statistics.</strong> They are stored as 64-bit numbers, 499 or more per pair. Should they be stored as they are, or as 32-bit numbers at half the size?</li>
 <li><strong>The pipeline.</strong> The intent is that each parallel job writes its own part file of a table, under a file name of its own choosing inside the table’s folder, and that nothing has to be gathered into one file afterwards. The stage’s record, written last, lists the table and its total number of rows. Does that fit how the Nextflow pipeline splits and gathers its work?</li>
 </ol>
 <details class="fold">

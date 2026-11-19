@@ -1,0 +1,27 @@
+{
+  "stage": "assignment",
+  "settings": {
+    "method": "mixture",
+    "hyperparameters": {
+      "n_em_rep": 5,
+      "pi_guess_range": [1.0000000000000001e-05, 0.10000000000000001],
+      "g_pert_guess_range": [2.3025850929940459, 8.5171931914162382],
+      "n_nonzero_cells_cutoff": 10,
+      "backup_threshold": 5,
+      "probability_threshold": 0.80000000000000004,
+      "formula_object": "~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch"
+    }
+  },
+  "provenance": {
+    "package": "sceptre",
+    "version": "0.99.1",
+    "language": "R",
+    "written_at": "2026-11-19T00:00:00Z"
+  },
+  "files": [
+    {
+      "path": "assignments.parquet",
+      "rows": 3501
+    }
+  ]
+}

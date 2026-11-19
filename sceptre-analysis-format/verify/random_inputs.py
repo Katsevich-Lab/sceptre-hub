@@ -50,7 +50,9 @@ for seed in SEEDS:
         "target_end": [1000 * (i + 1) + 19 for i in range(2 * n_targets)] + [None, None],
         "assignments": [list(a) for a in assignments], "in_use": in_use,
         "pairs": [list(p) for p in pairs],
-        "results": [{"grna_target": t, "response_id": g, "pass_qc": p is not None, "p_value": p,
+        # pairs that failed pairwise QC have a count below the threshold of 7, and no p-value
+        "results": [{"grna_target": t, "response_id": g, "n_nonzero_trt": int(rng.integers(7, 40)) if p is not None else int(rng.integers(0, 7)),
+                     "n_nonzero_cntrl": int(rng.integers(7, 400)), "pass_qc": p is not None, "p_value": p,
                      "fold_change": fc, "se_fold_change": None if p is None else float(rng.random()),
                      "log_2_fold_change": None if fc is None else float(np.log(fc) / np.log(2.0))}
                     for (t, g), p in zip(pairs, p_values) for fc in [None if p is None else float(rng.lognormal())]],

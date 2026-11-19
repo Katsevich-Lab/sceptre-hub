@@ -18,7 +18,8 @@ about analyses; an analysis names its data file by identifier (A1).
 
 **Scope.** This document fixes how sceptre's analyses of a Perturb-seq
 dataset are stored: which files exist, what they are called, what they
-contain and in what form. It covers the outputs of each stage of an analysis.
+contain and in what form. It covers the outputs of each stage of an analysis. The stages, their
+settings and the columns of their outputs are those of sceptre 0.99.1.
 It does not define what the numbers mean: what a p-value tests, how a fold
 change is estimated, or what an assignment method does are defined by
 sceptre's method documentation. That is a choice, and reviewers may want it
@@ -80,8 +81,8 @@ final; the sorting into kinds is.
 - **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 70 statements, 47 are file rules, 19 behaviour rules and 4
-guidance. The validators check 45 of the file rules (T0.9 in part), a test covers 1 more
+Of the 71 statements, 48 are file rules, 19 behaviour rules and 4
+guidance. The validators check 46 of the file rules (T0.9 in part), a test covers 1 more
 (T4.3), and 1 has no test (A3.2). Tests or the conformance run
 cover 11 of the behaviour rules (A1.8 in part, T7.4 in R only); 8 have no
 test: A1.5, A1.9, A3.5, A6.2, T1.3, T7.3, T7.5, T7.9. Eight of the untested rules
@@ -220,11 +221,11 @@ and `discovery`. The last three do not depend on one another.
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| A3.1 | file | The settings of each stage, their names and their allowed values are those of `spec/stage.schema.json`. | V (through A2.1) |
-| A3.2 | file | A formula names covariates as T7.4 does (`rna_n_umis`). Setting names keep role words (`response_n_umis_range`, `response_fit_method`). | none (testing it needs a package) |
+| A3.1 | file | The settings of each stage, their names and their allowed values are those of `spec/stage.schema.json`. They are the arguments and settings of sceptre 0.99.1 under sceptre's own names: those of `set_analysis_parameters()` and the resampling budgets `B1`, `B2` and `B3` in the parameters record, the method of `assign_grnas()` and its hyperparameters in the assignment record, and the thresholds of `run_qc()` in the QC record. | V (through A2.1) |
+| A3.2 | file | A formula names covariates as T7.4 does (`rna_n_umis`). Setting names keep role words (`response_n_umis_range`). | none (testing it needs a package) |
 | A3.3 | file | JSON files are UTF-8. A missing value is `null`. NaN and infinity MUST NOT appear. | V (a record that is not valid JSON fails A1.1 or A2.1) |
 | A3.4 | behaviour | A writer MUST write a real number with 17 significant digits, so that the number read is the number written. | tests (the threshold reproduces every call) |
-| A3.5 | behaviour | The resampling budget `B3` in force is that of the latest stage record that carries one. | none (testing it needs a package) |
+| A3.5 | behaviour | The resampling budget `B3` in force is that of the latest stage record that carries one. The parameters, QC and calibration records carry it. | none (testing it needs a package) |
 | A3.6 | file | The parameters record's `moi` setting is `high` or `low`: the preset from which a package chose its defaults, such as the control group and what is done with cells carrying several gRNAs. It is a choice of the analysis, and the data file does not record it. | V (through A2.1) |
 
 ### A4. Rerunning
@@ -299,8 +300,10 @@ analysis's strategy and the table's stage; `spec/tables.json` records it as
 | Rule | Kind | | Check |
 |---|---|---|---|
 | T3.1 | file | `parameters/discovery_pairs.parquet` and `parameters/positive_control_pairs.parquet` hold the pairs to test as the user gave them: `grna_target`, `response_id`. Row order carries no meaning. | V (through T0) |
-| T3.2 | file | `qc/discovery_pair_qc.parquet` and `qc/positive_control_pair_qc.parquet` hold the verdict of pairwise QC: the key columns and `pass_qc`. | V (through T0) |
+| T3.2 | file | `qc/discovery_pair_qc.parquet` and `qc/positive_control_pair_qc.parquet` hold the outcome of pairwise QC: the key columns, `n_nonzero_trt` and `n_nonzero_cntrl` (the number of treated cells and of control cells with a nonzero count of the response), and `pass_qc`. | V (through T0) |
 | T3.3 | file | The pair-QC tables MUST have a `grna_id` column under the `singleton` and `bonferroni` strategies, where each gRNA is tested on its own, and MUST NOT have one under `union`. | V |
+
+| T3.4 | file | In a pair-QC table, `pass_qc` MUST be true exactly when `n_nonzero_trt` is at least the QC record's `n_nonzero_trt_thresh` and `n_nonzero_cntrl` is at least its `n_nonzero_cntrl_thresh`. | V |
 
 ### T4. `calibration/negative_control_groups.parquet`
 
@@ -314,7 +317,7 @@ analysis's strategy and the table's stage; `spec/tables.json` records it as
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T5.1 | file | A results table has the key columns, `pass_qc`, `p_value` and `log_2_fold_change`. `fold_change`, `se_fold_change` and diagnostic columns MAY follow. | V (through T0.1) |
+| T5.1 | file | A results table has the key columns, `n_nonzero_trt`, `n_nonzero_cntrl`, `pass_qc`, `p_value` and `log_2_fold_change`. `fold_change` and `se_fold_change` MAY follow, and so MAY the diagnostic columns `stage`, `z_orig`, `xi`, `omega` and `alpha`. A pair that failed pairwise QC has a row, with missing values in every column after `pass_qc`. | V (through T0.1) |
 | T5.2 | file | In a table that has `fold_change`, a row's `log_2_fold_change` MUST equal `log(fold_change) / log(2)` to a relative difference of at most 10^-9, wherever neither is missing. A reader takes the stored value and does not recompute it. | V |
 | T5.3 | file | `significant` MUST NOT be stored. The record of the `calibration` and `discovery` stages has `significance_threshold`: the largest p-value called significant, or `null` if none was. A row is significant when its `p_value` is at most the threshold. | V |
 | T5.4 | file | Rows are sorted by key (T0.2), not by p-value. | V (through T0.2) |
@@ -329,17 +332,17 @@ fitted models for the responses, which the three testing stages share. No
 stage owns it: it has no stage record, no stage lists its files, it fills as
 jobs add to it, and it is cleared at a different moment from any testing
 stage. Because it never finishes, it cannot have a record written last, so
-each part describes itself. A fit depends on the data, the formula, the fitting method, the control
+each part describes itself. A fit depends on the data, the formula, the control
 group and the cells that passed QC, all of which are fixed once the parameters
 and QC stages have run.
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T6.1 | file | `fits/response/`, if it exists, MUST hold part files (`*.parquet`) and nothing else. Each part MUST carry the **identity** of the fits it holds: JSON text under the key `sceptre_fit_identity` in the Parquet file's own key-value metadata, conforming to `spec/fits.schema.json`: `screen_id`, `formula`, `cells_in_use_sha256` (the hash of A1.3 over the identifiers of the cells in use), `response_fit_method`, `control_group`. Other keys in that metadata are ignored. | V |
+| T6.1 | file | `fits/response/`, if it exists, MUST hold part files (`*.parquet`) and nothing else. Each part MUST carry the **identity** of the fits it holds: JSON text under the key `sceptre_fit_identity` in the Parquet file's own key-value metadata, conforming to `spec/fits.schema.json`: `screen_id`, `formula`, `cells_in_use_sha256` (the hash of A1.3 over the identifiers of the cells in use), `control_group`. Other keys in that metadata are ignored. | V |
 | T6.2 | file | The fits are the rows of the part files: one row per response, with `response_id`, `coefficients` and `theta`. In a part whose identity is that of the analysis, `coefficients` has one value per term of the design, in the design's order. | V |
-| T6.3 | file | A fit cache MUST NOT exist before the parameters and QC stages have run. A part whose identity is not that of the analysis (another formula, method, control group, dataset or set of cells) is allowed: it is unused, and the validators do not report it. | V |
+| T6.3 | file | A fit cache MUST NOT exist before the parameters and QC stages have run. A part whose identity is not that of the analysis (another formula, control group, dataset or set of cells) is allowed: it is unused, and the validators do not report it. | V |
 | T6.4 | behaviour | Each writer adds a part file of its own, carrying the identity of the fits in it, and MUST NOT modify another's. No file of the cache is shared between writers. Two parts MAY hold the same response; a reader takes either. A writer that knows no job is still adding to the cache MAY merge the parts that carry one identity: it writes one new part holding their fits and deletes them. | V (a valid conformance case with two parts); tests (`verify/writers`: merged parts hold the same fits under the same identity) |
-| T6.5 | behaviour | The fits are a cache. A reader MAY ignore them, and deleting them changes no result beyond numerical tolerance. A reader MUST NOT take a fit from a part unless every field of that part's identity equals what the reader would use itself and the fitting method is one its language shares. It MUST ignore any other part, and a part with no identity. Identities are compared as parsed values, not as text, and two formulas are equal when they are the same once white space is removed. | tests (parts with another method, another set of cells, no identity, and a formula spaced differently) |
+| T6.5 | behaviour | The fits are a cache. A reader MAY ignore them, and deleting them changes no result beyond numerical tolerance. A reader MUST NOT take a fit from a part unless every field of that part's identity equals what the reader would use itself. It MUST ignore any other part, and a part with no identity. Identities are compared as parsed values, not as text, and two formulas are equal when they are the same once white space is removed. | tests (parts with another control group, another set of cells, no identity, and a formula spaced differently) |
 | T6.6 | behaviour | A writer SHOULD delete the cache when the `qc` stage or an earlier stage is rerun, and MUST keep it when a testing stage is rerun. Deleting is housekeeping: no result depends on it (T6.5), and it keeps a plain read of the folder from mixing old parts with current ones. | V (a valid conformance case); tests |
 | T6.7 | guidance | `fits/grna/` is reserved for fitted models of the gRNAs, which this version does not define. It would work the same way, with identity fields of its own. A table of another kind of fit is a folder of its own, never a column in this one. | — |
 | T6.8 | guidance | A job SHOULD write one part for all the fits it made, not one part per response. Reading the cache costs time for every part file. | — |
@@ -404,19 +407,19 @@ and QC stages have run.
 ## 6. What the two libraries support
 
 "Tested" means a check in `verify/` or the conformance set passes in that
-language, on the small examples, or that the one check with both packages
+language, on the small examples, or that the round trip with sceptre
 passed it (`RATIONALE.md`, Appendix B).
 
 | Feature | R | Python |
 |---|---|---|
 | Write and read an analysis | tested | tested |
 | An analysis written by the other language | tested | tested |
-| High MOI; low MOI with the "maximum" assignment method and flagged cells | tested | tested |
+| High MOI; low MOI with the "maximum" assignment method and flagged cells; the "mixture" and "thresholding" methods | tested | tested |
 | The `union`, `singleton` and `bonferroni` strategies | tested | tested |
 | Resampled statistics as a list column | tested | tested |
 | A table as a folder of part files | tested | tested |
 | An analysis of a response modality with another name | tested | tested |
-| Reuse of saved fits, and refusal when the method differs | tested | tested |
+| Reuse of saved fits, and refusal when the identity differs | tested | tested |
 | Continue an analysis the other language stopped | tested | tested |
 | Validators, on all conformance cases | tested | tested |
 | A covariate name with a dot in a formula | tested | tested through an alias: pysceptre's own formula parser does not take dots |

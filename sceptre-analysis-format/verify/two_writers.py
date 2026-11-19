@@ -28,10 +28,11 @@ import sceptre_analysis as sf
 from common import OUT, Results
 
 FORMULA = "~log(rna_n_umis) + batch"
+QC_COLUMNS = ["grna_target", "response_id", "n_nonzero_trt", "n_nonzero_cntrl", "pass_qc"]
 TERMS = ["(Intercept)", "log(rna_n_umis)", "batchb1"]
-SETTINGS = {"moi": "high", "formula": FORMULA, "side": "both", "resampling_mechanism": "permutations", "resampling_approximation": "spa",
+SETTINGS = {"moi": "high", "formula": FORMULA, "side": "both", "resampling_mechanism": "permutations", "resampling_approximation": "skew_normal",
             "control_group": "complement", "grna_integration_strategy": "union", "B1": 499, "B2": 4999, "B3": 0,
-            "multiple_testing_method": "BH", "multiple_testing_alpha": 0.1, "seed": 4, "response_fit_method": "batched", "grna_fit_method": "pysceptre"}
+            "multiple_testing_method": "BH", "multiple_testing_alpha": 0.1}
 STAMP = "2026-01-01T00:00:00Z"
 
 
@@ -65,22 +66,21 @@ def write_all(inputs, folder, language):
     sf.init_analysis(analysis, sf.screen_link(back), "rna")
     pairs = pd.DataFrame(inputs["pairs"], columns=["grna_target", "response_id"]).astype(object)
     none = pairs.iloc[:0]
-    results = pd.DataFrame(inputs["results"])
+    results = pd.DataFrame(inputs["results"]).astype({"n_nonzero_trt": "int32", "n_nonzero_cntrl": "int32"})
     sf.write_stage(analysis, "parameters", {"settings": SETTINGS, "design": {"terms": TERMS}},
                    {"parameters/discovery_pairs": pairs, "parameters/positive_control_pairs": none}, provenance)
     sf.write_stage(analysis, "assignment", {"settings": {"method": "thresholding", "hyperparameters": {"threshold": 5}}},
                    {"assignment/assignments": pd.DataFrame(inputs["assignments"], columns=["grna_id", "cell_id"]).astype(object)}, provenance)
     sf.write_stage(analysis, "qc", {"settings": {"response_n_umis_range": [0.01, 0.99], "response_n_nonzero_range": [0.01, 0.99],
-                                                 "p_mito_threshold": 0.2, "pairwise_qc": True, "B3": 0}},
+                                                 "p_mito_threshold": 0.2, "n_nonzero_trt_thresh": 7, "n_nonzero_cntrl_thresh": 7, "B3": 0}},
                    {"qc/cells": pd.DataFrame({"cell_id": np.array(cells, dtype=object), "in_use": inputs["in_use"]}),
-                    "qc/discovery_pair_qc": results[["grna_target", "response_id", "pass_qc"]],
-                    "qc/positive_control_pair_qc": results[["grna_target", "response_id", "pass_qc"]].iloc[:0]}, provenance)
+                    "qc/discovery_pair_qc": results[QC_COLUMNS],
+                    "qc/positive_control_pair_qc": results[QC_COLUMNS].iloc[:0]}, provenance)
     called = [r["p_value"] for r in inputs["results"] if r["p_value"] is not None and r["p_value"] < 0.2]
     sf.write_stage(analysis, "discovery", {"settings": {}, "significance_threshold": max(called) if called else None},
                    {"discovery/results": results.astype({"p_value": float, "fold_change": float, "se_fold_change": float, "log_2_fold_change": float})}, provenance)
     in_use = [c for c, keep in zip(cells, inputs["in_use"]) if keep]
-    sf.write_fits(analysis, pd.DataFrame(inputs["fits"]), {"screen_id": inputs["id"], "formula": FORMULA, "cells_in_use_sha256": sf.sha256_ids(in_use),
-                                                           "response_fit_method": "batched", "control_group": "complement"})
+    sf.write_fits(analysis, pd.DataFrame(inputs["fits"]), {"screen_id": inputs["id"], "formula": FORMULA, "cells_in_use_sha256": sf.sha256_ids(in_use), "control_group": "complement"})
 
 
 def column_values(node):

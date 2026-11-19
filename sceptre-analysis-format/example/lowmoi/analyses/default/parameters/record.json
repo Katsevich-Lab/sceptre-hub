@@ -4,18 +4,15 @@
     "moi": "low",
     "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + batch",
     "side": "both",
-    "resampling_mechanism": "permutations",
-    "resampling_approximation": "spa",
-    "control_group": "nt_cells",
     "grna_integration_strategy": "union",
-    "B1": 499,
-    "B2": 4999,
-    "B3": 0,
+    "control_group": "nt_cells",
+    "resampling_mechanism": "permutations",
+    "resampling_approximation": "skew_normal",
     "multiple_testing_method": "BH",
     "multiple_testing_alpha": 0.10000000000000001,
-    "seed": 4,
-    "response_fit_method": "batched",
-    "grna_fit_method": "pysceptre"
+    "B1": 499,
+    "B2": 4999,
+    "B3": 24999
   },
   "design": {
     "terms": ["(Intercept)", "log(rna_n_nonzero)", "log(rna_n_umis)", "batchbatch_2"]
@@ -24,7 +21,7 @@
     "package": "sceptre",
     "version": "0.99.1",
     "language": "R",
-    "written_at": "2026-11-18T19:26:06Z"
+    "written_at": "2026-11-19T00:00:00Z"
   },
   "files": [
     {

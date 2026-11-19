@@ -36,6 +36,7 @@
  "column_types": {
   "string": "UTF-8 text, plain or dictionary-encoded; never missing",
   "boolean": "Parquet boolean; never missing",
+  "int32": "32-bit whole number; may be missing where `nullable` is true",
   "double": "64-bit float; may be missing where `nullable` is true",
   "list<double>": "a list of 64-bit floats per row"
  },
@@ -49,7 +50,8 @@
   "present_under": "on a column: the gRNA integration strategies under which the column is present; under any other strategy it is absent",
   "forbidden_columns": "columns the table must not have",
   "unique_across_parts": "false where two part files may hold the same key (the fit cache); a reader then takes either row",
-  "max_rows_per_row_group": "on a table: a limit on the rows of a row group that is smaller than the general one"
+  "max_rows_per_row_group": "on a table: a limit on the rows of a row group that is smaller than the general one",
+  "pass_qc_from_counts": "the rule under which `pass_qc` must be true exactly when `n_nonzero_trt` and `n_nonzero_cntrl` reach the thresholds in the QC record's settings"
  },
  "tables": [
   {
@@ -215,11 +217,22 @@
      "required": true
     },
     {
+     "name": "n_nonzero_trt",
+     "type": "int32",
+     "required": true
+    },
+    {
+     "name": "n_nonzero_cntrl",
+     "type": "int32",
+     "required": true
+    },
+    {
      "name": "pass_qc",
      "type": "boolean",
      "required": true
     }
-   ]
+   ],
+   "pass_qc_from_counts": "T3.4"
   },
   {
    "name": "qc/positive_control_pair_qc",
@@ -254,11 +267,22 @@
      "required": true
     },
     {
+     "name": "n_nonzero_trt",
+     "type": "int32",
+     "required": true
+    },
+    {
+     "name": "n_nonzero_cntrl",
+     "type": "int32",
+     "required": true
+    },
+    {
      "name": "pass_qc",
      "type": "boolean",
      "required": true
     }
-   ]
+   ],
+   "pass_qc_from_counts": "T3.4"
   },
   {
    "name": "calibration/negative_control_groups",
@@ -316,6 +340,16 @@
      "required": true
     },
     {
+     "name": "n_nonzero_trt",
+     "type": "int32",
+     "required": true
+    },
+    {
+     "name": "n_nonzero_cntrl",
+     "type": "int32",
+     "required": true
+    },
+    {
      "name": "pass_qc",
      "type": "boolean",
      "required": true
@@ -342,6 +376,36 @@
      "name": "log_2_fold_change",
      "type": "double",
      "required": true,
+     "nullable": true
+    },
+    {
+     "name": "stage",
+     "type": "int32",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "z_orig",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "xi",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "omega",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "alpha",
+     "type": "double",
+     "required": false,
      "nullable": true
     }
    ],
@@ -390,6 +454,16 @@
      "required": true
     },
     {
+     "name": "n_nonzero_trt",
+     "type": "int32",
+     "required": true
+    },
+    {
+     "name": "n_nonzero_cntrl",
+     "type": "int32",
+     "required": true
+    },
+    {
      "name": "pass_qc",
      "type": "boolean",
      "required": true
@@ -416,6 +490,36 @@
      "name": "log_2_fold_change",
      "type": "double",
      "required": true,
+     "nullable": true
+    },
+    {
+     "name": "stage",
+     "type": "int32",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "z_orig",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "xi",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "omega",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "alpha",
+     "type": "double",
+     "required": false,
      "nullable": true
     }
    ],
@@ -464,6 +568,16 @@
      "required": true
     },
     {
+     "name": "n_nonzero_trt",
+     "type": "int32",
+     "required": true
+    },
+    {
+     "name": "n_nonzero_cntrl",
+     "type": "int32",
+     "required": true
+    },
+    {
      "name": "pass_qc",
      "type": "boolean",
      "required": true
@@ -490,6 +604,36 @@
      "name": "log_2_fold_change",
      "type": "double",
      "required": true,
+     "nullable": true
+    },
+    {
+     "name": "stage",
+     "type": "int32",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "z_orig",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "xi",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "omega",
+     "type": "double",
+     "required": false,
+     "nullable": true
+    },
+    {
+     "name": "alpha",
+     "type": "double",
+     "required": false,
      "nullable": true
     }
    ],

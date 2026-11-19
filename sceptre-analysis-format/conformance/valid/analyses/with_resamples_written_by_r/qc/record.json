@@ -1,10 +1,11 @@
 {
   "stage": "qc",
   "settings": {
+    "n_nonzero_trt_thresh": 7,
+    "n_nonzero_cntrl_thresh": 7,
     "response_n_umis_range": [0.01, 0.98999999999999999],
     "response_n_nonzero_range": [0.01, 0.98999999999999999],
     "p_mito_threshold": 0.20000000000000001,
-    "pairwise_qc": true,
     "B3": 0
   },
   "summaries": {
@@ -21,7 +22,7 @@
     "package": "sceptre",
     "version": "0.99.1",
     "language": "R",
-    "written_at": "2026-11-18T19:26:06Z"
+    "written_at": "2026-11-19T00:00:00Z"
   },
   "files": [
     {

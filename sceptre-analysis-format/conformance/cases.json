@@ -45,6 +45,15 @@
     "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
+    "name": "valid/analyses/mixture_assignment_written_by_r",
+    "kind": "analysis",
+    "path": "conformance/valid/analyses/mixture_assignment_written_by_r",
+    "expect": [],
+    "conforms": true,
+    "what": "The `mixture_assignment` example analysis, written by R",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
     "name": "valid/analyses/left_sided_written_by_python",
     "kind": "analysis",
     "path": "conformance/valid/analyses/left_sided_written_by_python",
@@ -100,12 +109,12 @@
     "fits_used": true
   },
   {
-    "name": "valid/analyses/fits_made_with_another_method",
+    "name": "valid/analyses/fits_made_for_another_control_group",
     "kind": "analysis",
-    "path": "conformance/valid/analyses/fits_made_with_another_method",
+    "path": "conformance/valid/analyses/fits_made_for_another_control_group",
     "expect": [],
     "conforms": true,
-    "what": "The one part of the fit cache was made with a method other than the analysis's: allowed, and a reader takes no fit from it",
+    "what": "The one part of the fit cache was made for a control group other than the analysis's: allowed, and a reader takes no fit from it",
     "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu",
     "fits_used": false
   },
@@ -122,10 +131,9 @@
         "cells_in_use_sha256": "d6040e7cdff5a1918e3869873f780155e192eab3e824d3e6662defe383852231",
         "control_group": "complement",
         "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch",
-        "response_fit_method": "batched",
         "screen_id": "b907fd1b151fd398b78ff993ae9e86d6"
       },
-      "rows": 100
+      "rows": 98
     }
   },
   {
@@ -320,14 +328,80 @@
     "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
-    "name": "invalid/analyses/no_seed",
+    "name": "invalid/analyses/no_resampling_budget",
     "kind": "analysis",
-    "path": "conformance/invalid/analyses/no_seed",
+    "path": "conformance/invalid/analyses/no_resampling_budget",
     "expect": [
       "A2.1"
     ],
     "conforms": false,
-    "what": "The parameters record has no `seed`",
+    "what": "The parameters record has no `B1`",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/approximation_unknown",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/approximation_unknown",
+    "expect": [
+      "A2.1"
+    ],
+    "conforms": false,
+    "what": "The parameters record has `resampling_approximation` set to a value sceptre does not have",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/assignment_method_unknown",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/assignment_method_unknown",
+    "expect": [
+      "A2.1"
+    ],
+    "conforms": false,
+    "what": "The assignment record names a method sceptre does not have",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/no_pairwise_qc_thresholds",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/no_pairwise_qc_thresholds",
+    "expect": [
+      "A2.1"
+    ],
+    "conforms": false,
+    "what": "The QC record lacks the two thresholds of pairwise QC",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/pair_qc_without_counts",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/pair_qc_without_counts",
+    "expect": [
+      "T0.1"
+    ],
+    "conforms": false,
+    "what": "A pair-QC table lacks `n_nonzero_trt` (T3.2)",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/pair_qc_verdict_against_the_counts",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/pair_qc_verdict_against_the_counts",
+    "expect": [
+      "T3.4"
+    ],
+    "conforms": false,
+    "what": "Pairs are marked as passing pairwise QC although a count is below its threshold",
+    "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/results_without_counts",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/results_without_counts",
+    "expect": [
+      "T0.1"
+    ],
+    "conforms": false,
+    "what": "The discovery results lack `n_nonzero_cntrl` (T5.1)",
     "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
   },
   {

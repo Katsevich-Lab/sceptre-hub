@@ -2,7 +2,7 @@
   "stage": "calibration",
   "settings": {
     "calibration_group_size": 1,
-    "n_calibration_pairs": 1380,
+    "n_calibration_pairs": 1298,
     "B3": 0
   },
   "significance_threshold": null,
@@ -10,7 +10,7 @@
     "package": "sceptre",
     "version": "0.99.1",
     "language": "R",
-    "written_at": "2026-11-18T19:26:05Z"
+    "written_at": "2026-11-19T00:00:00Z"
   },
   "files": [
     {
@@ -19,7 +19,7 @@
     },
     {
       "path": "results.parquet",
-      "rows": 983
+      "rows": 921
     }
   ]
 }

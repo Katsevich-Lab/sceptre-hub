@@ -32,9 +32,6 @@ STAGE_FUNCTIONS <- c(
     calibration = "run_calibration_check", power = "run_power_check", discovery = "run_discovery_analysis"
 )
 
-# The shared list of response-fitting methods (T6). A method fitted in one
-# language only is never reused by the other.
-FIT_METHODS <- list(batched = c("R", "Python"), sceptre = c("R", "Python"), pysceptre = c("R", "Python"), glmGamPoi = "R")
 
 ROW_GROUP_ROWS <- as.integer(TABLE_SPEC$max_rows_per_row_group)
 
@@ -278,7 +275,7 @@ analysis_fit_fields <- function(directory) {
     settings <- read_json(stage_file(directory, "parameters"))$settings
     list(
         screen_id = read_json(file.path(directory, "analysis.json"))$screen$id, formula = settings$formula,
-        response_fit_method = settings$response_fit_method, control_group = settings$control_group
+        control_group = settings$control_group
     )
 }
 
@@ -591,6 +588,7 @@ schema_problems_text <- function(text, schema) {
 column_kind <- function(column) {
     if (is.character(column) || is.factor(column)) return("string")
     if (is.logical(column)) return("boolean")
+    if (is.integer(column)) return("int32")
     if (is.double(column)) return("double")
     if (is.list(column) && all(vapply(column, function(v) is.null(v) || is.double(v), logical(1)))) return("list<double>")
     "other"
@@ -723,6 +721,17 @@ validate_analysis <- function(directory, screen_file = NULL) {
                 }
             }
         }
+        # the verdict of pairwise QC follows from the two counts and the thresholds (T3.4)
+        if (!is.null(definition$pass_qc_from_counts) && ok && !is.null(records$qc)) {
+            limits <- records$qc$settings
+            for (part in parts) {
+                enough <- part$n_nonzero_trt >= limits$n_nonzero_trt_thresh & part$n_nonzero_cntrl >= limits$n_nonzero_cntrl_thresh
+                if (!identical(enough, part$pass_qc)) {
+                    log$add(definition$pass_qc_from_counts, where, "`pass_qc` does not follow from the two counts and the thresholds of the QC record.")
+                    break
+                }
+            }
+        }
         # a stored logarithm agrees with the column it is the logarithm of (T5.2)
         agree <- definition$log_2_of
         if (!is.null(agree) && ok && agree$of %in% names(parts[[1]])) {
@@ -792,7 +801,7 @@ validate_analysis <- function(directory, screen_file = NULL) {
         # design (T6.2). A part made otherwise is allowed and unused, and is not
         # reported: nothing depends on it, and clearing it is housekeeping (T6.3, T6.6).
         expected <- list(
-            formula = parameters$settings$formula, response_fit_method = parameters$settings$response_fit_method,
+            formula = parameters$settings$formula,
             control_group = parameters$settings$control_group
         )
         if (!is.null(analysis)) expected$screen_id <- analysis$screen$id

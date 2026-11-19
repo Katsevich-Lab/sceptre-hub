@@ -105,16 +105,6 @@ STAGE_FUNCTIONS = {
 }
 
 
-# The shared list of response-fitting methods (T6). A method fitted in one
-# language only is never reused by the other.
-FIT_METHODS = {
-    "batched": ("R", "Python"),
-    "sceptre": ("R", "Python"),
-    "pysceptre": ("R", "Python"),
-    "glmGamPoi": ("R",),
-}
-
-
 ROW_GROUP_ROWS = int(TABLE_SPEC["max_rows_per_row_group"])
 
 
@@ -173,7 +163,7 @@ def write_table(table: pd.DataFrame, path, key, metadata=None, table_name=None) 
         elif pd.api.types.is_bool_dtype(column.dtype):
             table[name] = column.astype("boolean")
         elif pd.api.types.is_integer_dtype(column.dtype):
-            table[name] = column.astype("int32")
+            table[name] = column.astype("Int32" if column.isna().any() else "int32")
     table = table.iloc[_byte_order(table, key)].reset_index(drop=True)
     arrays, fields = [], []
     for name in table.columns:
@@ -423,7 +413,6 @@ def _analysis_fit_fields(directory):
     return {
         "screen_id": _read_json(directory / "analysis.json")["screen"]["id"],
         "formula": settings["formula"],
-        "response_fit_method": settings["response_fit_method"],
         "control_group": settings["control_group"],
     }
 
@@ -791,6 +780,8 @@ def _column_kind(type_) -> str:
         return "string"
     if pa.types.is_boolean(type_):
         return "boolean"
+    if pa.types.is_integer(type_):
+        return "int32" if type_ == pa.int32() else "other"
     if pa.types.is_floating(type_):
         return "double"
     if (pa.types.is_list(type_) or pa.types.is_large_list(type_)) and pa.types.is_floating(type_.value_type):
@@ -917,6 +908,14 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
                 elif not column.get("nullable") and column["type"] != "list<double>" and part[column["name"]].null_count:
                     log.add("T0.1", where, f"The column `{column['name']}` has missing values.")
                     ok = False
+        # the verdict of pairwise QC follows from the two counts and the thresholds (T3.4)
+        if definition.get("pass_qc_from_counts") and ok and "qc" in records:
+            limits = records["qc"]["settings"]
+            for part in parts:
+                enough = (part["n_nonzero_trt"].to_numpy() >= limits["n_nonzero_trt_thresh"]) & (part["n_nonzero_cntrl"].to_numpy() >= limits["n_nonzero_cntrl_thresh"])
+                if not np.array_equal(enough, part["pass_qc"].to_numpy(zero_copy_only=False)):
+                    log.add(definition["pass_qc_from_counts"], where, "`pass_qc` does not follow from the two counts and the thresholds of the QC record.")
+                    break
         # a stored logarithm agrees with the column it is the logarithm of (T5.2)
         agree = definition.get("log_2_of")
         if agree and ok and agree["of"] in parts[0].column_names:
@@ -976,7 +975,6 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
         # reported: nothing depends on it, and clearing it is housekeeping (T6.3, T6.6).
         expected = {
             "formula": parameters["settings"]["formula"],
-            "response_fit_method": parameters["settings"]["response_fit_method"],
             "control_group": parameters["settings"]["control_group"],
         }
         if analysis is not None:

@@ -178,18 +178,15 @@
             "moi",
             "formula",
             "side",
+            "grna_integration_strategy",
+            "control_group",
             "resampling_mechanism",
             "resampling_approximation",
-            "control_group",
-            "grna_integration_strategy",
-            "B1",
-            "B2",
-            "B3",
             "multiple_testing_method",
             "multiple_testing_alpha",
-            "seed",
-            "response_fit_method",
-            "grna_fit_method"
+            "B1",
+            "B2",
+            "B3"
           ],
           "properties": {
             "moi": {
@@ -209,14 +206,12 @@
                 "right"
               ]
             },
-            "resampling_mechanism": {
+            "grna_integration_strategy": {
               "enum": [
-                "crt",
-                "permutations"
+                "union",
+                "singleton",
+                "bonferroni"
               ]
-            },
-            "resampling_approximation": {
-              "type": "string"
             },
             "control_group": {
               "enum": [
@@ -224,12 +219,25 @@
                 "nt_cells"
               ]
             },
-            "grna_integration_strategy": {
+            "resampling_mechanism": {
               "enum": [
-                "union",
-                "singleton",
-                "bonferroni"
+                "crt",
+                "permutations"
               ]
+            },
+            "resampling_approximation": {
+              "enum": [
+                "skew_normal",
+                "no_approximation"
+              ]
+            },
+            "multiple_testing_method": {
+              "type": "string"
+            },
+            "multiple_testing_alpha": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
             },
             "B1": {
               "type": "integer",
@@ -242,23 +250,6 @@
             "B3": {
               "type": "integer",
               "minimum": 0
-            },
-            "multiple_testing_method": {
-              "type": "string"
-            },
-            "multiple_testing_alpha": {
-              "type": "number",
-              "exclusiveMinimum": 0,
-              "maximum": 1
-            },
-            "seed": {
-              "type": "integer"
-            },
-            "response_fit_method": {
-              "type": "string"
-            },
-            "grna_fit_method": {
-              "type": "string"
             }
           }
         },
@@ -292,7 +283,11 @@
           ],
           "properties": {
             "method": {
-              "type": "string"
+              "enum": [
+                "maximum",
+                "mixture",
+                "thresholding"
+              ]
             },
             "hyperparameters": {
               "type": "object"
@@ -309,13 +304,22 @@
         "settings": {
           "type": "object",
           "required": [
+            "n_nonzero_trt_thresh",
+            "n_nonzero_cntrl_thresh",
             "response_n_umis_range",
             "response_n_nonzero_range",
             "p_mito_threshold",
-            "pairwise_qc",
             "B3"
           ],
           "properties": {
+            "n_nonzero_trt_thresh": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "n_nonzero_cntrl_thresh": {
+              "type": "integer",
+              "minimum": 0
+            },
             "response_n_umis_range": {
               "type": "array",
               "items": {
@@ -334,9 +338,6 @@
             },
             "p_mito_threshold": {
               "type": "number"
-            },
-            "pairwise_qc": {
-              "type": "boolean"
             },
             "B3": {
               "type": "integer",

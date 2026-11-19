@@ -1,0 +1,17 @@
+{
+  "stage": "discovery",
+  "settings": {},
+  "significance_threshold": 0.00067073966144427094,
+  "provenance": {
+    "package": "sceptre",
+    "version": "0.99.1",
+    "language": "R",
+    "written_at": "2026-11-19T00:00:00Z"
+  },
+  "files": [
+    {
+      "path": "results.parquet",
+      "rows": 1406
+    }
+  ]
+}

@@ -50,7 +50,7 @@ VALID.mkdir(parents=True)
 
 # ---------------------------------------------------------------- valid analyses
 
-for name in ("left_sided", "bonferroni", "singleton", "stopped_after_qc", "with_resamples"):
+for name in ("left_sided", "bonferroni", "singleton", "stopped_after_qc", "with_resamples", "mixture_assignment"):
     shutil.copytree(f"example/highmoi/analyses/{name}", VALID / "analyses" / f"{name}_written_by_r")
     case("analysis", VALID / "analyses" / f"{name}_written_by_r", [], f"The `{name}` example analysis, written by R", high_r)
 
@@ -132,10 +132,10 @@ cases[-1]["fits_used"] = True
 
 # Parts that are not this analysis's are allowed and unused: nothing depends on
 # them, so the validators say nothing and a reader takes no fit from them.
-other_method = VALID / "analyses" / "fits_made_with_another_method"
+other_method = VALID / "analyses" / "fits_made_for_another_control_group"
 shutil.copytree("example/highmoi/analyses/left_sided", other_method)
-restamp(fit_part(other_method), lambda v: v.__setitem__("response_fit_method", "sceptre"))
-case("analysis", other_method, [], "The one part of the fit cache was made with a method other than the analysis's: allowed, and a reader takes no fit from it", high_r)
+restamp(fit_part(other_method), lambda v: v.__setitem__("control_group", "nt_cells"))
+case("analysis", other_method, [], "The one part of the fit cache was made for a control group other than the analysis's: allowed, and a reader takes no fit from it", high_r)
 cases[-1]["fits_used"] = False
 
 stale = VALID / "analyses" / "stale_part_beside_a_current_one"
@@ -247,8 +247,20 @@ broken_analysis("side_up", ["A2.1"], "The parameters record has `side` set to `u
                 lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("side", "up")))
 broken_analysis("moi_medium", ["A2.1"], "The parameters record has `moi` set to `medium`",
                 lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("moi", "medium")))
-broken_analysis("no_seed", ["A2.1"], "The parameters record has no `seed`",
-                lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].pop("seed")))
+broken_analysis("no_resampling_budget", ["A2.1"], "The parameters record has no `B1`",
+                lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].pop("B1")))
+broken_analysis("approximation_unknown", ["A2.1"], "The parameters record has `resampling_approximation` set to a value sceptre does not have",
+                lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("resampling_approximation", "normal")))
+broken_analysis("assignment_method_unknown", ["A2.1"], "The assignment record names a method sceptre does not have",
+                lambda p: edit_json(p / "assignment/record.json", lambda v: v["settings"].__setitem__("method", "nearest")))
+broken_analysis("no_pairwise_qc_thresholds", ["A2.1"], "The QC record lacks the two thresholds of pairwise QC",
+                lambda p: edit_json(p / "qc/record.json", lambda v: [v["settings"].pop(k) for k in ("n_nonzero_trt_thresh", "n_nonzero_cntrl_thresh")]))
+broken_analysis("pair_qc_without_counts", ["T0.1"], "A pair-QC table lacks `n_nonzero_trt` (T3.2)",
+                lambda p: rewrite(p / "qc/discovery_pair_qc.parquet", lambda t: t.drop_columns(["n_nonzero_trt"])))
+broken_analysis("pair_qc_verdict_against_the_counts", ["T3.4"], "Pairs are marked as passing pairwise QC although a count is below its threshold",
+                lambda p: edit_json(p / "qc/record.json", lambda v: v["settings"].__setitem__("n_nonzero_trt_thresh", 50)))
+broken_analysis("results_without_counts", ["T0.1"], "The discovery results lack `n_nonzero_cntrl` (T5.1)",
+                lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.drop_columns(["n_nonzero_cntrl"])))
 broken_analysis("stage_without_its_predecessor", ["A2.2", "A4.1"], "The assignment record is missing while later stages remain",
                 lambda p: (p / "assignment/record.json").unlink())
 broken_analysis("listed_file_missing", ["A5.1"], "A table that a record lists is not in the folder",

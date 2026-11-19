@@ -7,9 +7,10 @@ source("format/setup.R")
 source("../perturb-seq-data-format/verify/as_sce.R")
 source("../perturb-seq-data-format/verify/common.R")
 formula <- "~log(rna_n_umis) + batch"
-settings <- list(moi = "high", formula = formula, side = "both", resampling_mechanism = "permutations", resampling_approximation = "spa",
+settings <- list(moi = "high", formula = formula, side = "both", resampling_mechanism = "permutations", resampling_approximation = "skew_normal",
     control_group = "complement", grna_integration_strategy = "union", B1 = 499L, B2 = 4999L, B3 = 0L,
-    multiple_testing_method = "BH", multiple_testing_alpha = 0.1, seed = 4L, response_fit_method = "batched", grna_fit_method = "pysceptre")
+    multiple_testing_method = "BH", multiple_testing_alpha = 0.1)
+qc_columns <- c("grna_target", "response_id", "n_nonzero_trt", "n_nonzero_cntrl", "pass_qc")
 missing_to <- function(x, na) vapply(x, function(v) if (is.null(v)) na else v, na)
 
 for (folder in sort(Sys.glob("verify/out/random/seed-*"))) {
@@ -43,6 +44,7 @@ for (folder in sort(Sys.glob("verify/out/random/seed-*"))) {
     pairs <- data.frame(grna_target = vapply(inputs$pairs, `[[`, "", 1L), response_id = vapply(inputs$pairs, `[[`, "", 2L))
     results_table <- data.frame(
         grna_target = vapply(inputs$results, function(r) r$grna_target, ""), response_id = vapply(inputs$results, function(r) r$response_id, ""),
+        n_nonzero_trt = vapply(inputs$results, function(r) as.integer(r$n_nonzero_trt), 1L), n_nonzero_cntrl = vapply(inputs$results, function(r) as.integer(r$n_nonzero_cntrl), 1L),
         pass_qc = vapply(inputs$results, function(r) r$pass_qc, logical(1)), p_value = missing_to(lapply(inputs$results, `[[`, "p_value"), NA_real_),
         fold_change = missing_to(lapply(inputs$results, `[[`, "fold_change"), NA_real_), se_fold_change = missing_to(lapply(inputs$results, `[[`, "se_fold_change"), NA_real_),
         log_2_fold_change = missing_to(lapply(inputs$results, `[[`, "log_2_fold_change"), NA_real_)
@@ -51,17 +53,17 @@ for (folder in sort(Sys.glob("verify/out/random/seed-*"))) {
         list("parameters/discovery_pairs" = pairs, "parameters/positive_control_pairs" = pairs[0, ]), provenance)
     fmt_write_stage(analysis, "assignment", list(settings = list(method = "thresholding", hyperparameters = list(threshold = 5L))),
         list("assignment/assignments" = data.frame(grna_id = vapply(inputs$assignments, `[[`, "", 1L), cell_id = vapply(inputs$assignments, `[[`, "", 2L))), provenance)
-    fmt_write_stage(analysis, "qc", list(settings = list(response_n_umis_range = c(0.01, 0.99), response_n_nonzero_range = c(0.01, 0.99), p_mito_threshold = 0.2, pairwise_qc = TRUE, B3 = 0L)),
+    fmt_write_stage(analysis, "qc", list(settings = list(response_n_umis_range = c(0.01, 0.99), response_n_nonzero_range = c(0.01, 0.99), p_mito_threshold = 0.2, n_nonzero_trt_thresh = 7L, n_nonzero_cntrl_thresh = 7L, B3 = 0L)),
         list("qc/cells" = data.frame(cell_id = cells, in_use = unlist(inputs$in_use)),
-            "qc/discovery_pair_qc" = results_table[c("grna_target", "response_id", "pass_qc")],
-            "qc/positive_control_pair_qc" = results_table[0, c("grna_target", "response_id", "pass_qc")]), provenance)
+            "qc/discovery_pair_qc" = results_table[qc_columns],
+            "qc/positive_control_pair_qc" = results_table[0, qc_columns]), provenance)
     called <- results_table$p_value[!is.na(results_table$p_value) & results_table$p_value < 0.2]
     fmt_write_stage(analysis, "discovery", list(settings = stats::setNames(list(), character()), significance_threshold = if (length(called)) max(called)),
         list("discovery/results" = results_table), provenance)
     fits <- data.frame(response_id = vapply(inputs$fits, function(f) f$response_id, ""), theta = vapply(inputs$fits, function(f) f$theta, numeric(1)))
     fits$coefficients <- lapply(inputs$fits, function(f) as.numeric(unlist(f$coefficients)))
     fmt_write_fits(analysis, fits[c("response_id", "coefficients", "theta")], list(screen_id = inputs$id, formula = formula,
-        cells_in_use_sha256 = sha256_ids(cells[unlist(inputs$in_use)]), response_fit_method = "batched", control_group = "complement"))
+        cells_in_use_sha256 = sha256_ids(cells[unlist(inputs$in_use)]), control_group = "complement"))
 
     for (language in c("r", "python")) {
         file <- file.path(folder, paste0("screen-", language, ".h5mu"))

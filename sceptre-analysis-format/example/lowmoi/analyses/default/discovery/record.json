@@ -1,12 +1,12 @@
 {
   "stage": "discovery",
   "settings": {},
-  "significance_threshold": 0.0023168180514560408,
+  "significance_threshold": 0.0018658121412250036,
   "provenance": {
     "package": "sceptre",
     "version": "0.99.1",
     "language": "R",
-    "written_at": "2026-11-18T19:26:06Z"
+    "written_at": "2026-11-19T00:00:00Z"
   },
   "files": [
     {

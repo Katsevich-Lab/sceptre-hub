@@ -17,10 +17,12 @@ This page introduces a format for storing a sceptre analysis on disk: the
 settings, the gRNA assignments, the quality control and the results, stage by
 stage. It is written for someone who has not seen the format before.
 
-The purpose is that an analysis written by sceptre (the R package) can be
-read, checked and continued by pysceptre (the Python package) or by the
-Nextflow pipeline, and the other way round, with the same files meaning the
-same thing in each.
+The format stores exactly what sceptre, the R package, computes today
+(version 0.99.1): the same stages, the same settings under the same names,
+and the same columns in the results. The purpose is that an analysis written
+by sceptre can be read, checked and continued by pysceptre (the Python
+package) or by the Nextflow pipeline, and the other way round, with the same
+files meaning the same thing in each.
 
 An analysis is always an analysis of one data file, and the data has a format
 of its own: the
@@ -117,17 +119,18 @@ For someone who knows sceptre, this is where each step ends up:
 |---|---|
 | `set_analysis_parameters()` | `parameters/`: the settings in `record.json`, and the pairs to test as two tables |
 | `assign_grnas()` | `assignment/`: one row for each gRNA assigned to a cell |
-| `run_qc()` | `qc/`: which cells passed, and which pairs passed |
+| `run_qc()` | `qc/`: which cells passed; and for each pair `n_nonzero_trt`, `n_nonzero_cntrl` and `pass_qc` |
 | `run_calibration_check()` | `calibration/`: the negative-control groups and their results |
 | `run_power_check()` | `power/`: the results for the positive-control pairs |
 | `run_discovery_analysis()` | `discovery/`: the results for the discovery pairs |
-| The result data frame | `results.parquet`: the pair (`grna_target` and `response_id`), `pass_qc`, `p_value`, `log_2_fold_change`, and `fold_change` with its standard error where the method reports them |
+| The result data frame | `results.parquet`, with sceptre's columns under sceptre's names: the pair (`grna_target` and `response_id`), `n_nonzero_trt`, `n_nonzero_cntrl`, `pass_qc`, `p_value`, `log_2_fold_change`, and `fold_change` with `se_fold_change` where sceptre reports them |
 | The `significant` column | Not stored. The stage's record has the largest p-value that was called significant, and a pair is significant when its p-value is at most that. A pair that failed quality control is in the table with `pass_qc` false and no p-value |
 | `formula_object` | The formula as text in the parameters record. The design matrix is rebuilt, not stored |
 | `response_n_umis`, `grna_n_umis` in a formula | `rna_n_umis`, `grna_n_umis`: the name of what was measured, not its role |
 | `extra_covariates` | `parameters/cell_covariates.parquet` |
 | `moi` | A setting in the parameters record |
 | `grna_integration_strategy` | A setting: `union`, `singleton` or `bonferroni`. It decides whether the pair and results tables are per target or per gRNA, and so whether they have a `grna_id` column (see the notes under the list of tables) |
+| The extra columns of `output_amount = 2` and `3` | `stage`, `z_orig`, `xi`, `omega` and `alpha` are further columns of `results.parquet`. The resampled statistics `z_null_1`, `z_null_2`, ... are one list per pair in `resamples.parquet` |
 | The `sceptre_object` saved to disk | The folder itself. Each stage can be read without those after it |
 
 The rest of the page has five parts: the **principles** every choice follows
@@ -157,7 +160,7 @@ print(nt.principles("RATIONALE.md", "https://github.com/Katsevich-Lab/sceptre-hu
 | Integrity | A5 | A record lists each of its tables with its number of rows, and the two must match |
 | Every table | T0 | Parquet. Rows name cells, gRNAs and responses by identifier, never by position, and every identifier exists in the data file. Rows are sorted by the table's key. A table is one file or a folder of part files |
 | Each table | T1 to T5 | The columns of each table, listed below |
-| Saved fits | T6 | `fits/response/` holds the fitted response models as part files, so that a later stage or a rerun need not fit them again: for each response, one coefficient per column of the design matrix, and the dispersion. Each part carries a short description of how its fits were made, called its **identity**: the dataset, the formula, the cells in use, the fitting routine and the control group. Software uses a part only if that is how it would fit them itself. It is a cache: a fit that is not found is fitted again. It is kept when a testing stage is rerun and deleted when `qc` or an earlier stage is |
+| Saved fits | T6 | `fits/response/` holds the fitted response models as part files, so that a later stage or a rerun need not fit them again: for each response, one coefficient per column of the design matrix, and the dispersion. Each part carries a short description of how its fits were made, called its **identity**: the dataset, the formula, the cells in use and the control group. Software uses a part only if that is how it would fit them itself. It is a cache: a fit that is not found is fitted again. It is kept when a testing stage is rerun and deleted when `qc` or an earlier stage is |
 | Formulas and covariates | T7 | The formula is stored as text and must be additive. Covariates come from the data file, or from a table the analysis brings itself |
 
 Every table the format defines, read from `spec/tables.json`, the
@@ -191,59 +194,44 @@ print(at.tables_overview())
   controls.
 - `qc/cells.parquet` has every cell of the data file, with `in_use` true for
   the cells that passed quality control and are used by the stages after it.
+- `n_nonzero_trt` and `n_nonzero_cntrl` are sceptre's two counts for a pair:
+  the number of treated cells and of control cells in which the response has
+  a nonzero count. A pair passes pairwise quality control exactly when both
+  reach the thresholds in the `qc` record, and the validator checks that.
+- A pair that failed quality control keeps its row in the results, with
+  `pass_qc` false and no p-value or effect size.
 - A table may have further columns, which software ignores if it does not
-  know them. sceptre's `n_nonzero_trt` and `n_nonzero_cntrl`, for instance,
-  are not defined by the format and would be such columns.
+  know them.
 
 <details class="fold">
 <summary>The settings in a record</summary>
 
 The settings of each stage and their allowed values are defined in
-`spec/stage.schema.json`. They are those of the development version of
-sceptre, so some are newer than the arguments of the released package.
+`spec/stage.schema.json`. They are the arguments of sceptre's functions, under
+the same names and with the same allowed values.
 
-- **`parameters`**: `moi`, `formula`, `side`, `grna_integration_strategy`,
-  `control_group`, `resampling_mechanism`, `resampling_approximation`,
-  `multiple_testing_method` and `multiple_testing_alpha`; the resampling
-  budgets `B1`, `B2` and `B3`; `seed`; and `response_fit_method` and
-  `grna_fit_method`. The last two name the routine that fits each regression.
-  The development versions have three, called `sceptre`, `pysceptre` and
-  `batched`, which give nearly but not exactly the same fits; `RATIONALE.md`,
-  T6, compares them.
-- **`assignment`**: the `method` and its `hyperparameters`.
-- **`qc`**: the thresholds for cells and whether pairs are checked. Its
-  record also has `summaries`: how many cells were removed, and why.
-- **`calibration`**: the size and number of the negative-control groups.
-- **`B3` appears in three records** because in sceptre quality control and
-  the calibration check may each change it. The rule today is that the value
-  in the latest record is the one in force. With the testing stages as peers
-  that rule is not precise enough, and it is one of the open questions.
+- **`parameters`**: the arguments of `set_analysis_parameters()`: `formula`,
+  `side`, `grna_integration_strategy`, `control_group`,
+  `resampling_mechanism`, `resampling_approximation`,
+  `multiple_testing_method` and `multiple_testing_alpha`. With them are `moi`,
+  which sceptre takes in `import_data()`, and the resampling budgets `B1`,
+  `B2` and `B3`, which sceptre sets itself.
+- **`assignment`**: the `method` of `assign_grnas()`, which is `maximum`,
+  `mixture` or `thresholding`, and its `hyperparameters` as sceptre holds
+  them.
+- **`qc`**: the arguments of `run_qc()`: `n_nonzero_trt_thresh` and
+  `n_nonzero_cntrl_thresh`, the two thresholds of pairwise quality control;
+  `response_n_umis_range`, `response_n_nonzero_range` and `p_mito_threshold`
+  for cells. Its record also has `summaries`: how many cells were removed,
+  and why.
+- **`calibration`**: `calibration_group_size` and `n_calibration_pairs`.
+- **`B3` appears in three records** because in sceptre `run_qc()` and
+  `run_calibration_check()` may each change it. The value in the latest
+  record that has one is the one in force.
 
 The records of the `calibration` and `discovery` stages also have
 `significance_threshold`. It is `null` when no pair was called significant,
 which for a calibration check is the expected outcome.
-
-</details>
-
-<details class="fold">
-<summary>The three fitting routines</summary>
-
-The development versions of sceptre and pysceptre can fit the response
-regressions, including each gene's dispersion, by one of three routines:
-`sceptre`, `pysceptre` and `batched`. The name is recorded with the analysis
-and with every saved fit. `batched` is the default in both languages today.
-What each routine does is documented with the packages, not here; what
-matters for the format is how far they agree. On the example (100 genes,
-1,406 pairs):
-
-| Compared | Dispersion | p-values | Discoveries |
-|---|---|---|---|
-| `sceptre` and `pysceptre`, both run in R | Agree to within 1e-9 | Agree to within 2.5e-8 | The same 11 |
-| `batched` in R and `batched` in Python | Identical | Agree to within 8e-12 | The same 11 |
-| `batched` and `sceptre`, both in R | 98 genes agree to within 1e-6. For 2 genes `batched` gives 1000, its upper limit, where `sceptre` gives 0.07 and 0.03 | 22 pairs differ, all in those 2 genes, the largest by a factor of 2 | The same 11 |
-
-So a fit saved by one language can be reused by the other when both use the
-same routine, and fits from different routines must not be mixed.
 
 </details>
 
@@ -362,7 +350,7 @@ was chosen over.
 <summary><strong>Saved model fits are a cache outside the stages.</strong> <span class="where">T6</span></summary>
 
 - **The choice.** `fits/response/` holds part files. Each part says, inside the file, how its fits were made, and software uses a part only when that matches what it would do itself. Deleting the folder changes no result beyond rounding: a fit that is not found is fitted again by the same routine.
-- **Why.** A fit depends on the data, the formula, the fitting method, the control group and the cells that passed QC, all fixed once QC has run. Which testing stage computes it first is an accident, so a stage's folder is the wrong home: rerunning that stage would delete fits that are still valid.
+- **Why.** A fit depends on the data, the formula, the control group and the cells that passed QC, all fixed once QC has run. Which testing stage computes it first is an accident, so a stage's folder is the wrong home: rerunning that stage would delete fits that are still valid.
 
 </details>
 
@@ -377,8 +365,9 @@ Column, table and file names are as hard to change as structure: the stage names
 
 The tree below is a real analysis folder,
 `example/highmoi/analyses/left_sided/`: a left-sided analysis of sceptre's
-high-MOI example data. It was computed by a development version of sceptre and
-written with the prototype writer in `format/`. Open a folder to see its
+high-MOI example data. It was computed by sceptre 0.99.1, and its
+`sceptre_object` was then written out with the prototype writer in `format/`.
+Open a folder to see its
 files, and a file to see its first rows or its contents. The descriptions are
 read from the specification's own files.
 
@@ -390,9 +379,18 @@ print(at.analysis_tree())
 
 This analysis has no `cell_covariates.parquet` and no `resamples.parquet`,
 which are optional, and it uses the `union` strategy, so its tables have no
-`grna_id`. Six more example analyses are in `example/`, among them one under
-the `singleton` strategy, one of sceptre's low-MOI example data, one that
-stopped after quality control, and one that kept its resampled statistics.
+`grna_id`. Seven more example analyses are in `example/`, among them one under
+the `singleton` strategy, one that assigned gRNAs with the `mixture` method,
+one of sceptre's low-MOI example data, one that stopped after quality
+control, and one that kept its resampled statistics.
+
+Each example was also taken the other way. A `sceptre_object` rebuilt from the
+data file and the folder alone has the same content, slot by slot, as the
+object the folder was written from, except for two intermediate quantities
+that sceptre computes again. And running sceptre again from only the settings
+in the records gives the same results. The code that did this reads the
+inside of a `sceptre_object` and is not part of the format; `RATIONALE.md`,
+Appendix B, has the details.
 
 ## Native reading
 
@@ -571,15 +569,17 @@ were written and read at the size of a large screen, with made-up content
 - **Resampled statistics** are large: 4 GB per million pairs. A Parquet file
   is written in blocks of rows, and reading one pair means reading its whole
   block: a tenth of a second with blocks of 10,000 rows, 7 seconds with
-  blocks of a million, which is the limit the format sets today.
+  blocks of a million. The format therefore limits a block of this table to
+  10,000 rows.
 - **Saved fits** take time to read in proportion to the number of part
-  files: 10,000 parts take a minute and a half.
-
-The last two are open questions below.
+  files: 10,000 parts take a minute and a half. The format therefore advises
+  one part per job, and allows parts to be merged once no job is writing.
 
 ### What is not tested
 
 - A real analysis of more than 1,000 cells, written by a package.
+- pysceptre. The examples come from sceptre, and no pysceptre analysis has
+  been written to or rebuilt from these files in this version.
 - The rules about what a package that fits models must do.
 - The pipeline. Part files are meant for its parallel jobs, and no pipeline
   has written them yet.
@@ -591,14 +591,11 @@ The last two are open questions below.
 Review is wanted on these most.
 
 1. **Does the folder hold everything a sceptre analysis needs, and nothing it should not?** A stage's settings, tables and results are stored. Not stored is whatever can be computed again from the data file and the folder, such as intermediate quantities held in a `sceptre_object`. What a result means, such as which test a p-value comes from, is left to sceptre's documentation.
-2. **Columns of the results.** The format defines `pass_qc`, `p_value`, `log_2_fold_change`, `fold_change` and `se_fold_change`. It does not define `n_nonzero_trt` and `n_nonzero_cntrl`, which a writer may add as further columns. Should they be defined?
-3. **Which fitting routine should be the default?** The development versions fit the response regressions by one of three routines. Saved fits are shared between R and Python only when both use the same routine. On the example, the routine that is the default today gives a clearly different dispersion from the other two for 2 of 100 genes. The format cannot settle this, but it decides how often fits can be shared.
-4. **Additive formulas only.** A formula can use covariates, `log(x)` and `log(x + 1)`. Is it acceptable that an analysis with an interaction or a spline cannot be saved?
-5. **Covariates.** Covariates given for an analysis are stored with it, not in the data file. Is that the right place?
-6. **`B3`.** Which record's `B3` should a testing stage use: the one in `parameters`, the one in `qc`, or its own?
-7. **Resampled statistics.** They are stored as 64-bit numbers, 499 or more per pair. Should they be stored as they are, or as 32-bit numbers at half the size? And should this table have a smaller limit on the size of a block of rows, so that one pair can be read quickly?
-8. **Saved fits.** Reading them takes about 9 milliseconds per part file. Should a job write one part for all its fits, and may parts be merged afterwards? Today a part, once written, is never modified.
-9. **The pipeline.** The intent is that each parallel job writes its own part file of a table, under a file name of its own choosing inside the table's folder, and that nothing has to be gathered into one file afterwards. The stage's record, written last, lists the table and its total number of rows. Does that fit how the Nextflow pipeline splits and gathers its work?
+2. **Additive formulas only.** A formula can use covariates, `log(x)` and `log(x + 1)`. Is it acceptable that an analysis with an interaction or a spline cannot be saved?
+3. **Covariates.** Covariates given for an analysis are stored with it, not in the data file. Is that the right place?
+4. **`B3`.** In sceptre the budget a testing stage uses depends on which functions were called before it. The format records `B3` wherever sceptre may change it and takes the latest. Should a testing stage record the value it used instead?
+5. **Resampled statistics.** They are stored as 64-bit numbers, 499 or more per pair. Should they be stored as they are, or as 32-bit numbers at half the size?
+6. **The pipeline.** The intent is that each parallel job writes its own part file of a table, under a file name of its own choosing inside the table's folder, and that nothing has to be gathered into one file afterwards. The stage's record, written last, lists the table and its total number of rows. Does that fit how the Nextflow pipeline splits and gathers its work?
 
 <details class="fold">
 <summary>What does not need review now</summary>
