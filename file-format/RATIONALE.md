@@ -628,7 +628,7 @@ the top of this document.
 | Count type | Smallest unsigned type that fits | Fixed 32-bit | A close call; kept for a type that never depends on the data | S4 |
 | gRNA annotation | Type, spacer, gRNA and target positions, target key | Target and target position | **IGVF.** Taken in part now (S8); the rest planned | S8, 9 |
 | Gene annotation | Symbol, position, mitochondrial and ribosomal flags | Unspecified | **IGVF.** Planned | 10 |
-| Reference genome | Build per gRNA; annotation file hash in the manifest | Not recorded | **IGVF.** Planned | 10 |
+| Reference genome | Build per gRNA; annotation file hash in the manifest | One build for the file, required when the gRNA table has positions; no annotation hash | **IGVF** for the annotation hash, which is planned | S8, S10 |
 | Other modalities | Optional `hashing` | Any, ignored unless named | Taken from IGVF | S2 |
 | Names | `gene`, `guide`, `guide_id`, `gene_id`, `intended_target_name` | `rna`, `grna`, `grna_id`, `response_id`, `grna_target` | Neither is a standard. An importer maps one to the other | S2 |
 
