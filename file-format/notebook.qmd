@@ -288,10 +288,9 @@ names cells, gRNAs and responses by identifier, never by position.
 print(analysis_tree())
 ```
 
-<details class="fold">
-<summary>Open these files yourself, in R or Python</summary>
+## Open these files yourself
 
-Standard libraries read both. Nothing here is specific to sceptre.
+Standard libraries read both, in R or Python. Nothing here is specific to sceptre.
 
 ::: {.panel-tabset group="language"}
 
@@ -324,8 +323,6 @@ print(results.head(3))
 ```
 
 :::
-
-</details>
 
 ## The choices to review
 
