@@ -559,7 +559,7 @@ These can be added or changed later without breaking any file.
 
 | | |
 |---|---|
-| `overview.qmd`, `overview.html` | This page and its source. `./render.sh` renders it |
+| `overview.qmd` | The source of this page. `../site/build.sh` builds the site; `./render.sh` renders this page alone |
 | `SPEC.md` | The specification: scope, terms, and the numbered statements |
 | `RATIONALE.md` | The reasons: every choice with its alternatives and evidence, comparisons with other formats, planned additions, and the measurements |
 | `spec/screen.json` | The machine-readable structure of a data file |

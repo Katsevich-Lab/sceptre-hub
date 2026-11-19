@@ -28,7 +28,7 @@ otherwise.
 This document states the rules. It gives no reasons: for each rule, the
 section of [`RATIONALE.md`](RATIONALE.md) with the same letter and number
 (A1, T5, ...) explains the choice, its alternatives and the evidence.
-`overview.html` is the introduction, and says what review is asked for.
+[The overview](overview.qmd) is the introduction, and says what review is asked for.
 
 ## Versions and changes
 

@@ -3,13 +3,12 @@ project:
   output-dir: _site
   render:
     - index.md
+    - perturb-seq-data-format/overview.qmd
     - perturb-seq-data-format/SPEC.md
     - perturb-seq-data-format/RATIONALE.md
+    - sceptre-analysis-format/overview.qmd
     - sceptre-analysis-format/SPEC.md
     - sceptre-analysis-format/RATIONALE.md
-  resources:
-    - perturb-seq-data-format/overview.html
-    - sceptre-analysis-format/overview.html
 
 website:
   title: "Perturb-seq formats"
@@ -25,7 +24,7 @@ website:
       - section: Perturb-seq data file format
         contents:
           - text: Overview
-            href: perturb-seq-data-format/overview.html
+            href: perturb-seq-data-format/overview.qmd
           - text: Specification
             href: perturb-seq-data-format/SPEC.md
           - text: Rationale
@@ -33,13 +32,16 @@ website:
       - section: sceptre analysis format
         contents:
           - text: Overview
-            href: sceptre-analysis-format/overview.html
+            href: sceptre-analysis-format/overview.qmd
           - text: Specification
             href: sceptre-analysis-format/SPEC.md
           - text: Rationale
             href: sceptre-analysis-format/RATIONALE.md
 
 from: markdown+gfm_auto_identifiers
+execute:
+  warning: false
+  message: false
 format:
   html:
     theme: cosmo

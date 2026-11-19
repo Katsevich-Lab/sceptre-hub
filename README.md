@@ -29,6 +29,9 @@ This repository holds:
   software.
 - [sceptre-analysis-format/](sceptre-analysis-format/): a draft of the format
   for sceptre's analyses of such a file.
+  Both formats can be browsed at
+  <https://katsevich-lab.github.io/sceptre-hub/>, which is built from these
+  two folders.
 - [contracts/](contracts/): the few things the implementations must agree on,
   kept executable where possible. The R package is the reference
   implementation; the [parity contract](contracts/parity.md) defines agreement

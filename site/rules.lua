@@ -6,11 +6,12 @@
 local REPO = "https://github.com/Katsevich-Lab/sceptre-hub/blob/main/"
 local FOLDER = { S = "perturb-seq-data-format", A = "sceptre-analysis-format", T = "sceptre-analysis-format" }
 local FOLDER_SET = { ["perturb-seq-data-format"] = true, ["sceptre-analysis-format"] = true }
-local PAGES = { ["SPEC.md"] = true, ["RATIONALE.md"] = true, ["overview.html"] = true }
+local PAGES = { ["SPEC.md"] = true, ["RATIONALE.md"] = true, ["overview.qmd"] = true }
 
 local input = quarto.doc.input_file:gsub("\\", "/")
 local here = input:match("([^/]+)/[^/]+$")          -- the folder of the page being rendered
 local is_spec = input:match("SPEC%.md$") ~= nil
+local is_overview = input:match("overview%.qmd$") ~= nil
 
 local function rule_url(id)
   local folder = FOLDER[id:sub(1, 1)]
@@ -43,6 +44,16 @@ end
 
 -- a relative link to something this site does not render goes to the repository
 local function fix_link(link)
+  -- a full address of one of this site's pages, as the overviews write them
+  local folder, page, rest = link.target:match("^https://github%.com/Katsevich%-Lab/sceptre%-hub/blob/main/([%w%-]+)/(%u+)%.md(.*)$")
+  if not folder then
+    folder, rest = link.target:match("^https://raw%.githack%.com/Katsevich%-Lab/sceptre%-hub/main/([%w%-]+)/overview%.html(.*)$")
+    page = folder and "overview"
+  end
+  if folder and FOLDER_SET[folder] then
+    link.target = ((folder == here) and "" or ("../" .. folder .. "/")) .. page .. ".html" .. rest
+    return link
+  end
   local target = link.target
   if target:match("^%a+:") or target:match("^#") then return nil end
   local path = target:gsub("#.*$", "")

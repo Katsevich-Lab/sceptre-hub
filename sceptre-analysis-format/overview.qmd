@@ -636,7 +636,7 @@ These can be added or changed later without breaking any analysis.
 
 | | |
 |---|---|
-| `overview.qmd`, `overview.html` | This page and its source. `./render.sh` renders it |
+| `overview.qmd` | The source of this page. `../site/build.sh` builds the site; `./render.sh` renders this page alone |
 | `SPEC.md` | The specification: scope, terms, and the numbered statements |
 | `RATIONALE.md` | The reasons: every choice with its alternatives and evidence, the comparison with the IGVF pipeline's outputs, planned additions, and the measurements |
 | `spec/` | The machine-readable parts: `tables.json` (every table's columns, types and key) and JSON Schemas for the JSON records |
