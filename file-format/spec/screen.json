@@ -5,12 +5,12 @@
     "file": "one dataset, written once and never modified",
     "modality": "one kind of measurement on the cells",
     "grna_modality": "the gRNAs",
-    "counts": "raw counts, cells × features, stored by feature",
+    "counts": "raw counts, cells \u00d7 features, stored by feature",
     "cell_table": "one row per cell: measurements of this modality",
     "feature_table": "one row per feature",
     "grna_table": "one row per gRNA: what it targets",
     "shared_cell_table": "one row per cell: facts about the cell, whatever was measured",
-    "metadata": "the format version, and what dataset this is"
+    "metadata": "what the file says about itself: the format version, which dataset this is, and what kind of screen it was"
   },
   "root": {
     "encoding-type": "MuData"
@@ -148,30 +148,21 @@
     }
   ],
   "metadata": {
-    "path": "uns/sceptre",
+    "path": "uns",
     "entries": {
-      "format": {
-        "description": "the format version of this file",
+      "perturb_seq_format": {
+        "description": "the version of the Perturb-seq data file format this file follows",
         "kind": "string",
         "pattern": "^[0-9]+\\.[0-9]+$",
         "required": true
       },
-      "moi": {
-        "description": "multiplicity of infection: `high` or `low`",
-        "kind": "string",
-        "values": [
-          "high",
-          "low"
-        ],
-        "required": true
-      },
-      "id": {
+      "dataset_id": {
         "description": "identifies the dataset; random, assigned at import",
         "kind": "string",
         "required": true
       },
-      "name": {
-        "description": "a label for people",
+      "title": {
+        "description": "a title for people",
         "kind": "string",
         "required": false
       },

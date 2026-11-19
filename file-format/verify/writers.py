@@ -34,7 +34,7 @@ for case in json.loads(Path("conformance/cases.json").read_text()):
             copy = Path(folder) / "copy.h5mu"
             sf.write_screen(md.read_h5mu(case["path"]), copy)
             with h5py.File(case["path"]) as a, h5py.File(copy) as b:
-                results.add(f"{case['name']}: a copy keeps the id", ad.io.read_elem(a["uns/sceptre/id"]) == ad.io.read_elem(b["uns/sceptre/id"]))
+                results.add(f"{case['name']}: a copy keeps the id", ad.io.read_elem(a["uns/dataset_id"]) == ad.io.read_elem(b["uns/dataset_id"]))
                 results.add(f"{case['name']}: a copy keeps every modality", sorted(a["mod"]) == sorted(b["mod"]))
             results.add(f"{case['name']}: the copy conforms", len(sf.validate_screen(copy)) == 0)
 

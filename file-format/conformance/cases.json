@@ -32,6 +32,14 @@
     "what": "The high-MOI example, written by Python"
   },
   {
+    "name": "valid/types_with_another_tools_entry.h5mu",
+    "kind": "screen",
+    "path": "conformance/valid/types_with_another_tools_entry.h5mu",
+    "expect": [],
+    "conforms": true,
+    "what": "`uns` also holds an entry of another tool, which the format ignores (S10.2)"
+  },
+  {
     "name": "valid/types_gzip_counts.h5mu",
     "kind": "screen",
     "path": "conformance/valid/types_gzip_counts.h5mu",
@@ -582,24 +590,24 @@
     "what": "A cell identifier contains a line feed"
   },
   {
-    "name": "invalid/screens/no_sceptre_metadata.h5mu",
+    "name": "invalid/screens/no_format_entries.h5mu",
     "kind": "screen",
-    "path": "conformance/invalid/screens/no_sceptre_metadata.h5mu",
+    "path": "conformance/invalid/screens/no_format_entries.h5mu",
     "expect": [
       "S10.1"
     ],
     "conforms": false,
-    "what": "The file has no `uns/sceptre`"
+    "what": "The file has neither `perturb_seq_format` nor `dataset_id`"
   },
   {
-    "name": "invalid/screens/dataset_name_as_a_number.h5mu",
+    "name": "invalid/screens/title_as_a_number.h5mu",
     "kind": "screen",
-    "path": "conformance/invalid/screens/dataset_name_as_a_number.h5mu",
+    "path": "conformance/invalid/screens/title_as_a_number.h5mu",
     "expect": [
       "S10.5"
     ],
     "conforms": false,
-    "what": "The optional dataset name is a number"
+    "what": "The optional title is a number"
   },
   {
     "name": "invalid/screens/unknown_perturbation_type.h5mu",
@@ -610,16 +618,6 @@
     ],
     "conforms": false,
     "what": "The optional perturbation type is not one of the listed kinds"
-  },
-  {
-    "name": "invalid/screens/moi_medium.h5mu",
-    "kind": "screen",
-    "path": "conformance/invalid/screens/moi_medium.h5mu",
-    "expect": [
-      "S10.2"
-    ],
-    "conforms": false,
-    "what": "`moi` is `medium`"
   },
   {
     "name": "invalid/screens/format_from_the_future.h5mu",
@@ -739,6 +737,17 @@
     ],
     "conforms": false,
     "what": "The parameters record has `side` set to `up`",
+    "screen": "conformance/valid/highmoi_written_by_r.h5mu"
+  },
+  {
+    "name": "invalid/analyses/moi_medium",
+    "kind": "analysis",
+    "path": "conformance/invalid/analyses/moi_medium",
+    "expect": [
+      "A2.1"
+    ],
+    "conforms": false,
+    "what": "The parameters record has `moi` set to `medium`",
     "screen": "conformance/valid/highmoi_written_by_r.h5mu"
   },
   {

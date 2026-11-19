@@ -61,6 +61,14 @@ case("screen", types_py, [], "The same data, written by Python")
 case("screen", high_r, [], "The high-MOI example, written by R")
 case("screen", high_py, [], "The high-MOI example, written by Python")
 
+other_tool = VALID / "types_with_another_tools_entry.h5mu"
+shutil.copy(types_py, other_tool)
+with h5py.File(other_tool, "r+") as f:
+    group = f["uns"].create_group("neighbors")
+    group.attrs.update({"encoding-type": "dict", "encoding-version": "0.1.0"})
+    group.create_dataset("n_neighbors", data=np.int64(15)).attrs.update({"encoding-type": "numeric-scalar", "encoding-version": "0.2.0"})
+case("screen", other_tool, [], "`uns` also holds an entry of another tool, which the format ignores (S10.2)")
+
 gzip = VALID / "types_gzip_counts.h5mu"
 shutil.copy(types_r, gzip)
 with h5py.File(gzip, "r+") as f:
@@ -81,7 +89,7 @@ grna_var = base["grna"].var.assign(spacer=["ACGT", "TTGA"])
 with_extra = md.MuData({"rna": base["rna"], "grna": ad.AnnData(X=base["grna"].X, obs=base["grna"].obs, var=grna_var), "hashing": hashing})
 for name in base.obs.columns:
     with_extra.obs[name] = base.obs[name].array
-with_extra.uns["sceptre"] = dict(base.uns["sceptre"])
+with_extra.uns.update({key: base.uns[key] for key in sf.METADATA if key in base.uns})
 sf.write_screen(with_extra, extra)
 case("screen", extra, [], "A modality no analysis uses, and a gRNA column the format does not define")
 cases[-1]["copy_keeps_modalities"] = "rna"   # read with this response modality and written again, every modality is still there
@@ -400,7 +408,7 @@ broken_screen("target_start_zero", ["S8.10"], "A target starts at position 0: a 
 broken_screen("target_end_before_start", ["S8.10"], "A target ends before it starts", set_positions(end=50))
 broken_screen("target_start_without_chromosome", ["S8.11"], "A gRNA has a target start and end and no chromosome", set_positions(chromosome="missing"))
 broken_screen("positions_without_genome_build", ["S8.14"], "The gRNA table has positions and the file has no `genome_build`",
-              lambda f: f["uns/sceptre"].__delitem__("genome_build"))
+              lambda f: f["uns"].__delitem__("genome_build"))
 broken_screen("target_start_as_text", ["S8.2"], "`target_start` stored as text",
               lambda f: (f["mod/grna/var"].__delitem__("target_start"),
                          add_column(f, "mod/grna/var", "target_start", np.array(["100", "200"], dtype=object), "string-array", text)))
@@ -433,23 +441,23 @@ def line_feed(f):
 
 
 broken_screen("identifier_with_a_line_feed", ["S9.4"], "A cell identifier contains a line feed", line_feed)
-broken_screen("no_sceptre_metadata", ["S10.1"], "The file has no `uns/sceptre`", lambda f: f["uns"].__delitem__("sceptre"))
+broken_screen("no_format_entries", ["S10.1"], "The file has neither `perturb_seq_format` nor `dataset_id`",
+              lambda f: [f["uns"].__delitem__(name) for name in ("perturb_seq_format", "dataset_id")])
 
 
 def set_scalar(f, name, value):
-    del f[f"uns/sceptre/{name}"]
-    f["uns/sceptre"].create_dataset(name, data=value, dtype=text if isinstance(value, str) else None)
+    del f[f"uns/{name}"]
+    f["uns"].create_dataset(name, data=value, dtype=text if isinstance(value, str) else None)
     encoding = "string" if isinstance(value, str) else "numeric-scalar"
-    f[f"uns/sceptre/{name}"].attrs.update({"encoding-type": encoding, "encoding-version": "0.2.0"})
+    f[f"uns/{name}"].attrs.update({"encoding-type": encoding, "encoding-version": "0.2.0"})
 
 
-broken_screen("dataset_name_as_a_number", ["S10.5"], "The optional dataset name is a number",
-              lambda f: f["uns/sceptre"].create_dataset("name", data=np.int32(7)) if "name" not in f["uns/sceptre"] else set_scalar(f, "name", np.int32(7)))
+broken_screen("title_as_a_number", ["S10.5"], "The optional title is a number",
+              lambda f: f["uns"].create_dataset("title", data=np.int32(7)) if "title" not in f["uns"] else set_scalar(f, "title", np.int32(7)))
 broken_screen("unknown_perturbation_type", ["S10.6"], "The optional perturbation type is not one of the listed kinds",
               lambda f: set_scalar(f, "perturbation_type", "CRISPRx"))
-broken_screen("moi_medium", ["S10.2"], "`moi` is `medium`", lambda f: set_scalar(f, "moi", "medium"))
-broken_screen("format_from_the_future", ["S10.3"], "The data file's format version is 9.0", lambda f: set_scalar(f, "format", "9.0"))
-broken_screen("format_as_a_number", ["S10.1"], "The data file's format is the integer 0, not a version", lambda f: set_scalar(f, "format", np.int32(0)))
+broken_screen("format_from_the_future", ["S10.3"], "The data file's format version is 9.0", lambda f: set_scalar(f, "perturb_seq_format", "9.0"))
+broken_screen("format_as_a_number", ["S10.1"], "The data file's format is the integer 0, not a version", lambda f: set_scalar(f, "perturb_seq_format", np.int32(0)))
 
 # ---------------------------------------------------------------- invalid analyses
 
@@ -493,6 +501,8 @@ broken_analysis("record_of_another_stage", ["A2.1"], "The record in `discovery/`
                 lambda p: edit_json(p / "discovery/record.json", lambda v: v.__setitem__("stage", "power")), reader_refuses=True)
 broken_analysis("side_up", ["A2.1"], "The parameters record has `side` set to `up`",
                 lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("side", "up")))
+broken_analysis("moi_medium", ["A2.1"], "The parameters record has `moi` set to `medium`",
+                lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("moi", "medium")))
 broken_analysis("no_seed", ["A2.1"], "The parameters record has no `seed`",
                 lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].pop("seed")))
 broken_analysis("stage_without_its_predecessor", ["A2.2", "A4.1"], "The assignment record is missing while later stages remain",

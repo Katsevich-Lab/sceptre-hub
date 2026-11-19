@@ -175,6 +175,7 @@
         "settings": {
           "type": "object",
           "required": [
+            "moi",
             "formula",
             "side",
             "resampling_mechanism",
@@ -191,6 +192,12 @@
             "grna_fit_method"
           ],
           "properties": {
+            "moi": {
+              "enum": [
+                "high",
+                "low"
+              ]
+            },
             "formula": {
               "type": "string",
               "pattern": "^~"

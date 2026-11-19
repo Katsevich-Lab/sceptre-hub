@@ -1,6 +1,6 @@
 ---
-title: "The sceptre file format"
-subtitle: "Draft 0.1: one file for a Perturb-seq screen, one folder for each analysis of it, the same in R and in Python"
+title: "Two file formats for Perturb-seq"
+subtitle: "Draft 0.1 of each: a data file format for any Perturb-seq software, and a format for sceptre's analyses of such a file. The same files in R and in Python"
 format:
   html:
     toc: true
@@ -13,9 +13,17 @@ execute:
   message: false
 ---
 
-This page is the way into the format. It shows what is on disk, why it is that
-way, what review is asked for, and what has been tested. Most of it is folded:
-open what you want to read.
+There are two formats here, with separate versions:
+
+- **The Perturb-seq data file format**: one file per screen, holding the
+  counts and what is known about the cells and gRNAs. It is meant for any
+  software that handles Perturb-seq data. Nothing in it is specific to sceptre.
+- **The sceptre analysis format**: one folder per analysis of a data file,
+  holding the settings and tables of each stage.
+
+This page is the way into both. It shows what is on disk, why it is that way,
+what review is asked for, and what has been tested. Most of it is folded: open
+what you want to read.
 
 Two reference documents sit behind it: [`SPEC.md`](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/file-format/SPEC.md)
 has the rules, numbered, and [`RATIONALE.md`](https://github.com/Katsevich-Lab/sceptre-hub/blob/main/file-format/RATIONALE.md)
@@ -141,8 +149,8 @@ def screen_tree() -> str:
             ], 1))
         shared = ad.io.read_elem(f["obs"])
         children.append(leaf("obs", says["shared_cell_table"], f"{n(len(shared), 'row')} × {n(shared.shape[1], 'column')}", rows(shared, "cell"), 1))
-        stamp = ad.io.read_elem(f[screen_spec["metadata"]["path"]])
         entries = screen_spec["metadata"]["entries"]
+        stamp = {k: ad.io.read_elem(f[f"uns/{k}"]) for k in entries if k in f["uns"]}
         values = pd.DataFrame([{"entry": k, "value": str(v), "meaning": entries.get(k, {}).get("description", "")} for k, v in stamp.items()])
         values["meaning"] = values["meaning"].str.replace("`", "")
         children.append(leaf(screen_spec["metadata"]["path"], says["metadata"], f"{len(values)} entries", values.to_html(index=False, border=0, classes="rows", escape=True), 1))
@@ -179,8 +187,11 @@ def analysis_tree() -> str:
 
 
 # What each check of the verification suite shows, and what it found when this page was rendered.
+COVERS = {"conformance-data": "data file", "conformance-analysis": "analysis", "encodings": "both", "two-writers": "both",
+          "independent-readers": "both", "wide-index": "data file", "writers": "both", "derived": "analysis"}
 SHOWS = {
-    "conformance": "Both validators report exactly the expected rules on every file of `conformance/` (files that conform, and files that each break a rule), and the standard readers read the files that must still be read",
+    "conformance-data": "Both validators report exactly the expected rules on every data file of `conformance/` (files that conform, and files that each break a rule), and the standard readers read the files that must still be read",
+    "conformance-analysis": "The same for every analysis folder of `conformance/`",
     "encodings": "Every kind of value, written by each language's standard libraries and read by the other's. The kinds the format allows come back correct; the kinds it forbids still break",
     "two-writers": "R and Python each write the same random content. The files are compared array by array and column by column, and each language reads the other's file and gets the source back",
     "independent-readers": "Tools outside this code read the files: anndata, scanpy, pandas, polars and duckdb in Python; HDF5Array and arrow in R",
@@ -198,18 +209,19 @@ def status() -> str:
     cases = {c["name"]: c for c in json.loads(Path("conformance/cases.json").read_text())}
     for language in ("r", "python"):
         results = json.loads(Path(f"conformance/results-{language}.json").read_text())
-        found.setdefault("conformance", {})[language] = [
-            "pass" if name not in cases or (sorted(r["rules"]) == cases[name]["expect"] and r["conforms"] == cases[name]["conforms"]
-                                            and False not in [v for k, v in r.items() if k != "conforms"]) else "fail"
-            for name, r in results.items()]
+        for kind, group in (("screen", "conformance-data"), ("analysis", "conformance-analysis")):
+            found.setdefault(group, {})[language] = [
+                "pass" if sorted(r["rules"]) == cases[name]["expect"] and r["conforms"] == cases[name]["conforms"]
+                and False not in [v for k, v in r.items() if k != "conforms"] else "fail"
+                for name, r in results.items() if cases[name]["kind"] == kind]
     if set(found) != set(SHOWS) or any(set(v) != {"r", "python"} for v in found.values()):
         raise SystemExit("Run verify/run.sh before rendering: this page reports its results.")
 
     def passed(results) -> str:
         fails = results.count("fail")
         return f"{results.count('pass'):,} of {len(results):,}" + ("" if fails == 0 else " — FAILING")
-    lines = "".join(f"<tr><td><code>{name}</code></td><td>{text(SHOWS[name])}</td><td>{passed(found[name]['r'])}</td><td>{passed(found[name]['python'])}</td></tr>" for name in SHOWS)
-    return f"<table class='status'><thead><tr><th>Check</th><th>What it shows</th><th>Passed in R</th><th>Passed in Python</th></tr></thead><tbody>{lines}</tbody></table>"
+    lines = "".join(f"<tr><td><code>{name}</code></td><td>{COVERS[name]}</td><td>{text(SHOWS[name])}</td><td>{passed(found[name]['r'])}</td><td>{passed(found[name]['python'])}</td></tr>" for name in SHOWS)
+    return f"<table class='status'><thead><tr><th>Check</th><th>Format</th><th>What it shows</th><th>Passed in R</th><th>Passed in Python</th></tr></thead><tbody>{lines}</tbody></table>"
 ```
 
 ```{=html}

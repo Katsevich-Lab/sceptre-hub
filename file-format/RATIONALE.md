@@ -1,6 +1,9 @@
-# The sceptre file format: rationale
+# The Perturb-seq data file format and the sceptre analysis format: rationale
 
-[`SPEC.md`](SPEC.md) states the rules of the format, numbered, with no reasons.
+[`SPEC.md`](SPEC.md) states the rules of two formats, numbered, with no reasons:
+the Perturb-seq data file format (the S rules), meant for any software that
+handles Perturb-seq data, and the sceptre analysis format (the A and T rules).
+Where this document says "the format" of a rule, it means the one the rule belongs to.
 This document gives the reasons: for each choice, the alternatives, the
 evidence, what it locks in, and how it compares with the IGVF pipeline's
 format. Sections here and there share their letters and numbers (S3, A1, T5,
@@ -271,7 +274,9 @@ one rule, and no rounding between what a package computed and what it reads back
 
 ### S10. File-level metadata: a native record, not JSON text — *Adopted*
 
-- **Decision.** `uns/sceptre` is an AnnData dictionary with scalar text entries: `format` (the version, such as `0.1`), `moi` (`high` or `low`), and `id` (a random identifier assigned when the file is written, used in A1).
+- **Decision.** Scalar text entries at the top level of `uns`: `perturb_seq_format` (the version, such as `0.1`) and `dataset_id` (a random identifier assigned when the file is written, used in A1), and the optional entries below.
+- **At the top level, under no tool's name** *(Decided)*. These entries are facts about the dataset, and other tools should be able to read and write them. Under a key named for one tool, another tool would have to write into that tool's space or invent its own key for the same facts. Dataset facts at the top level of `uns` is what CELLxGENE's schema does *(not independently checked)*. The two entries that are the format's own bookkeeping carry distinctive names, because every tool shares this level: the version entry names the format, and `dataset_id` and `title` are not `id` and `name`.
+- **No `moi`** *(Decided)*. Whether a screen is treated as low or high multiplicity of infection selects an analysis's defaults: the control group, and what is done with cells that carry several gRNAs. The same data can reasonably be analysed either way, and real screens are not all one or the other. It is a setting of the analysis's parameters record (A3.6), not an entry of the data file.
 - **A two-part version** *(Decided)*. The version is `MAJOR.MINOR`. A minor increase adds something an older reader can safely ignore; a major increase is a change after which an older reader could misread a file. A reader reads any file of the major version it knows and refuses another.
   - *Why.* With one number, every addition either goes unrecorded or forces every reader to refuse the file. Two parts let a file say what it uses while old readers keep working. The stamp is in every file, so this had to be settled before the freeze.
   - *Precedent.* Apache Arrow versions its format this way and states the rule as: an older reader must either read newer data or detect that it cannot *(Arrow's `Versioning.rst` and `Changing.rst`; not independently checked)*.
@@ -286,7 +291,7 @@ one rule, and no rounding between what a package computed and what it reads back
   - *The vocabulary* for `perturbation_type` is crisprVerse's five kinds: `CRISPRko`, `CRISPRi`, `CRISPRa`, `CRISPRbe`, `CRISPRkd` *(crisprDesign README, not independently checked; that `CRISPRkd` means knockdown of RNA with an RNA-targeting enzyme should be confirmed)*. CELLxGENE's schema, the EMBL-EBI Perturbation Catalogue and scPerturb record the same concept *(not independently checked)*. A new kind is a minor addition.
   - *`genome_build` is required with positions.* Positions are used to pair targets with nearby genes. If the two sets of positions are in different builds the pairs are wrong and nothing fails, and a file without the build gives no way to notice. The value is free text, such as `GRCh38`: the format keeps no list of builds, so software comparing two builds has to know that `GRCh38` and `hg38` name the same one. The cost is that positions of unknown build cannot be stored.
   - *It replaces a separate entry for the target molecule.* The knockdown kind is the RNA-targeting case, so one entry covers both distinctions.
-- **IGVF.** `moi` (`high` or `low`, the same two words) and `capture_method` are in the guide modality's `uns`, each as a one-element string array. There is no format version and no dataset identifier; a file is identified by a SHA-256 of all its bytes in a separate manifest (A1). This format adds the version and the identifier because files outlive the code that wrote them.
+- **IGVF.** `moi` (`high` or `low`) and `capture_method` are in the guide modality's `uns`, each as a one-element string array; this format keeps `moi` in the analysis. There is no format version and no dataset identifier; a file is identified by a SHA-256 of all its bytes in a separate manifest (A1). This format adds the version and the identifier because files outlive the code that wrote them.
 
 ### S11. Compression — *Adopted: writer's choice*
 
@@ -332,7 +337,7 @@ merged file.
 - **Decision.** `analysis.json` records:
   - `format`, the analysis's format version (S10);
   - `response_modality`, the name of the modality this analysis tests (S2). It is always written, even when the file has only one candidate;
-  - `screen`: the dataset's `id` (S10), its numbers of cells, responses and gRNAs, a SHA-256 of each ordered identifier list, and a relative path as a hint.
+  - `screen`: the data file's `dataset_id` (S10), as `id`, its numbers of cells, responses and gRNAs, a SHA-256 of each ordered identifier list, and a relative path as a hint.
 
   A reader refuses a dataset whose `id` or hashes differ, or that has no modality of that name.
 - **Why the response modality is here and not in the parameters record.** The link's response count and hash are those of the response modality, so the two belong together, and nothing in an analysis survives a change of response modality.
@@ -347,7 +352,7 @@ merged file.
 - **Analyses far from their data** *(Decided; details Adopted)*. A data file may sit read-only on a server while its analyses live on a laptop or elsewhere on the server. The link allows this: it is the `id` and the hashes, a reader is told where the data file is and never follows `screen.path`, the data file knows nothing about its analyses, and an analysis folder can be read for its results with no data file at all. Four rules support it:
   - *The hint is a relative path or a URL, never an absolute local path.* An absolute path names a user and a server's layout, and means nothing on another machine. The schema enforces the form and the validators report it (A1.4).
   - *A writer records a path only when the data file is near*: in the analysis folder's parent or grandparent, or below one of them. Farther away, the relative path is a chain of `..` that names directories and helps nobody, so the writer records nothing.
-  - *A dataset may have a `name`*, a label for people, stored in the data file and copied into the link. An error can then say which dataset an analysis was run on instead of quoting a random `id`. The name is not part of the identity check.
+  - *A dataset may have a `title`*, for people, stored in the data file and copied into the link. An error can then say which dataset an analysis was run on instead of quoting a random `id`. The name is not part of the identity check.
   - *A dataset may have a `source`*: a URL, DOI or accession, such as a GEO accession for a published screen.
 - **No dataset version** *(Decided)*. A version would be bookkeeping for every writer. The `id` changes when a dataset is imported again, which is the protection an analysis needs.
 - **Finding the data is package behaviour, not format.** A package can resolve a dataset `id` to a location through a search path or a small table in the user's own configuration. Nothing specific to one machine goes in `analysis.json`. If a package ever follows the hint by itself, it should do so only for locations the user has configured: a folder from an untrusted source could otherwise point a reader at any file or URL. None of this is built.
@@ -605,7 +610,6 @@ the top of this document.
 |---|---|
 | Container | MuData `.h5mu`; cells × features; raw integer counts; sparse |
 | Identifiers | Cells, features and table rows are named by identifier, not position |
-| MOI | Stored in the file as `high` or `low` |
 | Control group | `complement` or `nt_cells` |
 | Two levels of testing | Per element and per guide there; union and singleton here |
 | Result tables | Parquet with zstd as the working format |
@@ -621,6 +625,7 @@ the top of this document.
 | Assignments | 0/1 matrix layer in the data file | Table in the analysis | This format, for the same reason. An export to the matrix is worth having | T1 |
 | R and Python | Python writes; R reads the matrices, MOI and pairs | Both read and write everything | This format: it is the first requirement | S7 |
 | Format number, dataset id | Neither | Both | This format | S10 |
+| MOI | `high` or `low`, in the data file | `high` or `low`, in the analysis's parameters | This format: it selects an analysis's defaults, and one dataset can be analysed either way | S10, A3 |
 | Matrix layout | Compressed by cell | Compressed by feature | This format: one gene is one read, with no chunk files | S3 |
 | Results | Three copies; method-prefixed columns; annotations in every row; adjusted p-values stored | One copy; keys and results only | This format: nothing stored twice | T5 |
 | Settings | Several run-level files | One record per stage | This format, for continuing an analysis | A2 |
@@ -828,8 +833,8 @@ pysceptre and runs on the committed files with standard libraries only.
 passing:
 
 - the validators and readers on the conformance set. Both validators accept
-  all 23 conforming files and report exactly the expected rules for all 75
-  broken ones, the same in both languages. 58 rules are exercised by at least
+  all 24 conforming files and report exactly the expected rules for all 75
+  broken ones, the same in both languages. 57 rules are exercised by at least
   one broken file. Two more are checked with no file: S11.1 (no filter other
   than gzip), because R cannot read a file compressed otherwise at all, and
   T0.3 (row groups of at most a million rows), because the file would be large;

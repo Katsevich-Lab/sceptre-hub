@@ -10,7 +10,8 @@ read_as_sce <- function(file, response_modality = NULL) {
             if (grepl("sampleMap", conditionMessage(w), fixed = TRUE)) invokeRestart("muffleWarning")
         }
     )
-    stamp <- lapply(S4Vectors::metadata(mae)$sceptre, function(x) as.vector(x)[1])
+    stamp <- S4Vectors::metadata(mae)
+    stamp <- lapply(stamp[intersect(names(SCREEN_SPEC$metadata$entries), names(stamp))], function(x) as.vector(x)[1])
     main <- response_modality_of(names(mae), response_modality, file)
     cells <- colnames(mae[[main]])
     if (!identical(cells, colnames(mae[[GRNA]]))) fmt_stop("The modalities must hold the same cells in the same order.")
@@ -49,10 +50,10 @@ read_as_sce <- function(file, response_modality = NULL) {
         )
         SingleCellExperiment::altExp(sce, name) <- other
     }
-    S4Vectors::metadata(sce) <- list(sceptre = c(
-        list(format = as.character(stamp$format), moi = stamp$moi, id = stamp$id, response_modality = main),
+    S4Vectors::metadata(sce) <- c(
+        list(dataset_id = stamp$dataset_id, response_modality = main),
         stamp[intersect(OPTIONAL_METADATA, names(stamp))]
-    ))
+    )
     sce
 }
 from_file_frame <- function(frame, covariates) {

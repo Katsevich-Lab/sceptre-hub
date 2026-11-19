@@ -16,7 +16,7 @@ for (case in jsonlite::fromJSON("conformance/cases.json", simplifyVector = FALSE
     copy <- tempfile(fileext = ".h5mu")
     fmt_write_screen(read_as_sce(case$path, case$copy_keeps_modalities), copy)
     modalities <- function(file) sort(subset(rhdf5::h5ls(file, recursive = 2L), group == "/mod")$name)
-    check(paste0(case$name, ": a copy keeps the id"), identical(as.vector(rhdf5::h5read(case$path, "uns/sceptre/id")), as.vector(rhdf5::h5read(copy, "uns/sceptre/id"))))
+    check(paste0(case$name, ": a copy keeps the id"), identical(as.vector(rhdf5::h5read(case$path, "uns/dataset_id")), as.vector(rhdf5::h5read(copy, "uns/dataset_id"))))
     check(paste0(case$name, ": a copy keeps every modality"), identical(modalities(case$path), modalities(copy)))
     check(paste0(case$name, ": the copy conforms"), nrow(validate_screen(copy)) == 0L)
     rhdf5::h5closeAll()

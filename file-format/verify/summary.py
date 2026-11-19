@@ -16,10 +16,12 @@ conformance = {"python": "conformance/results-python.json", "r": "conformance/re
 cases = {c["name"]: c for c in json.loads(Path("conformance/cases.json").read_text())}
 for language, path in conformance.items() if sys.argv[1:] != ["writers"] else ():
     results = json.loads(Path(path).read_text())
-    rows["conformance"][language] = [
-        {"check": name, "result": "pass" if name not in cases or (sorted(r["rules"]) == cases[name]["expect"] and r["conforms"] == cases[name]["conforms"]
-                                                                 and False not in [v for k, v in r.items() if k != "conforms"]) else "fail", "detail": ""}
-        for name, r in results.items()]
+    # the two formats are reported apart: data-file cases and analysis cases
+    for kind, group in (("screen", "conformance-data"), ("analysis", "conformance-analysis")):
+        rows[group][language] = [
+            {"check": name, "result": "pass" if sorted(r["rules"]) == cases[name]["expect"] and r["conforms"] == cases[name]["conforms"]
+             and False not in [v for k, v in r.items() if k != "conforms"] else "fail", "detail": ""}
+            for name, r in results.items() if cases[name]["kind"] == kind]
 
 failed, observations = [], []
 print(f"{'suite':22} {'language':8} {'checks':>6} {'pass':>5} {'fail':>5} {'observations':>13}")

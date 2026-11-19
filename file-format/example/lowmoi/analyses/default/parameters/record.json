@@ -1,6 +1,7 @@
 {
   "stage": "parameters",
   "settings": {
+    "moi": "low",
     "formula": "~log(rna_n_nonzero) + log(rna_n_umis) + batch",
     "side": "both",
     "resampling_mechanism": "permutations",

@@ -64,7 +64,7 @@
           "pattern": "^(https?://[^\\s]+|(?![/~])(?![A-Za-z]:)(?!.*://)[^\\\\]+)$",
           "$comment": "A hint: a relative POSIX path or an http(s) URL. Never an absolute local path."
         },
-        "name": {
+        "title": {
           "type": "string",
           "minLength": 1
         }

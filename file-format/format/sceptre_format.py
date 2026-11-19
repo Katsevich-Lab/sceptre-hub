@@ -45,7 +45,9 @@ TABLE_SPEC = json.loads((SPEC_DIR / "tables.json").read_text())
 SCREEN_SPEC = json.loads((SPEC_DIR / "screen.json").read_text())
 # The optional entries of a data file's metadata (S10.5): a name for people, and
 # what is known about the screen at import and cannot be worked out later.
+METADATA = tuple(SCREEN_SPEC["metadata"]["entries"])
 OPTIONAL_METADATA = tuple(k for k, v in SCREEN_SPEC["metadata"]["entries"].items() if not v.get("required"))
+VERSION_ENTRY, ID_ENTRY = "perturb_seq_format", "dataset_id"
 GRNA = "grna"
 DEFAULT_RESPONSE_MODALITY = "rna"
 # the gRNA table's target coordinates: name in the package -> name in the file (S8)
@@ -267,9 +269,9 @@ def response_modality_of(modalities, requested=None, what="The data file") -> st
 
 
 def response_of(mdata) -> str:
-    """The modality an analysis of this MuData tests: `uns["sceptre"]["response_modality"]`
+    """The modality an analysis of this MuData tests: `uns["response_modality"]`
     if the caller set it, else the only modality besides ``grna``."""
-    return response_modality_of(mdata.mod, dict(mdata.uns["sceptre"]).get("response_modality"))
+    return response_modality_of(mdata.mod, mdata.uns.get("response_modality"))
 
 
 def index_type(n_stored, n_cells, n_features, index_limit=None) -> str:
@@ -284,8 +286,8 @@ def index_type(n_stored, n_cells, n_features, index_limit=None) -> str:
 
 
 def write_screen(mdata, file, index_limit=None) -> None:
-    """Write a MuData as a data file. `uns["sceptre"]`
-    holds `moi`, and `id` if the dataset already has one. Every modality is written
+    """Write a MuData as a data file. `uns` holds the entries of S10 that are
+    known, with `dataset_id` if the dataset already has one. Every modality is written
     under its own name; `grna` is the gRNA modality."""
     import anndata as ad
     import mudata as md
@@ -294,12 +296,10 @@ def write_screen(mdata, file, index_limit=None) -> None:
     file = Path(file)
     if file.exists():
         raise ValueError(f"{file} exists; a data file is written once.")
-    stamp = dict(mdata.uns["sceptre"])
-    if stamp.get("moi") not in ("high", "low"):
-        raise ValueError("uns['sceptre']['moi'] must be 'high' or 'low'.")
+    stamp = {key: mdata.uns[key] for key in METADATA if key in mdata.uns}
     grna_table = mdata.mod[GRNA].var
     if not stamp.get("genome_build") and any(grna_table[c].notna().any() for c in GRNA_COORDINATES.values() if c in grna_table):
-        raise ValueError("The gRNA table has positions: uns['sceptre']['genome_build'] must say which genome build they are in.")
+        raise ValueError("The gRNA table has positions: uns['genome_build'] must say which genome build they are in.")
     names = list(mdata.mod)
     if GRNA not in names or len(names) < 2:
         raise ValueError(f"A data file needs the modality '{GRNA}' and at least one other.")
@@ -346,16 +346,13 @@ def write_screen(mdata, file, index_limit=None) -> None:
     shared = _as_file_frame(mdata.obs.loc[cells, [c for c in mdata.obs.columns if ":" not in str(c)]], True)
     for name in shared.columns:
         out.obs[name] = shared[name].array
-    # a native record with scalar entries (S10)
-    out.uns["sceptre"] = {
-        "format": FORMAT_VERSION,
-        "moi": stamp["moi"],
-        "id": stamp.get("id") or uuid.uuid4().hex,
-    }
-    # optional: a label for people, and where the data came from (S10.5)
+    # scalar entries at the top level of `uns` (S10)
+    out.uns[VERSION_ENTRY] = FORMAT_VERSION
+    out.uns[ID_ENTRY] = str(stamp.get(ID_ENTRY) or uuid.uuid4().hex)
+    # optional: a title for people, and what is known about the screen (S10.5)
     for key in OPTIONAL_METADATA:
         if stamp.get(key):
-            out.uns["sceptre"][key] = str(stamp[key])
+            out.uns[key] = str(stamp[key])
     file.parent.mkdir(parents=True, exist_ok=True)
     # plain HDF5 strings: R cannot open a file with anndata's nullable string arrays (S7)
     # noted before writing: mudata converts these columns in the object as it writes
@@ -422,7 +419,7 @@ def check_screen(mdata) -> None:
     `mudata.read_h5mu`: a major format version it does not know (S10.3), and a
     gRNA table whose vectors break S8.7 or S8.8 (S8.9). Cheap: it looks at the
     metadata and the gRNA table only."""
-    version = dict(mdata.uns.get("sceptre", {})).get("format")
+    version = mdata.uns.get(VERSION_ENTRY)
     check_format(None if version is None else str(np.asarray(version).reshape(-1)[0]), "The data file")
     _check_vectors(mdata[GRNA].var, "The data file")
 
@@ -431,7 +428,7 @@ def screen_link(mdata, file=None, directory=None) -> dict:
     """What an analysis records about its data file (A1)."""
     response = mdata[response_of(mdata)]
     link = {
-        "id": mdata.uns["sceptre"]["id"],
+        "id": str(mdata.uns[ID_ENTRY]),
         "n_cells": int(response.n_obs),
         "n_responses": int(response.n_vars),
         "n_grnas": int(mdata[GRNA].n_vars),
@@ -440,8 +437,8 @@ def screen_link(mdata, file=None, directory=None) -> dict:
         "grna_ids_sha256": sha256_ids(mdata[GRNA].var_names),
     }
     # for people: which dataset this is; not part of the identity a reader checks
-    if mdata.uns["sceptre"].get("name"):
-        link["name"] = mdata.uns["sceptre"]["name"]
+    if mdata.uns.get("title"):
+        link["title"] = str(mdata.uns["title"])
     # a hint only, and only when the data file is near the analysis (A1.4)
     if file is not None and nearby_path(file, directory) is not None:
         link["path"] = nearby_path(file, directory)
@@ -676,7 +673,7 @@ def check_link(recorded: dict, mdata, what) -> None:
     current = screen_link(mdata)
     for field in ("id", "cell_ids_sha256", "response_ids_sha256", "grna_ids_sha256"):
         if recorded.get(field) != current[field]:
-            named = f", the dataset '{recorded['name']}'" if recorded.get("name") else ""
+            named = f", the dataset '{recorded['title']}'" if recorded.get("title") else ""
             raise ValueError(f"The analysis {what} was run on another data file{named} (its `{field}` differs).")
 
 
@@ -980,16 +977,14 @@ def validate_screen(file, index_limit=None) -> pd.DataFrame:
             if not entry["required"] and record is not None and name in record and not scalar_of(name, entry["kind"]):
                 log.add("S10.5", f"{where}/{name}", "must be a scalar text entry.")
         if not all(scalar_of(name, entry["kind"]) for name, entry in entries.items() if entry["required"]):
-            log.add("S10.1", where, "needs the scalar text entries `format`, `moi` and `id`.")
-        elif format_parts(_text(record["format"][()])[0]) is None:
-            log.add("S10.1", f"{where}/format", "is not a version of the form MAJOR.MINOR.")
+            log.add("S10.1", where, f"needs the scalar text entries `{VERSION_ENTRY}` and `{ID_ENTRY}`.")
+        elif format_parts(_text(record[VERSION_ENTRY][()])[0]) is None:
+            log.add("S10.1", f"{where}/{VERSION_ENTRY}", "is not a version of the form MAJOR.MINOR.")
         else:
-            if _text(record["moi"][()])[0] not in entries["moi"]["values"]:
-                log.add("S10.2", f"{where}/moi", "must be 'high' or 'low'.")
-            if not known_major(_text(record["format"][()])[0]):
-                log.add("S10.3", f"{where}/format", "is a format this validator does not know.")
-            if not _text(record["id"][()])[0]:
-                log.add("S10.1", f"{where}/id", "is empty.")
+            if not known_major(_text(record[VERSION_ENTRY][()])[0]):
+                log.add("S10.3", f"{where}/{VERSION_ENTRY}", "is a format this validator does not know.")
+            if not _text(record[ID_ENTRY][()])[0]:
+                log.add("S10.1", f"{where}/{ID_ENTRY}", "is empty.")
         # optional entries with a fixed vocabulary (S10.6)
         for name in OPTIONAL_METADATA:
             allowed = entries[name].get("values")
@@ -1157,7 +1152,7 @@ def _screen_identity(file, response_modality) -> dict:
     with h5py.File(file, "r") as f:
         out = {
             "modalities": list(f["mod"]),
-            "id": _text(f["uns/sceptre/id"][()])[0],
+            "id": _text(f[f"uns/{ID_ENTRY}"][()])[0],
             "cells": _index_of(f["mod/grna/obs"]),
             "grnas": _index_of(f["mod/grna/var"]),
         }

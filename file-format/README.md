@@ -1,12 +1,18 @@
-# The sceptre file format
+# Two file formats for Perturb-seq
 
 [![File format checks](https://github.com/Katsevich-Lab/sceptre-hub/actions/workflows/file-format.yml/badge.svg?branch=main)](https://github.com/Katsevich-Lab/sceptre-hub/actions/workflows/file-format.yml)
 
-> **Draft.** It has not been reviewed. The format is version 0.1 until
-> sceptre's first release that uses it, which freezes it as 1.0.
+> **Draft.** Neither has been reviewed. Each is at version 0.1 until it is
+> frozen as 1.0.
 
-An on-disk format for Perturb-seq data and analyses: the same files in R and
-Python, with one data file and any number of analyses of it.
+- **The Perturb-seq data file format.** One MuData `.h5mu` file per screen:
+  counts, cells, features and gRNAs. It is meant for any software that handles
+  Perturb-seq data, and nothing in it is specific to sceptre.
+- **The sceptre analysis format.** One folder per analysis of a data file:
+  the settings and tables of each stage.
+
+Both are the same files in R and in Python. They have separate versions, and
+the data file knows nothing about analyses.
 
 **Start with [the notebook](https://raw.githack.com/Katsevich-Lab/sceptre-hub/main/file-format/notebook.html).**
 It gives the principles, shows what is on disk, the choices to review and

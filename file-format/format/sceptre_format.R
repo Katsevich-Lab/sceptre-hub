@@ -245,15 +245,14 @@ response_modality_of <- function(modalities, requested = NULL, what = "The data 
 #   altExp "gRNA"           gRNA counts; its rowData is the gRNA table (grna_target, ...)
 #   other altExps           further modalities over the same cells, written under
 #                           their names; analyses that do not name them ignore them
-#   metadata(sce)$sceptre   list(moi = "high" or "low", response_modality = the
-#                           main experiment's modality name, "rna" if absent);
-#                           `id` is kept if present; `name` (a label for people)
+#   metadata(sce)           the entries of S10 that are known; `dataset_id` is kept
+#                           if present; `response_modality` names the main
+#                           experiment's modality ("rna" if absent); `title`
 #                           and `source` (a URL, DOI or accession) are optional
 fmt_write_screen <- function(sce, file, index_limit = NULL) {
     if (file.exists(file)) fmt_stop(file, " exists; a data file is written once.")
     dir.create(dirname(file), recursive = TRUE, showWarnings = FALSE)
-    stamp <- S4Vectors::metadata(sce)$sceptre
-    if (!isTRUE(stamp$moi %in% c("high", "low"))) fmt_stop("metadata(sce)$sceptre$moi must be 'high' or 'low'.")
+    stamp <- S4Vectors::metadata(sce)
     main <- if (is.null(stamp$response_modality)) DEFAULT_RESPONSE_MODALITY else stamp$response_modality
     others <- setdiff(SingleCellExperiment::altExpNames(sce), "gRNA")
     names_used <- c(main, GRNA, others)
@@ -269,7 +268,7 @@ fmt_write_screen <- function(sce, file, index_limit = NULL) {
     grna_table <- SummarizedExperiment::rowData(grna)
     if (is.null(grna_table$grna_target) || anyNA(grna_table$grna_target)) fmt_stop("Every gRNA needs a `grna_target`.")
     has_positions <- any(vapply(intersect(GRNA_COORDINATES, names(grna_table)), function(name) any(!is.na(grna_table[[name]])), logical(1)))
-    if (has_positions && is.null(stamp$genome_build)) fmt_stop("The gRNA table has positions: metadata(sce)$sceptre$genome_build must say which genome build they are in.")
+    if (has_positions && is.null(stamp$genome_build)) fmt_stop("The gRNA table has positions: metadata(sce)$genome_build must say which genome build they are in.")
     if (!is.null(grna_table$vector_id)) {
         if (anyNA(grna_table$vector_id)) fmt_stop("Every gRNA needs a `vector_id` when the column is present.")
         for (fault in vector_faults(rownames(grna), as.character(grna_table$vector_id), as.character(grna_table$grna_target))) fmt_stop(fault$message)
@@ -312,15 +311,15 @@ fmt_write_screen <- function(sce, file, index_limit = NULL) {
         MultiAssayExperiment::MultiAssayExperiment(
             lapply(experiments, function(e) e$experiment),
             colData = S4Vectors::DataFrame(as_file_frame(covariates$shared, TRUE), check.names = FALSE, row.names = cells),
-            # a native record with scalar entries (S10)
-            metadata = list(sceptre = c(
+            # scalar entries at the top level of `uns` (S10)
+            metadata = c(
                 list(
-                    format = scalar(FORMAT_VERSION), moi = scalar(stamp$moi),
-                    id = scalar(if (is.null(stamp$id)) new_id() else stamp$id)
+                    perturb_seq_format = scalar(FORMAT_VERSION),
+                    dataset_id = scalar(if (is.null(stamp$dataset_id)) new_id() else stamp$dataset_id)
                 ),
-                # optional: a label for people, and where the data came from (S10.5)
+                # optional: a title for people, and what is known about the screen (S10.5)
                 lapply(stamp[intersect(OPTIONAL_METADATA, names(stamp)[!vapply(stamp, is.null, logical(1))])], scalar)
-            ))
+            )
         ),
         file
     )
@@ -341,7 +340,7 @@ check_format <- function(format, what) {
 # table whose vectors break S8.7 or S8.8 (S8.9). Cheap: it looks at the metadata
 # and the gRNA table only.
 check_screen <- function(mae) {
-    check_format(as.vector(S4Vectors::metadata(mae)$sceptre$format)[1], "The data file")
+    check_format(as.vector(S4Vectors::metadata(mae)$perturb_seq_format)[1], "The data file")
     grna_table <- SummarizedExperiment::rowData(mae[[GRNA]])
     if (!is.null(grna_table$vector_id)) {
         faults <- vector_faults(rownames(grna_table), as.character(grna_table$vector_id), as.character(grna_table$grna_target))
@@ -353,14 +352,14 @@ check_screen <- function(mae) {
 screen_link <- function(sce, file = NULL, directory = NULL) {
     grna <- SingleCellExperiment::altExp(sce, "gRNA")
     link <- list(
-        id = S4Vectors::metadata(sce)$sceptre$id,
+        id = S4Vectors::metadata(sce)$dataset_id,
         n_cells = ncol(sce), n_responses = nrow(sce), n_grnas = nrow(grna),
         cell_ids_sha256 = sha256_ids(colnames(sce)),
         response_ids_sha256 = sha256_ids(rownames(sce)),
         grna_ids_sha256 = sha256_ids(rownames(grna))
     )
     # for people: which dataset this is; not part of the identity a reader checks
-    link$name <- S4Vectors::metadata(sce)$sceptre$name
+    link$title <- S4Vectors::metadata(sce)$title
     # a hint only, and only when the data file is near the analysis (A1.4)
     if (!is.null(file)) link$path <- nearby_path(file, directory)
     link
@@ -555,7 +554,7 @@ check_link <- function(recorded, sce, what) {
     current <- screen_link(sce)
     for (field in c("id", "cell_ids_sha256", "response_ids_sha256", "grna_ids_sha256")) {
         if (!identical(recorded[[field]], current[[field]])) {
-            named <- if (is.null(recorded$name)) "" else paste0(", the dataset '", recorded$name, "'")
+            named <- if (is.null(recorded$title)) "" else paste0(", the dataset '", recorded$title, "'")
             fmt_stop("The analysis ", what, " was run on another data file", named, " (its `", field, "` differs).")
         }
     }
@@ -816,13 +815,12 @@ validate_screen <- function(file, index_limit = NULL) {
     }
     required <- vapply(entries, function(e) isTRUE(e$required), logical(1))
     if (!all(mapply(scalar_of, names(entries)[required], classes[required]))) {
-        log$add("S10.1", where, "needs the scalar text entries `format`, `moi` and `id`.")
-    } else if (is.null(format_parts(read(paste0(where, "/format"))))) {
-        log$add("S10.1", paste0(where, "/format"), "is not a version of the form MAJOR.MINOR.")
+        log$add("S10.1", where, "needs the scalar text entries `perturb_seq_format` and `dataset_id`.")
+    } else if (is.null(format_parts(read(paste0(where, "/perturb_seq_format"))))) {
+        log$add("S10.1", paste0(where, "/perturb_seq_format"), "is not a version of the form MAJOR.MINOR.")
     } else {
-        if (!read(paste0(where, "/moi")) %in% unlist(entries$moi$values)) log$add("S10.2", paste0(where, "/moi"), "must be 'high' or 'low'.")
-        if (!known_major(read(paste0(where, "/format")))) log$add("S10.3", paste0(where, "/format"), "is a format this validator does not know.")
-        if (!nzchar(read(paste0(where, "/id")))) log$add("S10.1", paste0(where, "/id"), "is empty.")
+        if (!known_major(read(paste0(where, "/perturb_seq_format")))) log$add("S10.3", paste0(where, "/perturb_seq_format"), "is a format this validator does not know.")
+        if (!nzchar(read(paste0(where, "/dataset_id")))) log$add("S10.1", paste0(where, "/dataset_id"), "is empty.")
     }
     # optional entries with a fixed vocabulary (S10.6)
     for (name in OPTIONAL_METADATA) {
@@ -1013,7 +1011,7 @@ screen_identity <- function(file, response_modality) {
     read <- function(path) as.character(as.vector(rhdf5::h5read(file, path)))
     index <- function(table) read(paste0(table, "/", as.vector(rhdf5::h5readAttributes(file, table)[["_index"]])))
     modalities <- subset(rhdf5::h5ls(file, recursive = 2L), group == "/mod")$name
-    out <- list(modalities = modalities, id = read("uns/sceptre/id"), cells = index("mod/grna/obs"), grnas = index("mod/grna/var"))
+    out <- list(modalities = modalities, id = read("uns/dataset_id"), cells = index("mod/grna/obs"), grnas = index("mod/grna/var"))
     target <- "mod/grna/var/grna_target"
     out$targets <- if (identical(as.vector(rhdf5::h5readAttributes(file, target)[["encoding-type"]]), "categorical")) {
         read(paste0(target, "/categories"))[as.integer(rhdf5::h5read(file, paste0(target, "/codes"))) + 1L]

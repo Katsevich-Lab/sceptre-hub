@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>The sceptre file format</title>
+<title>Two file formats for Perturb-seq</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -2223,8 +2223,8 @@ vertical-align: -.125em;
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">The sceptre file format</h1>
-<p class="subtitle lead">Draft 0.1: one file for a Perturb-seq screen, one folder for each analysis of it, the same in R and in Python</p>
+<h1 class="title">Two file formats for Perturb-seq</h1>
+<p class="subtitle lead">Draft 0.1 of each: a data file format for any Perturb-seq software, and a format for sceptre’s analyses of such a file. The same files in R and in Python</p>
 </div>
 
 
@@ -2241,7 +2241,12 @@ vertical-align: -.125em;
 </header>
 
 
-<p>This page is the way into the format. It shows what is on disk, why it is that way, what review is asked for, and what has been tested. Most of it is folded: open what you want to read.</p>
+<p>There are two formats here, with separate versions:</p>
+<ul>
+<li><strong>The Perturb-seq data file format</strong>: one file per screen, holding the counts and what is known about the cells and gRNAs. It is meant for any software that handles Perturb-seq data. Nothing in it is specific to sceptre.</li>
+<li><strong>The sceptre analysis format</strong>: one folder per analysis of a data file, holding the settings and tables of each stage.</li>
+</ul>
+<p>This page is the way into both. It shows what is on disk, why it is that way, what review is asked for, and what has been tested. Most of it is folded: open what you want to read.</p>
 <p>Two reference documents sit behind it: <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/file-format/SPEC.md"><code>SPEC.md</code></a> has the rules, numbered, and <a href="https://github.com/Katsevich-Lab/sceptre-hub/blob/main/file-format/RATIONALE.md"><code>RATIONALE.md</code></a> has the full reasons, with evidence, under the same numbers.</p>
 <div class="callout callout-style-simple callout-note">
 <div class="callout-body d-flex">
@@ -3184,7 +3189,7 @@ batch_1
 <li>
 <details>
 <summary class="row" style="--d:1">
-<span class="name"><code>uns/sceptre</code></span><span class="what">the format version, and what dataset this is</span><span class="size">7 entries</span>
+<span class="name"><code>uns</code></span><span class="what">what the file says about itself: the format version, which dataset this is, and what kind of screen it was</span><span class="size">6 entries</span>
 </summary>
 <div class="body">
 <table class="dataframe rows table table-sm table-striped small">
@@ -3204,29 +3209,18 @@ meaning
 <tbody>
 <tr>
 <td>
-format
+perturb_seq_format
 </td>
 <td>
 0.1
 </td>
 <td>
-the format version of this file
+the version of the Perturb-seq data file format this file follows
 </td>
 </tr>
 <tr>
 <td>
-genome_build
-</td>
-<td>
-GRCh38
-</td>
-<td>
-the genome build of the positions; required when the gRNA table has positions
-</td>
-</tr>
-<tr>
-<td>
-id
+dataset_id
 </td>
 <td>
 b907fd1b151fd398b78ff993ae9e86d6
@@ -3237,24 +3231,24 @@ identifies the dataset; random, assigned at import
 </tr>
 <tr>
 <td>
-moi
-</td>
-<td>
-high
-</td>
-<td>
-multiplicity of infection: high or low
-</td>
-</tr>
-<tr>
-<td>
-name
+title
 </td>
 <td>
 sceptre high-MOI example data
 </td>
 <td>
-a label for people
+a title for people
+</td>
+</tr>
+<tr>
+<td>
+perturbation_type
+</td>
+<td>
+CRISPRi
+</td>
+<td>
+the kind of perturbation
 </td>
 </tr>
 <tr>
@@ -3270,13 +3264,13 @@ the organism, as a scientific name
 </tr>
 <tr>
 <td>
-perturbation_type
+genome_build
 </td>
 <td>
-CRISPRi
+GRCh38
 </td>
 <td>
-the kind of perturbation
+the genome build of the positions; required when the gRNA table has positions
 </td>
 </tr>
 </tbody>
@@ -3326,7 +3320,7 @@ Close all
     &quot;cell_ids_sha256&quot;: &quot;46704530fcc3718c02e50135a646f0e9487016020bba4f9313e421aa4377f3fa&quot;,
     &quot;response_ids_sha256&quot;: &quot;9247821dc1add1886b9ca5a361edb2cd02002dd3fecb7a63551d0dd393026b7e&quot;,
     &quot;grna_ids_sha256&quot;: &quot;90de70838feca98b70315bd03718d41d86560353f32e3c470db195dd64b05ce2&quot;,
-    &quot;name&quot;: &quot;sceptre high-MOI example data&quot;,
+    &quot;title&quot;: &quot;sceptre high-MOI example data&quot;,
     &quot;path&quot;: &quot;../../screen.h5mu&quot;
   }
 }</pre>
@@ -3477,6 +3471,7 @@ ENSG00000286326
 <pre>{
   &quot;stage&quot;: &quot;parameters&quot;,
   &quot;settings&quot;: {
+    &quot;moi&quot;: &quot;high&quot;,
     &quot;formula&quot;: &quot;~log(rna_n_nonzero) + log(rna_n_umis) + log(grna_n_nonzero) + log(grna_n_umis) + batch&quot;,
     &quot;side&quot;: &quot;left&quot;,
     &quot;resampling_mechanism&quot;: &quot;crt&quot;,
@@ -4724,7 +4719,7 @@ Functionality:
 <div class="cell-output cell-output-stdout">
 <pre><code>MuData object with n_obs × n_vars = 500 × 160
   obs:  &#39;batch&#39;
-  uns:  &#39;sceptre&#39;
+  uns:  &#39;dataset_id&#39;, &#39;genome_build&#39;, &#39;organism&#39;, &#39;perturb_seq_format&#39;, &#39;perturbation_type&#39;, &#39;title&#39;
   2 modalities
     grna:   500 × 60
       obs:  &#39;n_nonzero&#39;, &#39;n_umis&#39;
@@ -4912,6 +4907,9 @@ What does not need review now
 Check
 </th>
 <th>
+Format
+</th>
+<th>
 What it shows
 </th>
 <th>
@@ -4925,21 +4923,44 @@ Passed in Python
 <tbody>
 <tr>
 <td>
-<code>conformance</code>
+<code>conformance-data</code>
 </td>
 <td>
-Both validators report exactly the expected rules on every file of <code>conformance/</code> (files that conform, and files that each break a rule), and the standard readers read the files that must still be read
+data file
 </td>
 <td>
-98 of 98
+Both validators report exactly the expected rules on every data file of <code>conformance/</code> (files that conform, and files that each break a rule), and the standard readers read the files that must still be read
 </td>
 <td>
-98 of 98
+49 of 49
+</td>
+<td>
+49 of 49
+</td>
+</tr>
+<tr>
+<td>
+<code>conformance-analysis</code>
+</td>
+<td>
+analysis
+</td>
+<td>
+The same for every analysis folder of <code>conformance/</code>
+</td>
+<td>
+50 of 50
+</td>
+<td>
+50 of 50
 </td>
 </tr>
 <tr>
 <td>
 <code>encodings</code>
+</td>
+<td>
+both
 </td>
 <td>
 Every kind of value, written by each language&#39;s standard libraries and read by the other&#39;s. The kinds the format allows come back correct; the kinds it forbids still break
@@ -4956,6 +4977,9 @@ Every kind of value, written by each language&#39;s standard libraries and read 
 <code>two-writers</code>
 </td>
 <td>
+both
+</td>
+<td>
 R and Python each write the same random content. The files are compared array by array and column by column, and each language reads the other&#39;s file and gets the source back
 </td>
 <td>
@@ -4968,6 +4992,9 @@ R and Python each write the same random content. The files are compared array by
 <tr>
 <td>
 <code>independent-readers</code>
+</td>
+<td>
+both
 </td>
 <td>
 Tools outside this code read the files: anndata, scanpy, pandas, polars and duckdb in Python; HDF5Array and arrow in R
@@ -4984,6 +5011,9 @@ Tools outside this code read the files: anndata, scanpy, pandas, polars and duck
 <code>wide-index</code>
 </td>
 <td>
+data file
+</td>
+<td>
 The 64-bit branch of the count matrix&#39;s index type, with the limit lowered because no test file reaches it
 </td>
 <td>
@@ -4998,6 +5028,9 @@ The 64-bit branch of the count matrix&#39;s index type, with the limit lowered b
 <code>writers</code>
 </td>
 <td>
+both
+</td>
+<td>
 What a writer does beyond producing a conforming file: a copy keeps the dataset&#39;s identifier and every modality, a retried stage leaves nothing of its first attempt, and large matrices get 64-bit index arrays
 </td>
 <td>
@@ -5010,6 +5043,9 @@ What a writer does beyond producing a conforming file: a copy keeps the dataset&
 <tr>
 <td>
 <code>derived</code>
+</td>
+<td>
+analysis
 </td>
 <td>
 What software computes from the files (cells per gRNA and per target, cells in use, pairs passing QC, log2 fold change, significance, control groups) equals what sceptre itself computed

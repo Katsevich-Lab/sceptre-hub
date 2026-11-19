@@ -1,6 +1,6 @@
-# The sceptre file format: specification
+# The Perturb-seq data file format and the sceptre analysis format: specification
 
-**Format 0.1 (draft), November 2026.**
+**Both at version 0.1 (draft), November 2026.**
 
 **Status.** This is a first draft. It was written in about a week, by one
 author, and implemented twice by that same author, in R and in Python. It has
@@ -8,6 +8,19 @@ been tested on datasets of 500 and 1,000 cells, and the data file alone on one
 real screen of 207,324 cells. The tables of an analysis have been written and
 read at real size with made-up content, on Linux; no real analysis has, and
 nobody else has reviewed it. It looks more finished than it is.
+
+**Two formats.** This document specifies two formats, each with its own version:
+
+| | The Perturb-seq data file format | The sceptre analysis format |
+|---|---|---|
+| What it is | One MuData `.h5mu` file per screen: counts, cells, features, gRNAs | One folder per analysis: stage records and tables |
+| Who it is for | Any software that reads or writes Perturb-seq data. Nothing in it is specific to sceptre | Software that runs or reads a sceptre analysis |
+| Its version | `perturb_seq_format`, in the file (S10) | `format`, in `analysis.json` (A1) |
+| Its rules | Section 2: the S rules | Sections 3 and 4: the A and T rules |
+
+The data file knows nothing about analyses. An analysis names its data file
+by identifier (A1). Everything else here (types, conformance, the checks)
+serves both.
 
 **Scope.** This document fixes how a Perturb-seq dataset and sceptre's
 analyses of it are stored: which files exist, what they are called, what they
@@ -35,8 +48,9 @@ section of [`RATIONALE.md`](RATIONALE.md) with the same letter and number
 
 ## Versions and changes
 
-- **The version** has two parts, `MAJOR.MINOR`, and is stamped in every data
-  file (S10) and every analysis (A1).
+- **Each format has its own version**, of two parts, `MAJOR.MINOR`: the data
+  file format's is in every data file (S10) and the analysis format's in every
+  analysis (A1). The two change independently.
   - A **minor** increase adds something an older reader can safely ignore: an
     optional column, table, file or metadata entry. Files that do not use the
     addition are unchanged.
@@ -46,18 +60,19 @@ section of [`RATIONALE.md`](RATIONALE.md) with the same letter and number
 - **What a reader does.** A reader MUST either read a file correctly or detect
   that it cannot. It reads any file whose major version it knows, ignoring what
   it does not know, and MUST refuse a file with another major version.
-- **Major version 0 is the draft.** Until sceptre's first release that reads
-  and writes these files, the rules may change without a major increase and no
-  migration is promised. That release freezes the format as 1.0.
+- **Major version 0 is the draft.** Until a format is frozen as 1.0, its rules
+  may change without a major increase and no migration is promised. The two
+  are frozen separately. The analysis format is frozen at sceptre's first
+  release that reads and writes it.
 - **How the specification changes.** Nothing enters this document until the R
   library and the Python library both implement it and a file in
   `conformance/` exercises it.
 
 | Version | What it added |
 |---|---|
-| 0.1 | Everything in this document |
+| 0.1, of both formats | Everything in this document |
 
-There is no dataset version. A dataset that is imported again gets a new `id`
+There is no dataset version. A dataset that is imported again gets a new `dataset_id`
 (S10.4), and that is the protection an analysis needs.
 
 ## How to read this
@@ -83,8 +98,8 @@ final; the sorting into kinds is.
 - **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 122 statements, 83 are file rules, 28 behaviour rules and 11
-guidance. The validators check 81 of the file rules (T0.9 in part), a test covers 1 more
+Of the 123 statements, 84 are file rules, 28 behaviour rules and 11
+guidance. The validators check 82 of the file rules (T0.9 in part), a test covers 1 more
 (T4.3), and 1 has no test (A3.2). Tests or the conformance run
 cover 18 of the behaviour rules; 10 have no test: S6.4, S8.4, S9.3, S12.1, S12.2, A1.5, A3.5, A6.2, T1.3, T7.3.
 Five of the untested rules (A1.5, A3.2, A3.5, T1.3, T7.3) can only be
@@ -190,6 +205,8 @@ may refer to one data file, and an analysis may be stored anywhere.
 ---
 
 ## 2. The data file
+
+This section is the Perturb-seq data file format.
 
 ### S1. Container
 
@@ -306,11 +323,11 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| S10.1 | file | `uns/sceptre` MUST be an AnnData dictionary with the scalar text entries `format` (a version, `MAJOR.MINOR`), `moi` and `id` (not empty). | V |
-| S10.2 | file | `moi` MUST be `high` or `low`. | V |
-| S10.3 | file | `format` is the data file's own format version, `0.1` for this document. A reader MUST refuse a major version other than the one it knows. | V |
-| S10.4 | behaviour | `id` identifies the dataset. A writer assigns a new random `id` when it imports data, and keeps the `id` when it copies a data file. | tests (`verify/writers`: a copied data file keeps its `id`). A new `id` on import: none (testing it needs a package) |
-| S10.5 | file | `uns/sceptre` MAY have these scalar text entries; `genome_build` is required where the gRNA table has positions (S8.14). None identifies the dataset (`id` does), and no reader's behaviour depends on them: `name`, a label for people; `source`, a URL, DOI or accession saying where the data came from; `perturbation_type`; `organism`, as a scientific name such as `Homo sapiens`; `genome_build`, such as `GRCh38`, the build of every coordinate in the file. | V |
+| S10.1 | file | `uns` MUST have the scalar text entries `perturb_seq_format` (a version, `MAJOR.MINOR`) and `dataset_id` (not empty). | V |
+| S10.2 | file | The entries this section names are the format's. `uns` MAY hold other entries, of other tools; they are not the format's and a reader ignores them. | V (a valid conformance case) |
+| S10.3 | file | `perturb_seq_format` is the version of the data file format, `0.1` for this document. A reader MUST refuse a major version other than the one it knows. | V |
+| S10.4 | behaviour | `dataset_id` identifies the dataset. A writer assigns a new random `dataset_id` when it imports data, and keeps it when it copies a data file. | tests (`verify/writers`: a copied data file keeps its `dataset_id`). A new one on import: none (testing it needs a package) |
+| S10.5 | file | `uns` MAY have these scalar text entries; `genome_build` is required where the gRNA table has positions (S8.14). None identifies the dataset (`dataset_id` does), and no reader's behaviour depends on them: `title`, a title for people; `source`, a URL, DOI or accession saying where the data came from; `perturbation_type`; `organism`, as a scientific name such as `Homo sapiens`; `genome_build`, such as `GRCh38`, the build of every coordinate in the file. | V |
 | S10.6 | file | `perturbation_type`, if present, MUST be one of `CRISPRko` (knockout), `CRISPRi` (interference), `CRISPRa` (activation), `CRISPRbe` (base editing), `CRISPRkd` (knockdown of RNA). | V |
 | S10.7 | guidance | A writer SHOULD record `perturbation_type` and `organism` when it knows them, and `genome_build` even in a file without positions. They are known at import, cannot be worked out from the file, and are lost for good if not written down. | — |
 
@@ -331,16 +348,18 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 
 ## 3. The analysis folder
 
+This section and the next are the sceptre analysis format.
+
 ### A1. `analysis.json`
 
 | Rule | Kind | | Check |
 |---|---|---|---|
 | A1.1 | file | `analysis.json` MUST exist and conform to `spec/analysis.schema.json`. It has `format` (the analysis's own format version, `0.1` for this document; a reader MUST refuse a major version other than the one it knows), `response_modality` (the name of the modality the analysis tests; never `grna`), and `screen`. | V |
-| A1.2 | file | `screen` describes the data file: its `id` (S10.4); `n_cells`, `n_responses`, `n_grnas`; and `cell_ids_sha256`, `response_ids_sha256`, `grna_ids_sha256`. "Responses" are the features of the response modality. A reader MUST refuse a data file for which any of these differs, or which has no modality of that name. | V |
+| A1.2 | file | `screen` describes the data file: `id`, which is the data file's `dataset_id` (S10.4); `n_cells`, `n_responses`, `n_grnas`; and `cell_ids_sha256`, `response_ids_sha256`, `grna_ids_sha256`. "Responses" are the features of the response modality. A reader MUST refuse a data file for which any of these differs, or which has no modality of that name. | V |
 | A1.3 | file | The SHA-256 of a list of identifiers is that of their UTF-8 bytes, in file order, joined by a line feed, with no line feed at the end. (S9.4 keeps this unambiguous.) | V (through A1.2) |
 | A1.4 | file | `screen.path` is optional. If present it MUST be a relative POSIX path or an `http` or `https` URL. It MUST NOT be an absolute local path. | V |
 | A1.5 | behaviour | `screen.path` is a hint. A reader takes the data file's location from its caller and MUST NOT depend on the hint. A writer records a relative path only when the data file is in the analysis folder's parent or grandparent folder or below one of them, and otherwise records nothing. | none (testing it needs a package) |
-| A1.6 | file | `screen.name` is optional: the data file's `name` (S10.5), copied so that a person can tell which dataset an analysis belongs to. It is not part of the identity a reader checks. | V (through A1.1) |
+| A1.6 | file | `screen.title` is optional: the data file's `title` (S10.5), copied so that a person can tell which dataset an analysis belongs to. It is not part of the identity a reader checks. | V (through A1.1) |
 | A1.7 | guidance | Where a dataset lives is for each package and each user's own configuration to resolve, for instance by a search path or a table from dataset `id` to location. Nothing specific to one machine belongs in `analysis.json`. A package that follows the hint by itself SHOULD do so only for locations the user has configured, since a folder from elsewhere could point a reader at any file or URL. | — |
 
 ### A2. Stage records
@@ -364,6 +383,7 @@ and `discovery`. The last three do not depend on one another.
 | A3.3 | file | JSON files are UTF-8. A missing value is `null`. NaN and infinity MUST NOT appear. | V (a record that is not valid JSON fails A1.1 or A2.1) |
 | A3.4 | behaviour | A writer MUST write a real number with 17 significant digits, so that the number read is the number written. | tests (the threshold reproduces every call) |
 | A3.5 | behaviour | The resampling budget `B3` in force is that of the latest stage record that carries one. | none (testing it needs a package) |
+| A3.6 | file | The parameters record's `moi` setting is `high` or `low`: the preset from which a package chose its defaults, such as the control group and what is done with cells carrying several gRNAs. It is a choice of the analysis, and the data file does not record it. | V (through A2.1) |
 
 ### A4. Rerunning
 

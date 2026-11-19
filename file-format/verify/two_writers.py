@@ -28,7 +28,7 @@ from common import OUT, Results
 
 FORMULA = "~log(rna_n_umis) + batch"
 TERMS = ["(Intercept)", "log(rna_n_umis)", "batchb1"]
-SETTINGS = {"formula": FORMULA, "side": "both", "resampling_mechanism": "permutations", "resampling_approximation": "spa",
+SETTINGS = {"moi": "high", "formula": FORMULA, "side": "both", "resampling_mechanism": "permutations", "resampling_approximation": "spa",
             "control_group": "complement", "grna_integration_strategy": "union", "B1": 499, "B2": 4999, "B3": 0,
             "multiple_testing_method": "BH", "multiple_testing_alpha": 0.1, "seed": 4, "response_fit_method": "batched", "grna_fit_method": "pysceptre"}
 STAMP = "2026-01-01T00:00:00Z"
@@ -54,7 +54,7 @@ def write_all(inputs, folder, language):
     })
     mdata.obs["batch"] = pd.Categorical(inputs["batch"]["values"], categories=inputs["batch"]["levels"])
     mdata.obs["quality"] = [np.nan if v is None else v for v in inputs["quality"]]
-    mdata.uns["sceptre"] = {"moi": inputs["moi"], "id": inputs["id"], "genome_build": inputs["genome_build"]}
+    mdata.uns.update({"dataset_id": inputs["id"], "genome_build": inputs["genome_build"]})
     screen = folder / f"screen-{language}.h5mu"
     sf.write_screen(mdata, screen)
 
@@ -124,7 +124,7 @@ if __name__ == "__main__":
                     results.add(f"{seed}: {modality} {table} table has the same columns, encodings and values", verdict is True, "" if verdict is True else verdict)
             verdict = same_tables(a["obs"], b["obs"])
             results.add(f"{seed}: shared cell table has the same columns, encodings and values", verdict is True, "" if verdict is True else verdict)
-            stamp = lambda f: {k: (f["uns/sceptre"][k].asstr()[()], str(f["uns/sceptre"][k].dtype)) for k in f["uns/sceptre"]}
+            stamp = lambda f: {k: (f["uns"][k].asstr()[()], str(f["uns"][k].dtype)) for k in f["uns"]}
             results.add(f"{seed}: file metadata identical", stamp(a) == stamp(b), f"{stamp(a)} / {stamp(b)}")
         for language, file in ((A, r_file), (B, py_file)):
             problems = sf.validate_screen(file)
