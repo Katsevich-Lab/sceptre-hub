@@ -145,6 +145,23 @@
       "required": false,
       "no_missing": true,
       "rule": "S8.6"
+    },
+    {
+      "name": "grna_type",
+      "description": "the kind of gRNA: `targeting`, or one of the kinds of control (`non-targeting`, `safe-targeting`, `negative control`)",
+      "kinds": [
+        "string",
+        "categorical"
+      ],
+      "required": false,
+      "no_missing": true,
+      "values": [
+        "targeting",
+        "non-targeting",
+        "safe-targeting",
+        "negative control"
+      ],
+      "rule": "S8.15"
     }
   ],
   "metadata": {

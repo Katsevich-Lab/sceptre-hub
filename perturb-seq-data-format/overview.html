@@ -3412,7 +3412,7 @@ Functionality:
 <section id="questions-for-reviewers" class="level2">
 <h2 class="anchored" data-anchor-id="questions-for-reviewers">Questions for reviewers</h2>
 <ol type="1">
-<li><strong>Is anything missing that a real screen needs?</strong> For gRNA annotation the format has a target, its position and an optional vector, and no gRNA type or spacer sequence yet. It defines no annotation of genes.</li>
+<li><strong>Is anything missing that a real screen needs?</strong> For gRNA annotation the format has a target, its position, an optional vector and an optional type, and no spacer sequence or position of the gRNA itself yet. It defines no annotation of genes.</li>
 <li><strong>Coordinates.</strong> Target positions are 1-based with both ends included, as in GTF files, and a file with positions has to say which genome build they are in. Is that the right convention?</li>
 <li><strong>Limits.</strong> A gRNA has one target, and so does a vector carrying several gRNAs; combinatorial screens are refused. DNA-targeting is assumed. Are those limits acceptable for now?</li>
 <li><strong>The matrix layout.</strong> Counts are stored by feature, which suits fitting one gene at a time. Files from mapping pipelines and from scanpy are stored by cell. Should the format allow both and recommend one?</li>
@@ -3425,7 +3425,7 @@ What does not need review now
 </summary>
 <p>These can be added or changed later without breaking any file.</p>
 <ul>
-<li><strong>Optional columns not yet in the format:</strong> gRNA type, spacer, gene annotation (<code>RATIONALE.md</code>, planned additions).</li>
+<li><strong>Optional columns not yet in the format:</strong> spacer, the gRNA’s own position, gene annotation (<code>RATIONALE.md</code>, planned additions).</li>
 <li><strong>The wording of individual rules.</strong> The sorting into file rules, behaviour rules and guidance is meant to be final; the sentences are not.</li>
 <li><strong>Compression settings.</strong> Software reading the files does not depend on them.</li>
 <li><strong>The code in <code>format/</code>.</strong> The validators show that the rules can be checked in both languages; the writer is temporary.</li>
@@ -3462,10 +3462,10 @@ Passed in Python
 Both validators report exactly the expected rules on every data file of <code>conformance/</code> (files that conform, and files that each break a rule), and the standard readers read the files that must still be read
 </td>
 <td>
-49 of 49
+53 of 53
 </td>
 <td>
-49 of 49
+53 of 53
 </td>
 </tr>
 <tr>

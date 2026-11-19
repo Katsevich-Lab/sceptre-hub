@@ -216,6 +216,12 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see S4.
 - **Why `target_chr` and not `chr`.** sceptre's gRNA table calls these columns `chr`, `start` and `end` and uses them as the target's position when it builds cis pairs. The bare names do not say whether they locate the gRNA or its target, and IGVF's files carry both. The file names say which; the packages keep their own names and the prototype translates.
 - **Not stored.** `grna_group`. It depends on a choice an analysis makes, how gRNAs are combined *(verified, `R/preprocessing_functions.R`)*, so it is not data (principle 2).
 - **A gRNA under two targets is refused.** It cannot be one row, and a writer stops with a message. R accepts such tables today, with a warning on the development branch *(verified, `R/accessors.R`)*, and public pysceptre counts them and keeps the full table separately *(verified, `scripts/sceptre_io.py`)*. What pooling means for such a gRNA is a scientific question first; a separate gRNA-to-target table can be added later without changing anything else ([section 6](#6-fixed-now-free-to-grow)).
+- **The kind of gRNA: `grna_type`** *(Decided)*.
+  - *The column.* An optional text column of the gRNA table with four values: `targeting`, `non-targeting`, `safe-targeting`, `negative control`. These are the values of the `type` column in the IGVF pipeline's guide table *(verified, `docs/mudata_schema.md` on its `dev` branch)*.
+  - *Controls keep one marker.* A gRNA of any of the three control kinds has `grna_target` equal to `non-targeting` and no target position. That is how the IGVF pipeline treats them: it takes a guide as a control if its type is one of the three or its target name is `non-targeting`, and its guide documentation says controls should carry no invented positions *(verified, `bin/intended_target_key_utils.py` and `docs/guide-metadata.md`)*. So whether a gRNA is a control is still decided by `grna_target` alone (S8.3), and the column adds one thing: which kind of control it is. A safe-targeting gRNA does cut somewhere; the format records that it is a control and not where it cuts.
+  - *The two must agree* (S8.16). A file in which a control kind has a real target, or a `targeting` gRNA has the target `non-targeting`, says two different things about one gRNA.
+  - *Why optional.* Most existing data says only "non-targeting", including libraries whose controls are in fact safe-targeting, so a required column would make an importer state a guess as fact. For a targeting gRNA the value follows from the target, which principle 7 says not to store.
+  - *Not added:* columns for the gRNA's own position, spacer, PAM and strand. They are planned ([section 6](#6-fixed-now-free-to-grow)); a file that carries them keeps IGVF's names.
 - **Several gRNAs on one vector: `vector_id`** *(Decided)*.
   - *The rule.* A vector has one target. Several gRNAs delivered together against the same element are in scope. A vector whose gRNAs have different targets is a combinatorial screen and is out of scope: sceptre is not equipped to analyse those, and the format should be future-proof without accommodating every possibility. This is the rule sceptre already enforces, that `vector_id` is nested within `grna_target`.
   - *The column.* An optional text column `vector_id` in the gRNA table, beside `grna_target`. Which gRNA sits on which vector is fixed at cloning and known at import, so it belongs in the data file by the format's dividing rule. sceptre keeps it today as an optional column of its gRNA table under the same name, so this continues a convention.
@@ -331,7 +337,7 @@ the top of this document.
 | MOI | `high` or `low`, in the data file | Not in the data file | This format: it is a choice about how to analyse a screen, and one dataset can be analysed either way | S10 |
 | Matrix layout | Compressed by cell | Compressed by feature | This format: one gene is one read, with no chunk files | S3 |
 | Count type | Smallest unsigned type that fits | Fixed 32-bit | A close call; kept for a type that never depends on the data | S4 |
-| gRNA annotation | Type, spacer, gRNA and target positions, target key | Target and target position | **IGVF.** Taken in part now (S8); the rest planned | S8, section 6 |
+| gRNA annotation | Type, spacer, gRNA and target positions, target key | Target, target position, and optionally the type, with IGVF's four values | **IGVF** for the spacer and the gRNA's own position, which are planned | S8, section 6 |
 | Gene annotation | Symbol, position, mitochondrial and ribosomal flags | Unspecified | **IGVF.** Planned | section 6 |
 | Reference genome | Build per gRNA; annotation file hash in the manifest | One build for the file, required when the gRNA table has positions; no annotation hash | **IGVF** for the annotation hash, which is planned | S8, S10 |
 | Other modalities | Optional `hashing` | Any number, under free names | Taken from IGVF | S2 |
@@ -396,7 +402,6 @@ reader can safely ignore it, **major** if it could misread the file.
 
 | Addition | Where | Why wait | Version |
 |---|---|---|---|
-| gRNA type: targeting, non-targeting, safe-targeting, other negative control | gRNA table | It overlaps with marking controls by `grna_target` equal to `non-targeting`, which both codebases depend on, and a safe-targeting gRNA has a real target and is a control, which that marker cannot say. This needs a decision, not only a column | minor if the column is information and the marker stays the rule; major if the column becomes the rule |
 | Spacer sequence and PAM | gRNA table | Known at import and not derivable, like the entries of S10, but they serve guide design and reanalysis, not reading results | minor |
 | The gRNA's own position and strand | gRNA table | sceptre does not read it | minor |
 | Gene symbol, gene position, mitochondrial flag | Feature table of the measured modality | The flag would record which genes `p_mito` counted; it needs the importers to keep it | minor |
@@ -435,7 +440,7 @@ format's rationale](../sceptre-analysis-format/RATIONALE.md#suggested-changes-to
 | The introduction | `overview.html` | One page: the principles, what is in a file, the choices that are expensive to change with their reasons in short, the questions that need a view, and what has been tested |
 | The reasons | this document | Why each rule is what it is |
 | Data-file definition | `spec/screen.json` | The structure of a data file as data: required groups, number types, encodings, allowed column kinds, required columns and metadata. Both validators read it |
-| Conformance files | `conformance/`, built by `verify/make_conformance.py` | 8 conforming files, written by R and by Python, and 41 that each break a rule, with the rules a validator must report. Five of the 41 store counts or index arrays in another number type, which a reader must still read (S4.4) |
+| Conformance files | `conformance/`, built by `verify/make_conformance.py` | 9 conforming files, written by R and by Python, and 44 that each break a rule, with the rules a validator must report. Five of the 41 store counts or index arrays in another number type, which a reader must still read (S4.4) |
 | Validator | `validate_screen()` in `format/perturb_seq_data.R` and `format/perturb_seq_data.py` | Checks a data file without building a package object, and reports every problem, not only the first |
 
 **Why define it this way.** Writing the schemas exposes ambiguities in the
@@ -496,8 +501,8 @@ the data and runs on the committed files with standard libraries only.
 Python, all passing:
 
 - the validators and readers on the conformance set. Both validators accept
-  all 8 conforming files and report exactly the expected rules for all 41
-  broken ones, the same in both languages. 35 rules are exercised by at least
+  all 9 conforming files and report exactly the expected rules for all 44
+  broken ones, the same in both languages. 37 rules are exercised by at least
   one broken file. One more is checked with no file: S11.1 (no filter other
   than gzip), because R cannot read a file compressed otherwise at all;
 - an encoding matrix: each kind of value written by each language's standard

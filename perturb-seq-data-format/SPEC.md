@@ -87,8 +87,8 @@ final; the sorting into kinds is.
 - **tests**: a check in `verify/` or the conformance run exercises it, named in brackets;
 - **none**: nothing tests it yet.
 
-Of the 59 statements, 40 are file rules, 12 behaviour rules and 7
-guidance. The validators check all 40 file rules. Tests or the conformance
+Of the 62 statements, 42 are file rules, 12 behaviour rules and 8
+guidance. The validators check all 42 file rules. Tests or the conformance
 run cover 6 of the behaviour rules; 6 have no test: S6.4, S8.3, S8.4, S9.3,
 S12.1, S12.2.
 
@@ -260,6 +260,9 @@ The gRNA table is the feature table of `grna`: one row per gRNA.
 | S8.12 | guidance | This is the convention of GTF and GFF files, Ensembl, and Bioconductor's `GRanges`. An interval from a BED file (0-based, end excluded) is converted at import by adding 1 to its start. The format has one convention and no entry that says which is in use. Any position column added later follows it. | — |
 | S8.13 | guidance | Chromosome names are text, and the format does not choose between `chr1` and `1`. They have to match the naming of whatever positions they are compared with. | — |
 | S8.14 | file | A file in which any gRNA has a position MUST have `genome_build` (S10.5). A position cannot be compared with another without knowing the build of both, and the build cannot be worked out from the file. | V |
+| S8.15 | file | The gRNA table MAY have `grna_type`, the kind of each gRNA: text with no missing values, one of `targeting`, `non-targeting`, `safe-targeting`, `negative control`. The last three are kinds of control. A table without the column does not record the kind. | V |
+| S8.16 | file | Where `grna_type` is present it MUST agree with `grna_target`: a gRNA of any control kind has `grna_target` equal to `non-targeting` and no target position, and a `targeting` gRNA has another target. | V |
+| S8.17 | guidance | Whether a gRNA is a control is decided by `grna_target` (S8.3), with or without `grna_type`; the column says which kind of control it is. A file that carries other columns of the IGVF guide table (the gRNA's own position, spacer, PAM, strand) SHOULD keep IGVF's names for them. | — |
 
 ### S9. Identifiers
 

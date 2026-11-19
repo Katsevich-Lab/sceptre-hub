@@ -470,6 +470,7 @@ reader can safely ignore it, **major** if it could misread the file.
 
 | Addition | Where | Why wait | Version |
 |---|---|---|---|
+| Which kinds of control the calibration stage used, where the data file records `grna_type` | Calibration record | Today every gRNA whose target is `non-targeting` is a control, of whichever kind. Using only some kinds is a choice no package offers yet | minor |
 | A hash of the data file's contents: the cell and feature tables, and perhaps the counts | `analysis.json`, beside the identifier hashes | The link (A1) catches a data file whose cells or features changed, not one whose values were edited in place. Hashing the tables is cheap; hashing the counts is a full read of the file | minor |
 | A check that a rebuilt design matrix is the writer's | Parameters record | A hash of exact values is not portable (T7). A hash of the covariates before any arithmetic would be | minor |
 | A small stamp in every stage table's Parquet metadata: format version, dataset `id`, stage, table name | Key-value metadata of each table file, as the fit cache's parts carry their identity (T6) | A convenience, not needed for correctness: a results file copied out of its folder would identify itself, and a validator could confirm each file belongs. It is a second copy of facts the stage record holds, so the two would have to be kept in agreement. | minor: an old reader ignores the metadata |

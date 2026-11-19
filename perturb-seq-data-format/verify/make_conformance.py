@@ -112,6 +112,27 @@ def add_vectors(f, vectors):
     table.attrs["column-order"] = np.array(order + ["vector_id"], dtype=h5py.string_dtype())
 
 
+def add_text_column(f, name, values):
+    table = f["mod/grna/var"]
+    column = table.create_dataset(name, data=np.array(values, dtype=object), dtype=h5py.string_dtype())
+    column.attrs.update({"encoding-type": "string-array", "encoding-version": "0.2.0"})
+    order = [c.decode() if isinstance(c, bytes) else c for c in table.attrs["column-order"]]
+    table.attrs["column-order"] = np.array(order + [name], dtype=h5py.string_dtype())
+
+
+def types_of(f):
+    """The kind of each gRNA of the file: its controls are of two kinds."""
+    ids, targets, _ = vectors_of(f)
+    controls = iter(["non-targeting", "safe-targeting"] * len(ids))
+    return ["targeting" if t != "non-targeting" else next(controls) for t in targets]
+
+
+with_types = VALID / "highmoi_with_grna_types.h5mu"
+shutil.copy(high_py, with_types)
+with h5py.File(with_types, "r+") as f:
+    add_text_column(f, "grna_type", types_of(f))
+case("screen", with_types, [], "The gRNA table says what kind of gRNA each is (`grna_type`); the controls are of two kinds")
+
 with_vectors = VALID / "highmoi_grnas_on_shared_vectors.h5mu"
 shutil.copy(high_py, with_vectors)
 with h5py.File(with_vectors, "r+") as f:
@@ -273,6 +294,20 @@ broken_screen("vector_with_two_targets", ["S8.7"], "Two gRNAs with different tar
               vectors_changed(two_targets_on_a_vector), source=high_py, reader_refuses=True)
 broken_screen("vector_named_like_another_grna", ["S8.8"], "A vector is named with the identifier of a gRNA on another vector",
               vectors_changed(vector_named_like_another_grna), source=high_py, reader_refuses=True)
+def types_changed(change):
+    def apply(f):
+        types = types_of(f)
+        change(types, vectors_of(f)[1])
+        add_text_column(f, "grna_type", types)
+    return apply
+
+
+broken_screen("unknown_grna_type", ["S8.15"], "A `grna_type` is not one of the four kinds",
+              types_changed(lambda types, targets: types.__setitem__(0, "positive control")), source=high_py)
+broken_screen("control_type_with_a_target", ["S8.16"], "A gRNA with a real target is marked `safe-targeting`",
+              types_changed(lambda types, targets: types.__setitem__(targets.index(next(t for t in targets if t != "non-targeting")), "safe-targeting")), source=high_py)
+broken_screen("targeting_type_without_a_target", ["S8.16"], "A gRNA whose target is `non-targeting` is marked `targeting`",
+              types_changed(lambda types, targets: types.__setitem__(targets.index("non-targeting"), "targeting")), source=high_py)
 broken_screen("vector_id_as_a_number", ["S8.6"], "`vector_id` stored as numbers",
               lambda f: add_column(f, "mod/grna/var", "vector_id", np.arange(f["mod/grna/var/_index"].shape[0], dtype=np.float64)), source=high_py)
 def set_positions(start=None, end=None, chromosome=None):
