@@ -7,7 +7,13 @@
 # It installs standard libraries only: neither sceptre nor pysceptre.
 name: File format
 
+# It runs when a push changes the format's folder or this file, and by hand.
 on:
+  push:
+    branches: [main]
+    paths:
+      - "file-format/**"
+      - ".github/workflows/file-format.yml"
   workflow_dispatch:
 
 jobs:
