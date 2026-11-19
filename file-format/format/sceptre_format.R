@@ -661,7 +661,8 @@ log_2_follows <- function(result) {
     if (is.null(result$fold_change) || is.null(result$log_2_fold_change)) return(FALSE)
     derived <- log_2_of(result$fold_change)
     held <- result$log_2_fold_change
-    all((is.na(derived) & is.na(held)) | (!is.na(derived) & !is.na(held) & derived == held))
+    # to within rounding: the last bit of a logarithm differs between platforms (T5.2)
+    all((is.na(derived) & is.na(held)) | (!is.na(derived) & !is.na(held) & (derived == held | abs(derived - held) <= 1e-14 * abs(derived))))
 }
 add_log_2_fold_change <- function(result) {
     if (!is.null(result$log_2_fold_change) || is.null(result$fold_change)) return(result)
@@ -701,10 +702,6 @@ formula_in_subset <- function(text) {
     terms <- substring(rhs, c(1L, plus + 1L), c(plus - 1L, nchar(rhs)))
     name <- "[A-Za-z][A-Za-z0-9_.]*"
     all(grepl(paste0("^(0|1|", name, "|log\\(", name, "\\)|log\\(", name, "\\+1\\))$"), terms))
-}
-# SHA-256 of the matrix's values as little-endian doubles, column by column.
-design_sha256 <- function(matrix) {
-    unname(tools::sha256sum(bytes = writeBin(as.double(matrix), raw(), endian = "little")))
 }
 
 # ---------------------------------------------------------------- comparing and describing

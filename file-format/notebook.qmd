@@ -433,10 +433,10 @@ is the section of `RATIONALE.md` (and of `SPEC.md`) with the detail.
 <details class="fold">
 <summary><strong>The design matrix is not stored, and formulas are additive only.</strong> <span class="where">T7</span></summary>
 
-- **The choice.** The parameters record holds the formula text and a hash of the matrix. Each language rebuilds the matrix and checks its term names and hash.
-- **Evidence.** On the example, R and pysceptre build matrices that are equal to the last bit.
+- **The choice.** The parameters record holds the formula text and the names of the matrix's columns. Each language rebuilds the matrix and checks those names.
+- **Evidence.** On the example, R and pysceptre build matrices that are equal to the last bit on one machine.
 - **Cost.** Only additive formulas of covariates, `log(x)` and `log(x + 1)` can be saved. An analysis with an interaction or a spline cannot.
-- **Known limit.** A hash of exact values fails on a correct matrix when a logarithm differs in its last bit between platforms, and between macOS and Linux some do (measured). An analysis written on one could be refused on the other. This is open.
+- **No hash of the matrix.** A hash of exact values would fail on a correct matrix, because a logarithm's last bit differs between macOS and Linux (measured). A check that survives this can be added later.
 
 </details>
 

@@ -258,8 +258,7 @@
         "design": {
           "type": "object",
           "required": [
-            "terms",
-            "sha256"
+            "terms"
           ],
           "properties": {
             "terms": {
@@ -268,10 +267,6 @@
                 "type": "string"
               },
               "minItems": 1
-            },
-            "sha256": {
-              "type": "string",
-              "pattern": "^[0-9a-f]{64}$"
             }
           }
         }

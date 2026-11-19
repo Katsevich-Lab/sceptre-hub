@@ -65,7 +65,7 @@ def write_all(inputs, folder, language):
     pairs = pd.DataFrame(inputs["pairs"], columns=["grna_target", "response_id"]).astype(object)
     none = pairs.iloc[:0]
     results = pd.DataFrame(inputs["results"])
-    sf.write_stage(analysis, "parameters", {"settings": SETTINGS, "design": {"terms": TERMS, "sha256": "ab" * 32}},
+    sf.write_stage(analysis, "parameters", {"settings": SETTINGS, "design": {"terms": TERMS}},
                    {"parameters/discovery_pairs": pairs, "parameters/positive_control_pairs": none}, provenance)
     sf.write_stage(analysis, "assignment", {"settings": {"method": "thresholding", "hyperparameters": {"threshold": 5}}},
                    {"assignment/assignments": pd.DataFrame(inputs["assignments"], columns=["grna_id", "cell_id"]).astype(object)}, provenance)

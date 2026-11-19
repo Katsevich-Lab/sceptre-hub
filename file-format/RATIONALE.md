@@ -559,12 +559,12 @@ Deferred to reader code, not the format: chunked reads, filtered reads.
 
 ### T7. The design matrix — *Decided*
 
-- **Decision.** Not stored. The parameters record holds the formula text and a hash of the matrix; each language rebuilds the matrix. Only additive formulas of covariate names, `log(x)` and `log(x + 1)` are allowed, and a writer refuses others. No stored-matrix fallback.
-- **Names.** The formula text and the recorded term names use the file's covariate names (`log(rna_n_umis)`, S5). The hash is of the matrix's values, so it does not depend on names.
-- **Evidence.** *(measured)* On the example, R's `model.matrix()` and pysceptre's `model_matrix()` give bitwise-equal matrices and the same hash.
-- **What a reader checks.** Both the rebuilt matrix's term names and its hash. The names (`batchbatch_2`) encode the factor levels, the baseline and the term order, which are the ways two languages can really disagree; the hash catches everything else.
+- **Decision.** Not stored. The parameters record holds the formula text and the names of the matrix's columns; each language rebuilds the matrix. Only additive formulas of covariate names, `log(x)` and `log(x + 1)` are allowed, and a writer refuses others. No stored-matrix fallback.
+- **Names.** The formula text and the recorded term names use the file's covariate names (`log(rna_n_umis)`, S5).
+- **Evidence.** *(measured)* On the example, R's `model.matrix()` and pysceptre's `model_matrix()` give bitwise-equal matrices on one machine.
+- **What a reader checks.** The rebuilt matrix's term names. The names (`batchbatch_2`) encode the factor levels, the baseline and the term order, which are the ways two languages can really disagree. That the data is the same data is the job of the link to the data file (A1).
 - **IGVF.** The design is recorded as a list of covariate options in the file's `uns`, and each method builds its own design from them. There is no check that two methods, or two languages, built the same matrix.
-- **Known limit.** A bit-exact hash fails on a correct matrix when a logarithm differs in its last bit between platforms. On one machine R and Python agree to the last bit. Between macOS and Linux they do not: the natural logarithms of the whole numbers 1 to 200,000 differ in 16 values *(measured, numpy on both)*. A design with a logarithm in it, as the default formula has, can therefore hash differently on the two, and a reader on one would refuse an analysis written on the other (T7.4). This is open.
+- **No hash of the matrix.** A hash of exact values fails on a correct matrix, because a logarithm's last bit differs between platforms: the natural logarithms of the whole numbers 1 to 200,000 differ in 16 values between macOS and Linux *(measured, numpy on both)*. With a logarithm in the default formula, an analysis written on one would be refused on the other. A check that survives this, such as a hash of the covariates before any arithmetic, can be added later ([section 9](#9-fixed-now-free-to-grow)).
 - **Restriction to state plainly.** R sceptre accepts any formula today. Under this rule an analysis with an interaction or a spline cannot be saved.
 
 ---
@@ -693,6 +693,8 @@ reader can safely ignore it, **major** if it could misread the file.
 | Addition | Where | Why wait | Version |
 |---|---|---|---|
 | gRNA type: targeting, non-targeting, safe-targeting, other negative control | gRNA table | It overlaps with marking controls by `grna_target` equal to `non-targeting`, which both codebases depend on, and a safe-targeting gRNA has a real target and is a control, which that marker cannot say. This needs a decision, not only a column | minor if the column is information and the marker stays the rule; major if the column becomes the rule |
+| A hash of the data file's contents: the cell and feature tables, and perhaps the counts | `analysis.json`, beside the identifier hashes | The link (A1) catches a data file whose cells or features changed, not one whose values were edited in place. Hashing the tables is cheap; hashing the counts is a full read of the file | minor |
+| A check that a rebuilt design matrix is the writer's | Parameters record | A hash of exact values is not portable (T7). A hash of the covariates before any arithmetic would be | minor |
 | Spacer sequence and PAM | gRNA table | Known at import and not derivable, like the entries of S10, but they serve guide design and reanalysis, not reading results | minor |
 | The gRNA's own position and strand | gRNA table | sceptre does not read it | minor |
 | Gene symbol, gene position, mitochondrial flag | Feature table of the measured modality | The flag would record which genes `p_mito` counted; it needs the importers to keep it | minor |
@@ -814,7 +816,7 @@ someone who has only the specification.
    is not the format's job.** That is parity between the packages. The
    format's part is to make the comparison possible: it records the formula,
    the methods, the seed, the settings and the writer; it stores the design's
-   term names and hash; and it stops fits crossing where the method differs.
+   term names; and it stops fits crossing where the method differs.
 6. **Sufficiency is the format's job, and needs a package.** Whether the files
    hold everything an analysis needs can only be tested by rebuilding a
    package's object from them.

@@ -17,8 +17,7 @@
     "grna_fit_method": "pysceptre"
   },
   "design": {
-    "terms": ["(Intercept)", "log(rna_n_nonzero)", "log(rna_n_umis)", "batchbatch_2"],
-    "sha256": "b1fd8282ebb9aa8d80675c0b36a744fd5ca172a2699a90761c5ab812b6ec67c0"
+    "terms": ["(Intercept)", "log(rna_n_nonzero)", "log(rna_n_umis)", "batchbatch_2"]
   },
   "provenance": {
     "package": "sceptre",

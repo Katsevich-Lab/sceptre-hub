@@ -46,7 +46,7 @@ for (folder in sort(Sys.glob("verify/out/random/seed-*"))) {
         pass_qc = vapply(inputs$results, function(r) r$pass_qc, logical(1)), p_value = missing_to(lapply(inputs$results, `[[`, "p_value"), NA_real_),
         fold_change = missing_to(lapply(inputs$results, `[[`, "fold_change"), NA_real_), se_fold_change = missing_to(lapply(inputs$results, `[[`, "se_fold_change"), NA_real_)
     )
-    fmt_write_stage(analysis, "parameters", list(settings = settings, design = list(terms = I(c("(Intercept)", "log(rna_n_umis)", "batchb1")), sha256 = strrep("ab", 32))),
+    fmt_write_stage(analysis, "parameters", list(settings = settings, design = list(terms = I(c("(Intercept)", "log(rna_n_umis)", "batchb1")))),
         list("parameters/discovery_pairs" = pairs, "parameters/positive_control_pairs" = pairs[0, ]), provenance)
     fmt_write_stage(analysis, "assignment", list(settings = list(method = "thresholding", hyperparameters = list(threshold = 5L))),
         list("assignment/assignments" = data.frame(grna_id = vapply(inputs$assignments, `[[`, "", 1L), cell_id = vapply(inputs$assignments, `[[`, "", 2L))), provenance)

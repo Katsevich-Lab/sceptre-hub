@@ -792,8 +792,7 @@ def add_significant(result: pd.DataFrame, threshold) -> pd.DataFrame:
 
 
 def log_2_of(fold_change) -> np.ndarray:
-    """sceptre's formula, to the last bit: log(x) / log(2), which is not always what
-    log2(x) returns."""
+    """sceptre's formula: log(x) / log(2), which is not always what log2(x) returns."""
     with np.errstate(divide="ignore", invalid="ignore"):
         return np.log(np.asarray(fold_change, dtype=float)) / np.log(2.0)
 
@@ -805,7 +804,8 @@ def log_2_follows(result: pd.DataFrame) -> bool:
         return False
     derived = log_2_of(result["fold_change"])
     held = result["log_2_fold_change"].to_numpy(dtype=float)
-    return bool(np.all((np.isnan(derived) & np.isnan(held)) | (derived == held)))
+    # to within rounding: the last bit of a logarithm differs between platforms (T5.2)
+    return bool(np.allclose(held, derived, rtol=1e-14, atol=0, equal_nan=True))
 
 
 def add_log_2_fold_change(result: pd.DataFrame) -> pd.DataFrame:
@@ -859,11 +859,6 @@ def formula_in_subset(text: str) -> bool:
     terms.append(rhs[start:])
     name = "[A-Za-z][A-Za-z0-9_.]*"
     return all(re.fullmatch(rf"0|1|{name}|log\({name}\)|log\({name}\+1\)", t) for t in terms)
-
-
-def design_sha256(matrix) -> str:
-    """SHA-256 of the matrix's values as little-endian doubles, column by column."""
-    return hashlib.sha256(np.asarray(matrix, dtype="<f8").tobytes(order="F")).hexdigest()
 
 
 # ---------------------------------------------------------------- comparing and describing
