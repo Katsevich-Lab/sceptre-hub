@@ -221,7 +221,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/covariate_the_data_file_already_has",
     "expect": [
-      "T7.7"
+      "A14.7"
     ],
     "conforms": false,
     "what": "The analysis brings covariates under names the data file already provides",
@@ -232,7 +232,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/formula_names_an_unknown_covariate",
     "expect": [
-      "T7.8"
+      "A14.8"
     ],
     "conforms": false,
     "what": "The formula names count summaries that neither the data file nor the analysis provides",
@@ -243,7 +243,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/covariate_of_the_wrong_type",
     "expect": [
-      "T7.6"
+      "A14.6"
     ],
     "conforms": false,
     "what": "A covariate the analysis brings is a boolean, not a number or text",
@@ -254,7 +254,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/covariates_for_some_cells_only",
     "expect": [
-      "T7.6"
+      "A14.6"
     ],
     "conforms": false,
     "what": "The analysis's covariate table lacks some cells of the data file",
@@ -376,10 +376,10 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/pair_qc_without_counts",
     "expect": [
-      "T0.1"
+      "A7.1"
     ],
     "conforms": false,
-    "what": "A pair-QC table lacks `n_nonzero_trt` (T3.2)",
+    "what": "A pair-QC table lacks `n_nonzero_trt` (A10.2)",
     "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
@@ -387,7 +387,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/pair_qc_verdict_against_the_counts",
     "expect": [
-      "T3.4"
+      "A10.4"
     ],
     "conforms": false,
     "what": "Pairs are marked as passing pairwise QC although a count is below its threshold",
@@ -398,10 +398,10 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/results_without_counts",
     "expect": [
-      "T0.1"
+      "A7.1"
     ],
     "conforms": false,
-    "what": "The discovery results lack `n_nonzero_cntrl` (T5.1)",
+    "what": "The discovery results lack `n_nonzero_cntrl` (A12.1)",
     "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
@@ -433,7 +433,7 @@
     "path": "conformance/invalid/analyses/table_truncated",
     "expect": [
       "A5.2",
-      "T2.1"
+      "A9.1"
     ],
     "conforms": false,
     "what": "`cells.parquet` has fewer rows than its stage wrote",
@@ -479,7 +479,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/column_missing",
     "expect": [
-      "T0.1"
+      "A7.1"
     ],
     "conforms": false,
     "what": "`cells.parquet` has no `in_use` column",
@@ -490,7 +490,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/column_of_the_wrong_type",
     "expect": [
-      "T0.1"
+      "A7.1"
     ],
     "conforms": false,
     "what": "`pass_qc` is stored as integers",
@@ -501,7 +501,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/rows_not_sorted",
     "expect": [
-      "T0.2"
+      "A7.2"
     ],
     "conforms": false,
     "what": "The assignment table is in reverse order",
@@ -512,7 +512,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/duplicate_row",
     "expect": [
-      "T0.4"
+      "A7.4"
     ],
     "conforms": false,
     "what": "The assignment table has the same (gRNA, cell) twice",
@@ -523,7 +523,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/cell_not_in_the_data_file",
     "expect": [
-      "T0.5"
+      "A7.5"
     ],
     "conforms": false,
     "what": "The assignment table names a cell the data file does not have",
@@ -534,7 +534,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/grna_column_under_the_union_strategy",
     "expect": [
-      "T3.3"
+      "A10.3"
     ],
     "conforms": false,
     "what": "A pair-QC table has a `grna_id` column in an analysis that pools gRNAs by target",
@@ -545,7 +545,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/grna_column_in_bonferroni_discovery",
     "expect": [
-      "T5.6"
+      "A12.6"
     ],
     "conforms": false,
     "what": "The discovery results of a bonferroni analysis have a `grna_id` column",
@@ -556,7 +556,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/significant_stored",
     "expect": [
-      "T5.3"
+      "A12.3"
     ],
     "conforms": false,
     "what": "The discovery results store a `significant` column",
@@ -567,10 +567,10 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/no_log_2_fold_change",
     "expect": [
-      "T0.1"
+      "A7.1"
     ],
     "conforms": false,
-    "what": "The discovery results have no `log_2_fold_change` (T5.1)",
+    "what": "The discovery results have no `log_2_fold_change` (A12.1)",
     "screen": "../perturb-seq-data-format/conformance/valid/highmoi_written_by_r.h5mu"
   },
   {
@@ -578,7 +578,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/effect_sizes_disagree",
     "expect": [
-      "T5.2"
+      "A12.2"
     ],
     "conforms": false,
     "what": "A `log_2_fold_change` is not the base-2 logarithm of the row's `fold_change`",
@@ -589,7 +589,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/fit_part_without_identity",
     "expect": [
-      "T6.1"
+      "A13.1"
     ],
     "conforms": false,
     "what": "A part of the fit cache does not say how its fits were made, as after a tool rewrote it; a reader takes no fit from it",
@@ -601,7 +601,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/fit_identity_incomplete",
     "expect": [
-      "T6.1"
+      "A13.1"
     ],
     "conforms": false,
     "what": "The identity inside a part of the fit cache lacks `cells_in_use_sha256`",
@@ -612,7 +612,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/fit_identity_not_json",
     "expect": [
-      "T6.1"
+      "A13.1"
     ],
     "conforms": false,
     "what": "The identity inside a part of the fit cache is not JSON",
@@ -624,7 +624,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/identity_file_in_the_fit_cache",
     "expect": [
-      "T6.1"
+      "A13.1"
     ],
     "conforms": false,
     "what": "The fit cache holds a JSON file beside its parts, which a folder reader would trip on",
@@ -635,7 +635,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/fits_before_qc",
     "expect": [
-      "T6.3"
+      "A13.3"
     ],
     "conforms": false,
     "what": "An analysis that stopped after assignment holds a fit cache",
@@ -646,7 +646,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/fit_with_too_few_coefficients",
     "expect": [
-      "T6.2"
+      "A13.2"
     ],
     "conforms": false,
     "what": "A saved fit has fewer coefficients than the design has terms",
@@ -657,7 +657,7 @@
     "kind": "analysis",
     "path": "conformance/invalid/analyses/formula_with_an_interaction",
     "expect": [
-      "T7.1"
+      "A14.1"
     ],
     "conforms": false,
     "what": "The formula has an interaction, outside the additive subset; the fit cache was made for another formula, which is allowed and unused",

@@ -11,7 +11,7 @@ for (case in cases) {
     found <- validate_analysis(case$path, case$screen)
     result <- list(rules = I(sort(unique(found$rule), method = "radix")), conforms = nrow(found) == 0L)
     if (!is.null(case$fits_used)) {
-        # whether a reader takes fits from the cache of this folder (T6.5)
+        # whether a reader takes fits from the cache of this folder (A13.5)
         result$fits_as_expected <- identical(!is.null(fmt_read_analysis(case$path)$tables[[FITS]]), case$fits_used)
     }
     if (!is.null(case$fits_for)) {

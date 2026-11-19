@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory() as folder:
     results.add("the analysis conforms after the retry", len(sf.validate_analysis(retry)) == 0)
 
 # The parts of the fit cache that carry one identity are merged into one part:
-# the same fits, the same identity, and the old parts are gone (T6.4).
+# the same fits, the same identity, and the old parts are gone (A13.4).
 with tempfile.TemporaryDirectory() as folder:
     merged = Path(folder) / "analysis"
     shutil.copytree("conformance/valid/analyses/fits_from_two_jobs", merged)
@@ -43,7 +43,7 @@ with tempfile.TemporaryDirectory() as folder:
                 sf.same_identity(before["identity"], after["identity"]) and sf.same_table(sf.rows_sorted(before["table"]), sf.rows_sorted(after["table"])))
     results.add("the analysis conforms after the merge", len(sf.validate_analysis(merged)) == 0)
 
-# A table with a list per row is written in row groups of at most 10,000 rows (T5.7).
+# A table with a list per row is written in row groups of at most 10,000 rows (A12.7).
 with tempfile.TemporaryDirectory() as folder:
     import pandas as pd
     import pyarrow.parquet as pq

@@ -2,7 +2,7 @@
 # It reads and sets the object's slots, which are internal to sceptre, so it
 # works with that version only. It is test code, not part of the format: a
 # package that adopts the format has a writer and a reader of its own.
-get <- function(object, name) methods::slot(object, name)
+slot_of <- function(object, name) methods::slot(object, name)
 swap_prefix <- function(text, from, to) gsub(paste0("(?<![A-Za-z0-9_.])", from, "_"), paste0(to, "_"), text, perl = TRUE)
 to_file_names <- function(text, modality) swap_prefix(text, "response", modality)
 to_package_names <- function(text, modality) swap_prefix(text, modality, "response")
@@ -17,7 +17,7 @@ must_follow <- function(derived, held, what) {
     if (!same(derived, held)) stop("The object's `", what, "` does not follow from what the files hold.", call. = FALSE)
 }
 called <- function(object) {
-    done <- get(object, "functs_called")
+    done <- slot_of(object, "functs_called")
     names(STAGE_FUNCTIONS)[STAGE_FUNCTIONS %in% names(done)[done]]
 }
 unit_columns <- function(grna_group, grna_table, strategy) {
@@ -28,7 +28,7 @@ unit_group <- function(table, strategy) if (identical(strategy, "union")) table$
 result_slot <- c(calibration = "calibration_result", power = "power_result", discovery = "discovery_result")
 
 # ------------------------------------------------------------------ writing
-write_main_analysis <- function(object, screen_file, directory, modality = "rna") {
+write_sceptre_object <- function(object, screen_file, directory, modality = "rna") {
     done <- called(object)
     sce <- read_as_sce(screen_file, modality)
     cells <- colnames(sce)
@@ -36,24 +36,24 @@ write_main_analysis <- function(object, screen_file, directory, modality = "rna"
     must_follow(colnames(sceptre::get_response_matrix(object)), cells, "cells")
     must_follow(rownames(sceptre::get_response_matrix(object)), rownames(sce), "responses")
     # the covariates sceptre computed are the ones the data file stores
-    held <- get(object, "covariate_data_frame")
+    held <- slot_of(object, "covariate_data_frame")
     stored <- as.data.frame(SummarizedExperiment::colData(sce), optional = TRUE)
     names(stored) <- to_package_names(names(stored), modality)
     for (name in names(held)) must_follow(as.vector(stored[[name]]), as.vector(held[[name]]), paste0("covariate ", name))
     fmt_init_analysis(directory, screen_link(sce), modality)
     provenance <- list(package = "sceptre", version = as.character(utils::packageVersion("sceptre")), language = "R", written_at = "2026-11-19T00:00:00Z")
     write <- function(stage, record, tables = list()) fmt_write_stage(directory, stage, record, tables[!vapply(tables, is.null, logical(1))], provenance)
-    low_moi <- isTRUE(get(object, "low_moi"))
-    strategy <- get(object, "grna_integration_strategy")
-    grna_table <- as.data.frame(get(object, "grna_target_data_frame"), stringsAsFactors = FALSE)
+    low_moi <- isTRUE(slot_of(object, "low_moi"))
+    strategy <- slot_of(object, "grna_integration_strategy")
+    grna_table <- as.data.frame(slot_of(object, "grna_target_data_frame"), stringsAsFactors = FALSE)
 
     if ("parameters" %in% done) {
         must_follow(grna_groups(grna_table, strategy), grna_table$grna_group, "grna_group")
-        formula <- to_file_names(formula_text(get(object, "formula_object")), modality)
+        formula <- to_file_names(formula_text(slot_of(object, "formula_object")), modality)
         if (!formula_in_subset(formula)) stop("The formula ", formula, " is outside the additive subset.")
-        design <- get(object, "covariate_matrix")
+        design <- slot_of(object, "covariate_matrix")
         pairs <- lapply(c(discovery = "discovery_pairs", positive_control = "positive_control_pairs"), function(name) {
-            held <- as.data.frame(get(object, name), stringsAsFactors = FALSE)
+            held <- as.data.frame(slot_of(object, name), stringsAsFactors = FALSE)
             table <- unique(data.frame(grna_target = as.character(held$grna_target), response_id = as.character(held$response_id), stringsAsFactors = FALSE))
             if (nrow(table) > 0L) must_follow(rows_sorted(expand_pairs(table, grna_table)), rows_sorted(held[c("grna_target", "response_id", "grna_group")]), name)
             table
@@ -62,28 +62,28 @@ write_main_analysis <- function(object, screen_file, directory, modality = "rna"
             settings = list(
                 moi = if (low_moi) "low" else "high",
                 formula = formula,
-                side = names(SIDES)[match(get(object, "side_code"), SIDES)],
+                side = names(SIDES)[match(slot_of(object, "side_code"), SIDES)],
                 grna_integration_strategy = strategy,
-                control_group = if (get(object, "control_group_complement")) "complement" else "nt_cells",
-                resampling_mechanism = if (get(object, "run_permutations")) "permutations" else "crt",
-                resampling_approximation = get(object, "resampling_approximation"),
-                multiple_testing_method = get(object, "multiple_testing_method"),
-                multiple_testing_alpha = get(object, "multiple_testing_alpha"),
-                B1 = get(object, "B1"), B2 = get(object, "B2"), B3 = get(object, "B3")
+                control_group = if (slot_of(object, "control_group_complement")) "complement" else "nt_cells",
+                resampling_mechanism = if (slot_of(object, "run_permutations")) "permutations" else "crt",
+                resampling_approximation = slot_of(object, "resampling_approximation"),
+                multiple_testing_method = slot_of(object, "multiple_testing_method"),
+                multiple_testing_alpha = slot_of(object, "multiple_testing_alpha"),
+                B1 = slot_of(object, "B1"), B2 = slot_of(object, "B2"), B3 = slot_of(object, "B3")
             ),
             design = list(terms = I(to_file_names(colnames(design), modality)))
         ), list("parameters/discovery_pairs" = pairs$discovery, "parameters/positive_control_pairs" = pairs$positive_control))
     }
 
     if ("assignment" %in% done) {
-        initial <- get(object, "initial_grna_assignment_list")
+        initial <- slot_of(object, "initial_grna_assignment_list")
         must_follow(names(initial), grna_ids, "the order of initial_grna_assignment_list")
-        must_follow(group_cells(initial, grna_table), get(object, "grna_assignments_raw"), "grna_assignments_raw")
-        must_follow(mean(lengths(initial)), get(object, "mean_cells_per_grna"), "mean_cells_per_grna")
-        method <- get(object, "grna_assignment_method")
-        if (!identical(method, "maximum")) must_follow(grnas_per_cell(initial, length(cells)), get(object, "grnas_per_cell"), "grnas_per_cell")
-        flagged <- setdiff(get(object, "cells_w_zero_or_twoplus_grnas"), if (low_moi) not_one_grna(initial, length(cells)))
-        hyperparameters <- formula_text(get(object, "grna_assignment_hyperparameters"))
+        must_follow(group_cells(initial, grna_table), slot_of(object, "grna_assignments_raw"), "grna_assignments_raw")
+        must_follow(mean(lengths(initial)), slot_of(object, "mean_cells_per_grna"), "mean_cells_per_grna")
+        method <- slot_of(object, "grna_assignment_method")
+        if (!identical(method, "maximum")) must_follow(grnas_per_cell(initial, length(cells)), slot_of(object, "grnas_per_cell"), "grnas_per_cell")
+        flagged <- setdiff(slot_of(object, "cells_w_zero_or_twoplus_grnas"), if (low_moi) not_one_grna(initial, length(cells)))
+        hyperparameters <- formula_text(slot_of(object, "grna_assignment_hyperparameters"))
         if (!is.null(hyperparameters$formula_object)) hyperparameters$formula_object <- to_file_names(hyperparameters$formula_object, modality)
         hyperparameters <- lapply(hyperparameters, function(x) if (length(x) > 1L) I(x) else x)
         write("assignment", list(settings = list(method = method, hyperparameters = hyperparameters)), list(
@@ -93,23 +93,23 @@ write_main_analysis <- function(object, screen_file, directory, modality = "rna"
     }
 
     if ("qc" %in% done) {
-        in_use <- get(object, "cells_in_use")
-        must_follow(qc_assignments(get(object, "grna_assignments_raw"), in_use, !get(object, "control_group_complement")), get(object, "grna_assignments"), "grna_assignments")
+        in_use <- slot_of(object, "cells_in_use")
+        must_follow(qc_assignments(slot_of(object, "grna_assignments_raw"), in_use, !slot_of(object, "control_group_complement")), slot_of(object, "grna_assignments"), "grna_assignments")
         pair_qc <- lapply(c(discovery = "discovery", positive_control = "positive_control"), function(type) {
-            info <- as.data.frame(get(object, paste0(type, "_pairs_with_info")), stringsAsFactors = FALSE)
+            info <- as.data.frame(slot_of(object, paste0(type, "_pairs_with_info")), stringsAsFactors = FALSE)
             if (nrow(info) == 0L) info <- data.frame(response_id = character(), grna_group = character(), n_nonzero_trt = integer(), n_nonzero_cntrl = integer(), pass_qc = logical(), stringsAsFactors = FALSE)
             table <- cbind(unit_columns(info$grna_group, grna_table, strategy), response_id = as.character(info$response_id),
                 n_nonzero_trt = as.integer(info$n_nonzero_trt), n_nonzero_cntrl = as.integer(info$n_nonzero_cntrl), pass_qc = info$pass_qc, stringsAsFactors = FALSE)
-            if (nrow(table) > 0L) must_follow(n_pairs_passing(table, strategy), get(object, paste0("n_ok_", type, "_pairs")), paste0("n_ok_", type, "_pairs"))
+            if (nrow(table) > 0L) must_follow(n_pairs_passing(table, strategy), slot_of(object, paste0("n_ok_", type, "_pairs")), paste0("n_ok_", type, "_pairs"))
             table
         })
-        removed <- get(object, "cell_removal_metrics")
-        thresholds <- get(object, "cellwise_qc_thresholds")
+        removed <- slot_of(object, "cell_removal_metrics")
+        thresholds <- slot_of(object, "cellwise_qc_thresholds")
         write("qc", list(
             settings = list(
-                n_nonzero_trt_thresh = get(object, "n_nonzero_trt_thresh"), n_nonzero_cntrl_thresh = get(object, "n_nonzero_cntrl_thresh"),
+                n_nonzero_trt_thresh = slot_of(object, "n_nonzero_trt_thresh"), n_nonzero_cntrl_thresh = slot_of(object, "n_nonzero_cntrl_thresh"),
                 response_n_umis_range = I(thresholds$response_n_umis_range), response_n_nonzero_range = I(thresholds$response_n_nonzero_range),
-                p_mito_threshold = thresholds$p_mito_threshold, B3 = get(object, "B3")
+                p_mito_threshold = thresholds$p_mito_threshold, B3 = slot_of(object, "B3")
             ),
             summaries = list(cells_removed = as.list(stats::setNames(removed, sub("^n_cells_rm_", "", names(removed)))))
         ), list(
@@ -118,7 +118,7 @@ write_main_analysis <- function(object, screen_file, directory, modality = "rna"
         ))
     }
 
-    result_of <- function(stage) as.data.frame(get(object, result_slot[[stage]]), stringsAsFactors = FALSE)
+    result_of <- function(stage) as.data.frame(slot_of(object, result_slot[[stage]]), stringsAsFactors = FALSE)
     result_table <- function(stage) {
         result <- result_of(stage)
         if (!is.null(result$significant)) {
@@ -131,7 +131,7 @@ write_main_analysis <- function(object, screen_file, directory, modality = "rna"
     resamples <- function(stage) resamples_table(result_of(stage))
     if ("calibration" %in% done) {
         result <- result_of("calibration")
-        negative <- as.data.frame(get(object, "negative_control_pairs"), stringsAsFactors = FALSE)
+        negative <- as.data.frame(slot_of(object, "negative_control_pairs"), stringsAsFactors = FALSE)
         must_follow(
             rows_sorted(data.frame(response_id = result$response_id, grna_group = unit_group(result, strategy), n_nonzero_trt = result$n_nonzero_trt, n_nonzero_cntrl = result$n_nonzero_cntrl, pass_qc = result$pass_qc, stringsAsFactors = FALSE)),
             rows_sorted(negative[c("response_id", "grna_group", "n_nonzero_trt", "n_nonzero_cntrl", "pass_qc")]), "negative_control_pairs"
@@ -139,7 +139,7 @@ write_main_analysis <- function(object, screen_file, directory, modality = "rna"
         groups <- unique(as.character(negative$grna_group))
         members <- strsplit(groups, "&", fixed = TRUE)
         write("calibration", list(
-            settings = list(calibration_group_size = get(object, "calibration_group_size"), n_calibration_pairs = get(object, "n_calibration_pairs"), B3 = get(object, "B3")),
+            settings = list(calibration_group_size = slot_of(object, "calibration_group_size"), n_calibration_pairs = slot_of(object, "n_calibration_pairs"), B3 = slot_of(object, "B3")),
             significance_threshold = significance_threshold(result)
         ), list(
             "calibration/negative_control_groups" = data.frame(grna_group = rep(groups, lengths(members)), grna_id = unlist(members), stringsAsFactors = FALSE),
@@ -151,9 +151,9 @@ write_main_analysis <- function(object, screen_file, directory, modality = "rna"
         write("discovery", list(settings = stats::setNames(list(), character()), significance_threshold = significance_threshold(result_of("discovery"))),
             list("discovery/results" = result_table("discovery"), "discovery/resamples" = resamples("discovery")))
     }
-    fits <- get(object, "response_precomputations")
+    fits <- slot_of(object, "response_precomputations")
     if (length(fits) > 0L && "qc" %in% done) {
-        terms <- colnames(get(object, "covariate_matrix"))
+        terms <- colnames(slot_of(object, "covariate_matrix"))
         table <- data.frame(response_id = names(fits), theta = vapply(fits, function(f) f$theta, numeric(1)), stringsAsFactors = FALSE)
         table$coefficients <- lapply(fits, function(f) { must_follow(names(f$fitted_coefs), terms, "the terms of a saved fit"); unname(f$fitted_coefs) })
         fmt_write_fits(directory, table[c("response_id", "coefficients", "theta")], fit_identity(object, sce, modality))
@@ -163,9 +163,9 @@ write_main_analysis <- function(object, screen_file, directory, modality = "rna"
 fit_identity <- function(object, sce, modality) {
     list(
         screen_id = S4Vectors::metadata(sce)$dataset_id,
-        formula = to_file_names(formula_text(get(object, "formula_object")), modality),
-        cells_in_use_sha256 = sha256_ids(colnames(sce)[get(object, "cells_in_use")]),
-        control_group = if (get(object, "control_group_complement")) "complement" else "nt_cells"
+        formula = to_file_names(formula_text(slot_of(object, "formula_object")), modality),
+        cells_in_use_sha256 = sha256_ids(colnames(sce)[slot_of(object, "cells_in_use")]),
+        control_group = if (slot_of(object, "control_group_complement")) "complement" else "nt_cells"
     )
 }
 
@@ -194,7 +194,7 @@ import_from_file <- function(screen_file, moi, modality = "rna") {
 # A data file and one analysis of it as a sceptre_object. The parameters are
 # set through sceptre's own function, from the settings in the record; every
 # later stage's outputs are put into the object's slots from the tables.
-read_main_object <- function(screen_file, directory) {
+read_sceptre_object <- function(screen_file, directory) {
     analysis <- fmt_read_analysis(directory)
     modality <- analysis$response_modality
     records <- analysis$stages
@@ -217,11 +217,11 @@ read_main_object <- function(screen_file, directory) {
         resampling_approximation = settings$resampling_approximation, control_group = settings$control_group,
         resampling_mechanism = settings$resampling_mechanism, multiple_testing_method = settings$multiple_testing_method,
         multiple_testing_alpha = settings$multiple_testing_alpha)
-    if (!identical(to_file_names(colnames(get(object, "covariate_matrix")), modality), as.character(unlist(records$parameters$design$terms)))) {
+    if (!identical(to_file_names(colnames(slot_of(object, "covariate_matrix")), modality), as.character(unlist(records$parameters$design$terms)))) {
         stop("The design matrix rebuilt from the formula has other columns than the analysis recorded.")
     }
-    for (name in c("B1", "B2", "B3")) must_follow(get(object, name), as.integer(settings[[name]]), name)
-    grna_table <- as.data.frame(get(object, "grna_target_data_frame"), stringsAsFactors = FALSE)
+    for (name in c("B1", "B2", "B3")) must_follow(slot_of(object, name), as.integer(settings[[name]]), name)
+    grna_table <- as.data.frame(slot_of(object, "grna_target_data_frame"), stringsAsFactors = FALSE)
     low_moi <- identical(settings$moi, "low")
 
     if ("assignment" %in% done) {
@@ -278,14 +278,14 @@ read_main_object <- function(screen_file, directory) {
     if ("qc" %in% done) {
         fits <- fmt_read_fits(directory, fit_identity(object, sce, modality))
         if (!is.null(fits)) {
-            terms <- colnames(get(object, "covariate_matrix"))
+            terms <- colnames(slot_of(object, "covariate_matrix"))
             set("response_precomputations", lapply(stats::setNames(seq_len(nrow(fits$table)), fits$table$response_id), function(i) {
                 list(fitted_coefs = stats::setNames(fits$table$coefficients[[i]], terms), theta = fits$table$theta[i])
             }))
         }
     }
     status <- stats::setNames(c(TRUE, STAGE_FUNCTIONS %in% STAGE_FUNCTIONS[done]), c("import_data", STAGE_FUNCTIONS))
-    set("functs_called", status[names(get(object, "functs_called"))])
+    set("functs_called", status[names(slot_of(object, "functs_called"))])
     set("last_function_called", unname(STAGE_FUNCTIONS[[utils::tail(done, 1L)]]))
     object
 }

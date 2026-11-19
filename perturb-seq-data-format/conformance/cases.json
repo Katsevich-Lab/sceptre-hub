@@ -37,7 +37,7 @@
     "path": "conformance/valid/types_with_another_tools_entry.h5mu",
     "expect": [],
     "conforms": true,
-    "what": "`uns` also holds an entry of another tool, which the format ignores (S10.2)"
+    "what": "`uns` also holds an entry of another tool, which the format ignores (D10.2)"
   },
   {
     "name": "valid/types_gzip_counts.h5mu",
@@ -45,7 +45,7 @@
     "path": "conformance/valid/types_gzip_counts.h5mu",
     "expect": [],
     "conforms": true,
-    "what": "Counts compressed with gzip, which S11 allows"
+    "what": "Counts compressed with gzip, which D11 allows"
   },
   {
     "name": "valid/types_extra_modality_and_columns.h5mu",
@@ -62,7 +62,7 @@
     "path": "conformance/valid/highmoi_without_count_summaries.h5mu",
     "expect": [],
     "conforms": true,
-    "what": "No cell table has `n_umis` or `n_nonzero`, which are optional (S6.1)"
+    "what": "No cell table has `n_umis` or `n_nonzero`, which are optional (D6.1)"
   },
   {
     "name": "valid/highmoi_with_grna_types.h5mu",
@@ -93,7 +93,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/not_hdf5.h5mu",
     "expect": [
-      "S1.1"
+      "D1.1"
     ],
     "conforms": false,
     "what": "A text file with the right extension"
@@ -103,7 +103,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/no_grna_modality.h5mu",
     "expect": [
-      "S2.1"
+      "D2.1"
     ],
     "conforms": false,
     "what": "The gRNA modality is named `guide`"
@@ -113,7 +113,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/bad_modality_name.h5mu",
     "expect": [
-      "S2.2"
+      "D2.2"
     ],
     "conforms": false,
     "what": "A modality named `1rna`"
@@ -123,7 +123,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/cells_in_another_order.h5mu",
     "expect": [
-      "S2.3"
+      "D2.3"
     ],
     "conforms": false,
     "what": "The gRNA modality lists two cells in the other order"
@@ -133,7 +133,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/compressed_by_cell.h5mu",
     "expect": [
-      "S3.1"
+      "D3.1"
     ],
     "conforms": false,
     "what": "The RNA counts are marked as compressed by cell (`csr_matrix`), as in an IGVF file"
@@ -143,7 +143,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/pointers_past_the_end.h5mu",
     "expect": [
-      "S3.2"
+      "D3.2"
     ],
     "conforms": false,
     "what": "The last column pointer is larger than the number of stored values"
@@ -153,7 +153,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/cells_unsorted_within_a_feature.h5mu",
     "expect": [
-      "S3.3"
+      "D3.3"
     ],
     "conforms": false,
     "what": "Two cell positions of the first gene are swapped"
@@ -163,7 +163,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/stored_zero.h5mu",
     "expect": [
-      "S3.4"
+      "D3.4"
     ],
     "conforms": false,
     "what": "A zero is stored as if it were a count"
@@ -173,7 +173,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/counts_as_doubles.h5mu",
     "expect": [
-      "S4.1"
+      "D4.1"
     ],
     "conforms": false,
     "what": "Counts stored as doubles, as R's MuData writes them by default",
@@ -184,7 +184,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/counts_as_uint16.h5mu",
     "expect": [
-      "S4.1"
+      "D4.1"
     ],
     "conforms": false,
     "what": "Counts stored as 16-bit unsigned integers, as an IGVF file has them",
@@ -195,7 +195,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/cell_positions_64_bit.h5mu",
     "expect": [
-      "S4.2"
+      "D4.2"
     ],
     "conforms": false,
     "what": "Cell positions stored as 64-bit integers beside 32-bit column pointers",
@@ -206,7 +206,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/pointers_64_bit.h5mu",
     "expect": [
-      "S4.3"
+      "D4.3"
     ],
     "conforms": false,
     "what": "Column pointers stored as 64-bit integers beside 32-bit cell positions: mixed widths, which scipy rejects in some operations",
@@ -217,8 +217,8 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/both_index_arrays_64_bit.h5mu",
     "expect": [
-      "S4.2",
-      "S4.3"
+      "D4.2",
+      "D4.3"
     ],
     "conforms": false,
     "what": "Both index arrays stored as 64-bit integers in a file small enough for 32-bit. The same file is what a file past the limit must look like: with the limit lowered for the test, the validators pass it",
@@ -230,7 +230,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/shared_column_named_like_a_modality.h5mu",
     "expect": [
-      "S5.1"
+      "D5.1"
     ],
     "conforms": false,
     "what": "A shared cell column named `rna_quality`"
@@ -240,7 +240,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/covariate_name_with_a_dash.h5mu",
     "expect": [
-      "S5.3"
+      "D5.3"
     ],
     "conforms": false,
     "what": "A cell column named `donor-age`, which has a character outside the allowed ones"
@@ -250,7 +250,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/n_umis_as_labels.h5mu",
     "expect": [
-      "S6.2"
+      "D6.2"
     ],
     "conforms": false,
     "what": "`n_umis` stored as a categorical instead of a number"
@@ -260,7 +260,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/boolean_column.h5mu",
     "expect": [
-      "S7.1"
+      "D7.1"
     ],
     "conforms": false,
     "what": "A true/false cell column stored as booleans, as Python writes it by default"
@@ -270,7 +270,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/integer_column_64_bit.h5mu",
     "expect": [
-      "S7.1"
+      "D7.1"
     ],
     "conforms": false,
     "what": "A 64-bit integer cell column, as pandas writes integers by default"
@@ -280,7 +280,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/text_covariate.h5mu",
     "expect": [
-      "S7.1"
+      "D7.1"
     ],
     "conforms": false,
     "what": "A cell covariate stored as plain text instead of a categorical"
@@ -290,7 +290,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/nullable_string_column.h5mu",
     "expect": [
-      "S7.2"
+      "D7.2"
     ],
     "conforms": false,
     "what": "A gRNA column in anndata's nullable string encoding, which R cannot open"
@@ -300,7 +300,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/categorical_code_out_of_range.h5mu",
     "expect": [
-      "S7.3"
+      "D7.3"
     ],
     "conforms": false,
     "what": "A categorical with a code beyond its categories"
@@ -310,7 +310,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/integer_column_with_missing_value.h5mu",
     "expect": [
-      "S7.4"
+      "D7.4"
     ],
     "conforms": false,
     "what": "An integer cell column holding R's missing-integer value"
@@ -320,7 +320,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/no_grna_target.h5mu",
     "expect": [
-      "S8.1"
+      "D8.1"
     ],
     "conforms": false,
     "what": "The gRNA table has no `grna_target`"
@@ -330,7 +330,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/grna_group_stored.h5mu",
     "expect": [
-      "S8.5"
+      "D8.5"
     ],
     "conforms": false,
     "what": "The gRNA table stores `grna_group`, which is an analysis's choice"
@@ -340,7 +340,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/vector_with_two_targets.h5mu",
     "expect": [
-      "S8.7"
+      "D8.7"
     ],
     "conforms": false,
     "what": "Two gRNAs with different targets share a `vector_id`: a combinatorial screen",
@@ -351,7 +351,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/vector_named_like_another_grna.h5mu",
     "expect": [
-      "S8.8"
+      "D8.8"
     ],
     "conforms": false,
     "what": "A vector is named with the identifier of a gRNA on another vector",
@@ -362,7 +362,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/unknown_grna_type.h5mu",
     "expect": [
-      "S8.15"
+      "D8.15"
     ],
     "conforms": false,
     "what": "A `grna_type` is not one of the four kinds"
@@ -372,7 +372,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/control_type_with_a_target.h5mu",
     "expect": [
-      "S8.16"
+      "D8.16"
     ],
     "conforms": false,
     "what": "A gRNA with a real target is marked `safe-targeting`"
@@ -382,7 +382,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/targeting_type_without_a_target.h5mu",
     "expect": [
-      "S8.16"
+      "D8.16"
     ],
     "conforms": false,
     "what": "A gRNA whose target is `non-targeting` is marked `targeting`"
@@ -392,7 +392,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/vector_id_as_a_number.h5mu",
     "expect": [
-      "S8.6"
+      "D8.6"
     ],
     "conforms": false,
     "what": "`vector_id` stored as numbers"
@@ -402,7 +402,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/target_start_zero.h5mu",
     "expect": [
-      "S8.10"
+      "D8.10"
     ],
     "conforms": false,
     "what": "A target starts at position 0: a 0-based coordinate, as in a BED file"
@@ -412,7 +412,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/target_end_before_start.h5mu",
     "expect": [
-      "S8.10"
+      "D8.10"
     ],
     "conforms": false,
     "what": "A target ends before it starts"
@@ -422,7 +422,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/target_start_without_chromosome.h5mu",
     "expect": [
-      "S8.11"
+      "D8.11"
     ],
     "conforms": false,
     "what": "A gRNA has a target start and end and no chromosome"
@@ -432,7 +432,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/positions_without_genome_build.h5mu",
     "expect": [
-      "S8.14"
+      "D8.14"
     ],
     "conforms": false,
     "what": "The gRNA table has positions and the file has no `genome_build`"
@@ -442,7 +442,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/target_start_as_text.h5mu",
     "expect": [
-      "S8.2"
+      "D8.2"
     ],
     "conforms": false,
     "what": "`target_start` stored as text"
@@ -452,7 +452,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/duplicate_cell_identifiers.h5mu",
     "expect": [
-      "S9.1"
+      "D9.1"
     ],
     "conforms": false,
     "what": "Two cells have the same identifier"
@@ -462,7 +462,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/gene_named_like_a_grna.h5mu",
     "expect": [
-      "S9.2"
+      "D9.2"
     ],
     "conforms": false,
     "what": "A gene and a gRNA have the same identifier"
@@ -472,7 +472,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/identifier_with_a_line_feed.h5mu",
     "expect": [
-      "S9.4"
+      "D9.4"
     ],
     "conforms": false,
     "what": "A cell identifier contains a line feed"
@@ -482,7 +482,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/no_format_entries.h5mu",
     "expect": [
-      "S10.1"
+      "D10.1"
     ],
     "conforms": false,
     "what": "The file has neither `perturb_seq_format` nor `dataset_id`"
@@ -492,7 +492,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/title_as_a_number.h5mu",
     "expect": [
-      "S10.5"
+      "D10.5"
     ],
     "conforms": false,
     "what": "The optional title is a number"
@@ -502,7 +502,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/unknown_perturbation_type.h5mu",
     "expect": [
-      "S10.6"
+      "D10.6"
     ],
     "conforms": false,
     "what": "The optional perturbation type is not one of the listed kinds"
@@ -512,7 +512,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/format_from_the_future.h5mu",
     "expect": [
-      "S10.3"
+      "D10.3"
     ],
     "conforms": false,
     "what": "The data file's format version is 9.0"
@@ -522,7 +522,7 @@
     "kind": "screen",
     "path": "conformance/invalid/screens/format_as_a_number.h5mu",
     "expect": [
-      "S10.1"
+      "D10.1"
     ],
     "conforms": false,
     "what": "The data file's format is the integer 0, not a version"

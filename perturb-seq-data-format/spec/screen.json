@@ -1,5 +1,5 @@
 {
-  "$comment": "The structure of a Perturb-seq data file, format 0, as data. Both validators read this file. SPEC.md section 2 states the rules; rules that need computing (order of cells within a feature, uniqueness, the same cells in every modality) are code in each language.",
+  "$comment": "The structure of a Perturb-seq data file, as data. Both validators read this file. Rules D1 to D12 of SPEC.md are the rules; rules that need computing (order of cells within a feature, uniqueness, the same cells in every modality) are code in each language.",
   "format": "0.1",
   "descriptions": {
     "file": "one dataset, written once and never modified",
@@ -28,15 +28,15 @@
       "indptr": "index"
     },
     "index": {
-      "$comment": "The one type of both index arrays (S4.2, S4.3). It is `narrow` while the largest of the number of stored values, the number of cells and the number of features is at most `narrow_up_to`, and `wide` beyond. This is the type scipy chooses for a sparse matrix of that size.",
+      "$comment": "The one type of both index arrays (D4.2, D4.3). It is `narrow` while the largest of the number of stored values, the number of cells and the number of features is at most `narrow_up_to`, and `wide` beyond. This is the type scipy chooses for a sparse matrix of that size.",
       "narrow": "int32",
       "wide": "int64",
       "narrow_up_to": 2147483647
     },
     "rules": {
-      "data": "S4.1",
-      "indices": "S4.2",
-      "indptr": "S4.3"
+      "data": "D4.1",
+      "indices": "D4.2",
+      "indptr": "D4.3"
     },
     "filters": [
       "deflate",
@@ -103,7 +103,7 @@
         "categorical"
       ],
       "required": true,
-      "rule": "S8.1"
+      "rule": "D8.1"
     },
     {
       "name": "target_chr",
@@ -113,7 +113,7 @@
         "categorical"
       ],
       "required": false,
-      "rule": "S8.2"
+      "rule": "D8.2"
     },
     {
       "name": "target_start",
@@ -123,7 +123,7 @@
         "int32"
       ],
       "required": false,
-      "rule": "S8.2"
+      "rule": "D8.2"
     },
     {
       "name": "target_end",
@@ -133,7 +133,7 @@
         "int32"
       ],
       "required": false,
-      "rule": "S8.2"
+      "rule": "D8.2"
     },
     {
       "name": "vector_id",
@@ -144,7 +144,7 @@
       ],
       "required": false,
       "no_missing": true,
-      "rule": "S8.6"
+      "rule": "D8.6"
     },
     {
       "name": "grna_type",
@@ -161,7 +161,7 @@
         "safe-targeting",
         "negative control"
       ],
-      "rule": "S8.15"
+      "rule": "D8.15"
     }
   ],
   "metadata": {
@@ -210,14 +210,14 @@
         "kind": "string",
         "required": false,
         "required_with_positions": true,
-        "rule": "S8.14"
+        "rule": "D8.14"
       }
     }
   },
   "grna_table_forbidden": [
     {
       "name": "grna_group",
-      "rule": "S8.5"
+      "rule": "D8.5"
     }
   ]
 }

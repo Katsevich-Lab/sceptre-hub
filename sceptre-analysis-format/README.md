@@ -11,9 +11,9 @@ each stage, the same files in R and in Python. It builds on the
 has its own version, and knows nothing about analyses.
 
 **Start with [the overview](https://katsevich-lab.github.io/sceptre-hub/sceptre-analysis-format/overview.html).**
-It gives the principles, shows what an analysis folder holds, the choices to
-review and their reasons, the questions for reviewers, what has been tested, and what each
-folder here holds. Its source is `overview.qmd`.
+It gives the principles and the main choices with their reasons, shows what
+an analysis folder holds, how it is read and written, and how the format is checked.
+Its source is `overview.qmd`.
 
 Behind it are two reference documents: `SPEC.md` (the rules, numbered) and
 `RATIONALE.md` (the full reasons and evidence, under the same numbers).
@@ -24,13 +24,12 @@ Behind it are two reference documents: `SPEC.md` (the rules, numbered) and
 verify/run.sh     # the verification suite; SCEPTRE_FORMAT_PYTHON picks the Python to use
                   # `verify/run.sh format` runs the part that uses no writer, `verify/run.sh writers` the rest
 sceptre-suite/run.sh   # the checks that need sceptre 0.99.1: sceptre's analyses, written and rebuilt
-./render.sh       # overview.html, a local copy of the overview; the published one is built by ../site/build.sh
 ```
 
-`verify/run.sh` and `render.sh` use standard libraries only, the committed files in `example/` and
+`verify/run.sh` uses standard libraries only, the committed files in `example/` and
 `conformance/` as they are, and the data file format in
-`../perturb-seq-data-format` (its code, examples and conformance files). They
-need what that format needs, and in R also `nanoparquet`, `jsonvalidate` and
+`../perturb-seq-data-format` (its code, examples and conformance files). It
+needs what that format needs, and in R also `nanoparquet`, `jsonvalidate` and
 `arrow` (`nanoparquet` and `jsonvalidate` may be in
 `../perturb-seq-data-format/rlib`); in Python also `pyarrow`, `jsonschema`, `polars` and
 `duckdb`. `verify/README.md` says how another implementation is tested against

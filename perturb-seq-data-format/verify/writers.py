@@ -26,7 +26,7 @@ def same_counts(a, b) -> bool:
     return all((x[m].X != y[m].X).nnz == 0 for m in y.mod)
 
 
-# A copy of a data file keeps its `dataset_id` and every modality (S10.4, S2.5).
+# A copy of a data file keeps its `dataset_id` and every modality (D10.4, D2.5).
 for case in json.loads(Path("conformance/cases.json").read_text()):
     if case.get("copy_keeps_modalities"):
         with tempfile.TemporaryDirectory() as folder:
@@ -38,7 +38,7 @@ for case in json.loads(Path("conformance/cases.json").read_text()):
             results.add(f"{case['name']}: the copy conforms", len(sf.validate_screen(copy)) == 0)
 
 # Past the index limit (lowered here) both index arrays of every modality are
-# 64-bit, the file conforms under that limit, and it reads back equal (S4).
+# 64-bit, the file conforms under that limit, and it reads back equal (D4).
 with tempfile.TemporaryDirectory() as folder:
     wide = Path(folder) / "wide.h5mu"
     source = "conformance/valid/types_written_by_python.h5mu"

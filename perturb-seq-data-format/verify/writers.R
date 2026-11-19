@@ -10,7 +10,7 @@ same_counts <- function(a, b) {
     rhdf5::h5closeAll()   # MuData's reader leaves a handle open
     identical(counts(x), counts(y)) && identical(counts(altExp(x, "gRNA")), counts(altExp(y, "gRNA")))
 }
-# A copy of a data file keeps its `dataset_id` and every modality (S10.4, S2.5).
+# A copy of a data file keeps its `dataset_id` and every modality (D10.4, D2.5).
 for (case in jsonlite::fromJSON("conformance/cases.json", simplifyVector = FALSE)) {
     if (is.null(case$copy_keeps_modalities)) next
     copy <- tempfile(fileext = ".h5mu")
@@ -23,7 +23,7 @@ for (case in jsonlite::fromJSON("conformance/cases.json", simplifyVector = FALSE
     unlink(copy)
 }
 # Past the index limit (lowered here) both index arrays of every modality are
-# 64-bit, the file conforms under that limit, and it reads back equal (S4).
+# 64-bit, the file conforms under that limit, and it reads back equal (D4).
 wide <- tempfile(fileext = ".h5mu")
 wide_source <- "conformance/valid/types_written_by_r.h5mu"
 fmt_write_screen(read_as_sce(wide_source), wide, index_limit = 1)

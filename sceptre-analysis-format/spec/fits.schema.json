@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "The identity of the fits in one part file of fits/response/: how they were made. It is JSON text under the key `sceptre_fit_identity` in the part's Parquet key-value metadata (SPEC.md, T6)",
+  "title": "The identity of the fits in one part file of fits/response/: how they were made. It is JSON text under the key `sceptre_fit_identity` in the part's Parquet key-value metadata (SPEC.md, A13)",
   "type": "object",
   "required": [
     "screen_id",

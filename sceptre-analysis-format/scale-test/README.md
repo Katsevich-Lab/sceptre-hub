@@ -31,7 +31,7 @@ One file, zstd, row groups of a million rows, sorted by target then response.
 | Read one target or one pair: Python / R arrow | 0.1 s | 0.1 s / 2 to 3 s |
 | Read one response: Python / R arrow | 0.5 s | 6 s, 3 GB / 5 s, 4 GB |
 
-### Resampled statistics: large, and the row group limit is too loose
+### Resampled statistics: large, and read in small row groups
 
 499 resampled statistics per pair, as random normal values.
 
@@ -48,7 +48,7 @@ million pairs, and 38 GB for 10 million pairs.
 The size of a row group decides what a selective read costs, because a reader
 decodes whole row groups:
 
-| Read (zstd, list of doubles) | Row groups of 1,000,000 rows (the limit of T0.3) | Row groups of 10,000 rows |
+| Read (zstd, list of doubles) | Row groups of 1,000,000 rows (the general limit of A7.3) | Row groups of 10,000 rows (the limit of A12.7) |
 |---|---|---|
 | One pair, 1 million pairs, Python | 7 s, 11 GB | 0.1 s, 0.3 GB |
 | One pair, 1 million pairs, R arrow | 9 s, 11 GB | 1.4 s, 0.4 GB |

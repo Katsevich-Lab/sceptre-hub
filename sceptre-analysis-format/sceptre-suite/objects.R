@@ -57,21 +57,21 @@ write_expected <- function(object, cells, folder) {
     done <- called(object)
     expected <- list(captured_from = paste("sceptre", as.character(utils::packageVersion("sceptre"))), stages = I(done))
     if ("assignment" %in% done) {
-        expected$cells_by_grna_sha256 <- sha256_text(ids_text(get(object, "initial_grna_assignment_list")))
-        raw <- get(object, "grna_assignments_raw")
+        expected$cells_by_grna_sha256 <- sha256_text(ids_text(slot_of(object, "initial_grna_assignment_list")))
+        raw <- slot_of(object, "grna_assignments_raw")
         expected$cells_by_group_sha256 <- sha256_text(ids_text(raw$grna_group_idxs))
         expected$cells_by_control_grna_sha256 <- sha256_text(ids_text(raw$indiv_nt_grna_idxs))
-        per_cell <- get(object, "grnas_per_cell")
+        per_cell <- slot_of(object, "grnas_per_cell")
         if (length(per_cell) > 0L) expected$grnas_per_cell_sha256 <- sha256_text(paste(per_cell, collapse = ","))
     }
     if ("qc" %in% done) {
-        expected$cells_in_use_sha256 <- sha256_ids(cells[get(object, "cells_in_use")])
-        expected$n_ok_discovery_pairs <- get(object, "n_ok_discovery_pairs")
-        expected$n_ok_positive_control_pairs <- get(object, "n_ok_positive_control_pairs")
+        expected$cells_in_use_sha256 <- sha256_ids(cells[slot_of(object, "cells_in_use")])
+        expected$n_ok_discovery_pairs <- slot_of(object, "n_ok_discovery_pairs")
+        expected$n_ok_positive_control_pairs <- slot_of(object, "n_ok_positive_control_pairs")
     }
-    if ("calibration" %in% done) expected$control_groups <- I(sort(unique(as.character(get(object, "negative_control_pairs")$grna_group)), method = "radix"))
+    if ("calibration" %in% done) expected$control_groups <- I(sort(unique(as.character(slot_of(object, "negative_control_pairs")$grna_group)), method = "radix"))
     for (stage in intersect(c("calibration", "power", "discovery"), done)) {
-        result <- as.data.frame(get(object, result_slot[[stage]]), stringsAsFactors = FALSE)
+        result <- as.data.frame(slot_of(object, result_slot[[stage]]), stringsAsFactors = FALSE)
         keep <- intersect(c("grna_target", "grna_id", "response_id", "p_value", "log_2_fold_change", "significant"), names(result))
         write_table(result[keep], file.path(folder, paste0(stage, ".parquet")), unit_key(result))
     }
@@ -81,7 +81,7 @@ write_examples <- function(objects, root) {
     for (dataset in names(objects)) {
         cells <- colnames(read_as_sce(screen_of(dataset), "rna"))
         for (name in names(objects[[dataset]])) {
-            suppressWarnings(write_main_analysis(objects[[dataset]][[name]], screen_of(dataset), file.path(root, dataset, "analyses", name)))
+            suppressWarnings(write_sceptre_object(objects[[dataset]][[name]], screen_of(dataset), file.path(root, dataset, "analyses", name)))
             write_expected(objects[[dataset]][[name]], cells, file.path(root, dataset, "expected", name))
         }
     }

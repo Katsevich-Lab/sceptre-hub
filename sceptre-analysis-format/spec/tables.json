@@ -1,5 +1,5 @@
 {
- "$comment": "The tables of a sceptre analysis folder. Both prototype libraries and both validators read this file. SPEC.md sections T0 to T6 are the rules; this file is their machine-readable form. A table's name is its path in the analysis folder, without `.parquet`.",
+ "$comment": "The tables of a sceptre analysis folder. Both prototype libraries and both validators read this file. SPEC.md rules A7 to A14 are the rules; this file is their machine-readable form. A table's name is its path in the analysis folder, without `.parquet`.",
  "format": "0.1",
  "stages": [
   "parameters",
@@ -209,7 +209,7 @@
       "singleton",
       "bonferroni"
      ],
-     "rule": "T3.3"
+     "rule": "A10.3"
     },
     {
      "name": "response_id",
@@ -232,7 +232,7 @@
      "required": true
     }
    ],
-   "pass_qc_from_counts": "T3.4"
+   "pass_qc_from_counts": "A10.4"
   },
   {
    "name": "qc/positive_control_pair_qc",
@@ -259,7 +259,7 @@
       "singleton",
       "bonferroni"
      ],
-     "rule": "T3.3"
+     "rule": "A10.3"
     },
     {
      "name": "response_id",
@@ -282,7 +282,7 @@
      "required": true
     }
    ],
-   "pass_qc_from_counts": "T3.4"
+   "pass_qc_from_counts": "A10.4"
   },
   {
    "name": "calibration/negative_control_groups",
@@ -332,7 +332,7 @@
       "singleton",
       "bonferroni"
      ],
-     "rule": "T5.6"
+     "rule": "A12.6"
     },
     {
      "name": "response_id",
@@ -413,12 +413,12 @@
     "column": "log_2_fold_change",
     "of": "fold_change",
     "relative_tolerance": 1e-09,
-    "rule": "T5.2"
+    "rule": "A12.2"
    },
    "forbidden_columns": [
     {
      "name": "significant",
-     "rule": "T5.3"
+     "rule": "A12.3"
     }
    ]
   },
@@ -446,7 +446,7 @@
      "present_under": [
       "singleton"
      ],
-     "rule": "T5.6"
+     "rule": "A12.6"
     },
     {
      "name": "response_id",
@@ -527,12 +527,12 @@
     "column": "log_2_fold_change",
     "of": "fold_change",
     "relative_tolerance": 1e-09,
-    "rule": "T5.2"
+    "rule": "A12.2"
    },
    "forbidden_columns": [
     {
      "name": "significant",
-     "rule": "T5.3"
+     "rule": "A12.3"
     }
    ]
   },
@@ -560,7 +560,7 @@
      "present_under": [
       "singleton"
      ],
-     "rule": "T5.6"
+     "rule": "A12.6"
     },
     {
      "name": "response_id",
@@ -641,12 +641,12 @@
     "column": "log_2_fold_change",
     "of": "fold_change",
     "relative_tolerance": 1e-09,
-    "rule": "T5.2"
+    "rule": "A12.2"
    },
    "forbidden_columns": [
     {
      "name": "significant",
-     "rule": "T5.3"
+     "rule": "A12.3"
     }
    ]
   },
@@ -675,7 +675,7 @@
       "singleton",
       "bonferroni"
      ],
-     "rule": "T5.6"
+     "rule": "A12.6"
     },
     {
      "name": "response_id",
@@ -689,7 +689,7 @@
     }
    ],
    "max_rows_per_row_group": 10000,
-   "row_group_rule": "T5.7"
+   "row_group_rule": "A12.7"
   },
   {
    "name": "power/resamples",
@@ -715,7 +715,7 @@
      "present_under": [
       "singleton"
      ],
-     "rule": "T5.6"
+     "rule": "A12.6"
     },
     {
      "name": "response_id",
@@ -729,7 +729,7 @@
     }
    ],
    "max_rows_per_row_group": 10000,
-   "row_group_rule": "T5.7"
+   "row_group_rule": "A12.7"
   },
   {
    "name": "discovery/resamples",
@@ -755,7 +755,7 @@
      "present_under": [
       "singleton"
      ],
-     "rule": "T5.6"
+     "rule": "A12.6"
     },
     {
      "name": "response_id",
@@ -769,7 +769,7 @@
     }
    ],
    "max_rows_per_row_group": 10000,
-   "row_group_rule": "T5.7"
+   "row_group_rule": "A12.7"
   },
   {
    "name": "fits/response",

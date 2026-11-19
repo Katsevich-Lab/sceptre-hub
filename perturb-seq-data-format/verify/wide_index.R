@@ -1,4 +1,4 @@
-# The 64-bit branch of S4, R side. verify/wide_index.py wrote the highmoi example
+# The 64-bit branch of D4, R side. verify/wide_index.py wrote the highmoi example
 # with both index arrays 64-bit (the writer's limit lowered). R's readers open
 # it: MuData's reader in memory, MuData's backed reader, and HDF5Array. R's own writer is run the same way. This
 # shows the types are handled; it cannot show that values above 2,147,483,647
@@ -68,7 +68,7 @@ check("R's writer, with the limit lowered, writes 64-bit index arrays", all(grep
 check("R's validator passes R's file under the lowered limit", nrow(validate_screen(mine, index_limit = 1)) == 0L)
 check("R's validator passes Python's file under the lowered limit", nrow(validate_screen(wide, index_limit = 1)) == 0L)
 found <- validate_screen(mine)
-check("under the real limit R's file does not conform, breaking S4.2 and S4.3 only", identical(sort(unique(found$rule)), c("S4.2", "S4.3")))
+check("under the real limit R's file does not conform, breaking D4.2 and D4.3 only", identical(sort(unique(found$rule)), c("D4.2", "D4.3")))
 same <- all(vapply(c("mod/rna/X/data", "mod/rna/X/indices", "mod/rna/X/indptr", "mod/grna/X/data", "mod/grna/X/indices", "mod/grna/X/indptr"), function(path) {
     identical(as.vector(rhdf5::h5read(mine, path, bit64conversion = "double")), as.vector(rhdf5::h5read(wide, path, bit64conversion = "double")))
 }, logical(1)))

@@ -1,0 +1,45 @@
+{
+  "step": "write",
+  "file": "data/screen.h5mu",
+  "checks": [],
+  "timings": {
+    "build SingleCellExperiment with disk-backed counts": {
+      "seconds": 6.9,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "fmt_write_screen (real limit), disk-backed counts": {
+      "seconds": 0.3,
+      "ok": false,
+      "warnings": [],
+      "error": "no method or default for coercing “DelayedMatrix” to “generalMatrix”",
+      "error_call": "methods::as(counts, \"generalMatrix\")"
+    },
+    "the writer's coercion alone: as(drop0(as(counts, 'generalMatrix')), 'RsparseMatrix')": {
+      "seconds": 0,
+      "ok": false,
+      "warnings": [],
+      "error": "no method or default for coercing “DelayedMatrix” to “generalMatrix”",
+      "error_call": "methods::as(SummarizedExperiment::assay(sce, \"counts\"), \"generalMatrix\")"
+    },
+    "as(counts, 'dgCMatrix') (Matrix's in-memory sparse class)": {
+      "seconds": 137.4,
+      "ok": false,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0",
+      "error": "SVT_SparseMatrix object contains too many nonzero values (2199990946) to \"fit\" in a CsparseMatrix derivative",
+      "error_call": ".Call2(.NAME, ..., PACKAGE = \"SparseArray\")"
+    }
+  },
+  "started": "2026-11-19 18:17:00",
+  "versions": {
+    "MuData": "1.14.0",
+    "rhdf5": "2.54.1",
+    "HDF5Array": "1.38.0",
+    "Matrix": "1.7.6",
+    "R": "4.5.2"
+  },
+  "finished": "2026-11-19 18:19:28",
+  "gc_max_mb": 34434.8,
+  "assay_class": "DelayedMatrix",
+  "r_file_exists_after": false
+}

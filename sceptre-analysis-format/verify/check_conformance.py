@@ -19,7 +19,7 @@ for case in cases:
     found = sf.validate_analysis(case["path"], case.get("screen"))
     result = {"rules": sorted(set(found["rule"])), "conforms": len(found) == 0}
     if "fits_used" in case:
-        # whether a reader takes fits from the cache of this folder (T6.5)
+        # whether a reader takes fits from the cache of this folder (A13.5)
         result["fits_as_expected"] = (sf.FITS in sf.read_analysis(case["path"])["tables"]) == case["fits_used"]
     if "fits_for" in case:
         fits = sf.read_fits(case["path"], case["fits_for"]["identity"])
@@ -32,7 +32,7 @@ for case in cases:
             result["reader_refused"] = True
     results[case["name"]] = result
     failed = [k for k in ("reader_refused", "fits_as_expected") if result.get(k) is False]
-    if result["rules"] != case["expect"] or result["conforms"] != case["conforms"] or failed:
+    if result["rules"] != sorted(case["expect"]) or result["conforms"] != case["conforms"] or failed:
         wrong += 1
         print(f"MISMATCH {case['name']}: expected {case['expect']}, reported {result}")
         print(found.to_string(index=False))

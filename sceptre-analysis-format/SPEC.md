@@ -11,7 +11,7 @@ is.
 
 **What it builds on.** An analysis is an analysis of one data file in the
 [Perturb-seq data file format](../perturb-seq-data-format/SPEC.md). This document does not repeat that
-format: rules numbered S (S7.6, S10.4, ...) are rules of [its
+format: rules numbered D (D7.6, D10.4, ...) are rules of [its
 specification](../perturb-seq-data-format/SPEC.md), and the terms cell, modality, feature, gRNA and target
 are defined there. The dependency runs one way. A data file knows nothing
 about analyses; an analysis names its data file by identifier (A1).
@@ -22,13 +22,12 @@ contain and in what form. It covers the outputs of each stage of an analysis. Th
 settings and the columns of their outputs are those of sceptre 0.99.1.
 It does not define what the numbers mean: what a p-value tests, how a fold
 change is estimated, or what an assignment method does are defined by
-sceptre's method documentation. That is a choice, and reviewers may want it
-otherwise.
+sceptre's method documentation.
 
 This document states the rules. It gives no reasons: for each rule, the
 section of [`RATIONALE.md`](RATIONALE.md) with the same letter and number
-(A1, T5, ...) explains the choice, its alternatives and the evidence.
-[The overview](overview.qmd) is the introduction, and says what review is asked for.
+(A1, A12, ...) explains the choice, its alternatives and the evidence.
+[The overview](overview.qmd) is the introduction.
 
 ## Versions and changes
 
@@ -82,11 +81,11 @@ final; the sorting into kinds is.
 - **none**: nothing tests it yet.
 
 Of the 73 statements, 49 are file rules, 19 behaviour rules and 5
-guidance. The validators check 47 of the file rules (T0.9 in part), a test covers 1 more
-(T4.3), and 1 has no test (A3.2). Tests or the conformance run
-cover 11 of the behaviour rules (A1.8 in part, T7.4 in R only); 8 have no
-test: A1.5, A1.9, A3.5, A6.2, T1.3, T7.3, T7.5, T7.9. Eight of the untested rules
-(A1.5, A1.9, A3.2, A3.5, T1.3, T7.3, T7.5, T7.9) can only be tested with a package
+guidance. The validators check 47 of the file rules (A7.9 in part), a test covers 1 more
+(A11.3), and 1 has no test (A3.2). Tests or the conformance run
+cover 11 of the behaviour rules (A1.8 in part, A14.4 in R only); 8 have no
+test: A1.5, A1.9, A3.5, A6.2, A8.3, A14.3, A14.5, A14.9. Eight of the untested rules
+(A1.5, A1.9, A3.2, A3.5, A8.3, A14.3, A14.5, A14.9) can only be tested with a package
 that fits models or builds its own object.
 
 **The machine-readable parts** are in [`spec/`](spec/), and both validators and
@@ -94,10 +93,10 @@ both prototype libraries read them:
 
 | File | What it defines |
 |---|---|
-| `spec/tables.json` | Every table of an analysis: its stage, key, columns and types (rules T0 to T6) |
+| `spec/tables.json` | Every table of an analysis: its stage, key, columns and types (rules A7 to A14) |
 | `spec/analysis.schema.json` | `analysis.json` (rule A1.1), as a JSON Schema |
 | `spec/stage.schema.json` | The six stage records (rule A2.1), as a JSON Schema |
-| `spec/fits.schema.json` | The identity each part of the fit cache carries: how its fits were made (rule T6.1), as a JSON Schema |
+| `spec/fits.schema.json` | The identity each part of the fit cache carries: how its fits were made (rule A13.1), as a JSON Schema |
 
 **Precedence.** Where a file of `spec/` and the prose of this document
 disagree, `spec/` is the rule and the prose is the mistake.
@@ -109,8 +108,8 @@ validators pass.
 **An analysis and its data file.** Checking an analysis in full needs its
 data file, because some rules are about the two together: that the link
 matches the file (A1.2), that the response modality is in it (A1.1), and that
-every cell, gRNA, response and target named in a table exists in it (T0.5,
-T2.1). Everything else can be checked from the folder alone: the records and
+every cell, gRNA, response and target named in a table exists in it (A7.5,
+A9.1). Everything else can be checked from the folder alone: the records and
 their schemas, which stages have run, the files each stage lists, and each
 table's columns, types, keys and order. `validate_analysis()` takes the data
 file as an optional second argument and checks what it can with what it is
@@ -146,7 +145,7 @@ not change this document.
 
 ---
 
-## 1. Layout
+## Layout
 
 ```
 my_analysis/                          one analysis
@@ -178,7 +177,7 @@ my_analysis/                          one analysis
 │   ├── record.json
 │   ├── results.parquet
 │   └── resamples.parquet             (optional)
-└── fits/                             NOT a stage: a cache, with rules of its own (T6)
+└── fits/                             NOT a stage: a cache, with rules of its own (A13)
     └── response/
         └── part-….parquet            one part file per job that added fits;
                                       each says inside how its fits were made
@@ -189,18 +188,18 @@ and an analysis may be stored anywhere.
 
 ---
 
-## 2. The analysis folder
+## The analysis folder
 
 ### A1. `analysis.json`
 
 | Rule | Kind | | Check |
 |---|---|---|---|
 | A1.1 | file | `analysis.json` MUST exist and conform to `spec/analysis.schema.json`. It has `format` (the analysis's own format version, `0.1` for this document; a reader MUST refuse a major version other than the one it knows), `response_modality` (the name of the modality the analysis tests; never `grna`), and `screen`. | V |
-| A1.2 | file | `screen` describes the data file: `id`, which is the data file's `dataset_id` (S10.4); `format`, which is the data file's `perturb_seq_format` (S10.3) when the analysis was created; `n_cells`, `n_responses`, `n_grnas`; and `cell_ids_sha256`, `response_ids_sha256`, `grna_ids_sha256`. "Responses" are the features of the response modality. A reader MUST refuse a data file for which `id`, a count or a hash differs, or which has no modality of that name. `format` is recorded for people and tools and is not part of the identity a reader checks. | V |
-| A1.3 | file | The SHA-256 of a list of identifiers is that of their UTF-8 bytes, in file order, joined by a line feed, with no line feed at the end. (S9.4 keeps this unambiguous.) | V (through A1.2) |
+| A1.2 | file | `screen` describes the data file: `id`, which is the data file's `dataset_id` (D10.4); `format`, which is the data file's `perturb_seq_format` (D10.3) when the analysis was created; `n_cells`, `n_responses`, `n_grnas`; and `cell_ids_sha256`, `response_ids_sha256`, `grna_ids_sha256`. "Responses" are the features of the response modality. A reader MUST refuse a data file for which `id`, a count or a hash differs, or which has no modality of that name. `format` is recorded for people and tools and is not part of the identity a reader checks. | V |
+| A1.3 | file | The SHA-256 of a list of identifiers is that of their UTF-8 bytes, in file order, joined by a line feed, with no line feed at the end. (D9.4 keeps this unambiguous.) | V (through A1.2) |
 | A1.4 | file | `screen.path` is optional. If present it MUST be a relative POSIX path or an `http` or `https` URL. It MUST NOT be an absolute local path. | V |
 | A1.5 | behaviour | `screen.path` is a hint. A reader takes the data file's location from its caller and MUST NOT depend on the hint. A writer records a relative path only when the data file is in the analysis folder's parent or grandparent folder or below one of them, and otherwise records nothing. | none (testing it needs a package) |
-| A1.6 | file | `screen.title` is optional: the data file's `title` (S10.5), copied so that a person can tell which dataset an analysis belongs to. It is not part of the identity a reader checks. | V (through A1.1) |
+| A1.6 | file | `screen.title` is optional: the data file's `title` (D10.5), copied so that a person can tell which dataset an analysis belongs to. It is not part of the identity a reader checks. | V (through A1.1) |
 | A1.7 | guidance | Where a dataset lives is for each package and each user's own configuration to resolve, for instance by a search path or a table from dataset `id` to location. Nothing specific to one machine belongs in `analysis.json`. A package that follows the hint by itself SHOULD do so only for locations the user has configured, since a folder from elsewhere could point a reader at any file or URL. | — |
 | A1.8 | behaviour | Which modality an analysis tests is recorded in `analysis.json` (A1.1); the data file does not mark one. A reader MUST find it there, never by a fixed name. A package MAY choose it for the user when the data file has exactly one modality besides `grna`. | tests (the validators take the name from `analysis.json`: the conformance folder that names a modality its data file lacks). The package's choice: none |
 | A1.9 | behaviour | A reader MUST ignore every modality of the data file other than `grna` and the one the analysis names. | none (testing it needs a package) |
@@ -222,7 +221,7 @@ and `discovery`. The last three do not depend on one another.
 | Rule | Kind | | Check |
 |---|---|---|---|
 | A3.1 | file | The settings of each stage, their names and their allowed values are those of `spec/stage.schema.json`. They are the arguments and settings of sceptre 0.99.1 under sceptre's own names: those of `set_analysis_parameters()` and the resampling budgets `B1`, `B2` and `B3` in the parameters record, the method of `assign_grnas()` and its hyperparameters in the assignment record, and the thresholds of `run_qc()` in the QC record. | V (through A2.1) |
-| A3.2 | file | A formula names covariates as T7.4 does (`rna_n_umis`). Setting names keep role words (`response_n_umis_range`). | none (testing it needs a package) |
+| A3.2 | file | A formula names covariates as A14.4 does (`rna_n_umis`). Setting names keep role words (`response_n_umis_range`). | none (testing it needs a package) |
 | A3.3 | file | JSON files are UTF-8. A missing value is `null`. NaN and infinity MUST NOT appear. | V (a record that is not valid JSON fails A1.1 or A2.1) |
 | A3.4 | behaviour | A writer MUST write a real number with 17 significant digits, so that the number read is the number written. | tests (the threshold reproduces every call) |
 | A3.5 | behaviour | The resampling budget `B3` in force is that of the latest stage record that carries one. The parameters, QC and calibration records carry it. | none (testing it needs a package) |
@@ -233,7 +232,7 @@ and `discovery`. The last three do not depend on one another.
 | Rule | Kind | | Check |
 |---|---|---|---|
 | A4.1 | file | A stage's folder MUST NOT hold one of that stage's tables that its record does not list. A folder holding tables and no record is a stage that did not finish. | V |
-| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the writer SHOULD delete the fit cache too (T6.6). | tests (`verify/writers`: a retried stage) |
+| A4.2 | behaviour | To rerun a stage, a writer MUST first delete the folders of that stage and of every later stage, each record before the rest of its folder. If the `qc` stage or an earlier one is among them, the writer SHOULD delete the fit cache too (A13.6). | tests (`verify/writers`: a retried stage) |
 | A4.3 | behaviour | A reader MUST ignore files it does not know. | V (a valid conformance case) |
 
 ### A5. Files of a stage
@@ -255,76 +254,76 @@ and `discovery`. The last three do not depend on one another.
 
 ---
 
-## 3. The tables
+## The tables
 
 `spec/tables.json` gives, for each table: its path, the stage that writes it
 (which is the folder it is in), whether it is required, its key, and its
 columns with their types. This section states
 the rules that apply to all tables and the meaning of each table.
 
-### T0. Every table
+### A7. Every table
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T0.1 | file | A table MUST have every required column of its definition, each of the type given there, with no missing values except where the definition says a column is nullable. | V |
-| T0.2 | file | The rows of each file MUST be sorted by the table's key, comparing identifiers as UTF-8 bytes. | V |
-| T0.3 | file | A row group MUST NOT have more than 1,000,000 rows. | v |
-| T0.4 | file | No two rows of a table may have the same key. The fit cache is the one exception: two of its part files may hold the same response (T6.4), though one file may not. | V |
-| T0.5 | file | Cells, gRNAs, responses and targets are named by identifier, and every identifier MUST exist in the data file. | V |
-| T0.6 | file | A table is one `.parquet` file, or a folder of that name holding part files with the same columns. Each part is sorted; parts need not be sorted across each other. | V (a valid conformance case) |
-| T0.7 | file | An identifier column MAY be plain text or dictionary-encoded. | V (a valid conformance case) |
-| T0.8 | behaviour | A reader MUST ignore columns it does not know. In the tables whose definition says `extra_columns: kept`, a reader keeps them. | V (a valid conformance case) |
-| T0.9 | file | Tables are Parquet, compressed with snappy, zstd or gzip, or not at all. Types are those of section 4. | types: V (through T0.1); compression: none |
+| A7.1 | file | A table MUST have every required column of its definition, each of the type given there, with no missing values except where the definition says a column is nullable. | V |
+| A7.2 | file | The rows of each file MUST be sorted by the table's key, comparing identifiers as UTF-8 bytes. | V |
+| A7.3 | file | A row group MUST NOT have more than 1,000,000 rows. | v |
+| A7.4 | file | No two rows of a table may have the same key. The fit cache is the one exception: two of its part files may hold the same response (A13.4), though one file may not. | V |
+| A7.5 | file | Cells, gRNAs, responses and targets are named by identifier, and every identifier MUST exist in the data file. | V |
+| A7.6 | file | A table is one `.parquet` file, or a folder of that name holding part files with the same columns. Each part is sorted; parts need not be sorted across each other. | V (a valid conformance case) |
+| A7.7 | file | An identifier column MAY be plain text or dictionary-encoded. | V (a valid conformance case) |
+| A7.8 | behaviour | A reader MUST ignore columns it does not know. In the tables whose definition says `extra_columns: kept`, a reader keeps them. | V (a valid conformance case) |
+| A7.9 | file | Tables are Parquet, compressed with snappy, zstd or gzip, or not at all. Types are those of [Types](#types). | types: V (through A7.1); compression: none |
 
 `grna_id` belongs to the key of the pair-QC and results tables when it is
-present. T3.3 and T5.6 say when that is, so a table's key follows from the
+present. A10.3 and A12.6 say when that is, so a table's key follows from the
 analysis's strategy and the table's stage; `spec/tables.json` records it as
 `present_under`.
 
-### T1. `assignment/assignments.parquet` and `assignment/flagged_cells.parquet`
+### A8. `assignment/assignments.parquet` and `assignment/flagged_cells.parquet`
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T1.1 | file | `assignment/assignments.parquet` has one row per assigned (gRNA, cell): `grna_id`, `cell_id`. | V (through T0) |
-| T1.2 | file | `assignment/flagged_cells.parquet` is optional. It lists, by `cell_id`, the cells that the assignment method judges not to carry exactly one gRNA beyond what the assignment table shows. | V (through T0) |
-| T1.3 | behaviour | The cells without exactly one gRNA are those with zero or several assignment rows, together with the flagged cells. | none (testing it needs a package) |
+| A8.1 | file | `assignment/assignments.parquet` has one row per assigned (gRNA, cell): `grna_id`, `cell_id`. | V (through A7) |
+| A8.2 | file | `assignment/flagged_cells.parquet` is optional. It lists, by `cell_id`, the cells that the assignment method judges not to carry exactly one gRNA beyond what the assignment table shows. | V (through A7) |
+| A8.3 | behaviour | The cells without exactly one gRNA are those with zero or several assignment rows, together with the flagged cells. | none (testing it needs a package) |
 
-### T2. `qc/cells.parquet`
-
-| Rule | Kind | | Check |
-|---|---|---|---|
-| T2.1 | file | One row per cell of the data file: `cell_id`, and `in_use`, true for the cells that passed QC. | V |
-
-### T3. The pairs to test, and their QC
+### A9. `qc/cells.parquet`
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T3.1 | file | `parameters/discovery_pairs.parquet` and `parameters/positive_control_pairs.parquet` hold the pairs to test as the user gave them: `grna_target`, `response_id`. Row order carries no meaning. | V (through T0) |
-| T3.2 | file | `qc/discovery_pair_qc.parquet` and `qc/positive_control_pair_qc.parquet` hold the outcome of pairwise QC: the key columns, `n_nonzero_trt` and `n_nonzero_cntrl` (the number of treated cells and of control cells with a nonzero count of the response), and `pass_qc`. | V (through T0) |
-| T3.3 | file | The pair-QC tables MUST have a `grna_id` column under the `singleton` and `bonferroni` strategies, where each gRNA is tested on its own, and MUST NOT have one under `union`. | V |
-| T3.4 | file | In a pair-QC table, `pass_qc` MUST be true exactly when `n_nonzero_trt` is at least the QC record's `n_nonzero_trt_thresh` and `n_nonzero_cntrl` is at least its `n_nonzero_cntrl_thresh`. | V |
+| A9.1 | file | One row per cell of the data file: `cell_id`, and `in_use`, true for the cells that passed QC. | V |
 
-### T4. `calibration/negative_control_groups.parquet`
+### A10. The pairs to test, and their QC
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T4.1 | file | One row per member of a negative-control group: `grna_group` (the group's name) and `grna_id`. | V (through T0) |
-| T4.2 | behaviour | A reader MUST take a group's members from this table, never from the group's name. | tests (control groups) |
-| T4.3 | file | A group's name appears in the calibration results in the column that names the tested unit: `grna_target` under the `union` strategy, `grna_id` otherwise. | tests (derived values, under each strategy) |
+| A10.1 | file | `parameters/discovery_pairs.parquet` and `parameters/positive_control_pairs.parquet` hold the pairs to test as the user gave them: `grna_target`, `response_id`. Row order carries no meaning. | V (through A7) |
+| A10.2 | file | `qc/discovery_pair_qc.parquet` and `qc/positive_control_pair_qc.parquet` hold the outcome of pairwise QC: the key columns, `n_nonzero_trt` and `n_nonzero_cntrl` (the number of treated cells and of control cells with a nonzero count of the response), and `pass_qc`. | V (through A7) |
+| A10.3 | file | The pair-QC tables MUST have a `grna_id` column under the `singleton` and `bonferroni` strategies, where each gRNA is tested on its own, and MUST NOT have one under `union`. | V |
+| A10.4 | file | In a pair-QC table, `pass_qc` MUST be true exactly when `n_nonzero_trt` is at least the QC record's `n_nonzero_trt_thresh` and `n_nonzero_cntrl` is at least its `n_nonzero_cntrl_thresh`. | V |
 
-### T5. Results: `<stage>/results.parquet`
+### A11. `calibration/negative_control_groups.parquet`
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T5.1 | file | A results table has the key columns, `n_nonzero_trt`, `n_nonzero_cntrl`, `pass_qc`, `p_value` and `log_2_fold_change`. `fold_change` and `se_fold_change` MAY follow, and so MAY the diagnostic columns `stage`, `z_orig`, `xi`, `omega` and `alpha`. A pair that failed pairwise QC has a row, with missing values in every column after `pass_qc`. | V (through T0.1) |
-| T5.2 | file | In a table that has `fold_change`, a row's `log_2_fold_change` MUST equal `log(fold_change) / log(2)` to a relative difference of at most 10^-9, wherever neither is missing. A reader takes the stored value and does not recompute it. | V |
-| T5.3 | file | `significant` MUST NOT be stored. The record of the `calibration` and `discovery` stages has `significance_threshold`: the largest p-value called significant, or `null` if none was. A row is significant when its `p_value` is at most the threshold. | V |
-| T5.4 | file | Rows are sorted by key (T0.2), not by p-value. | V (through T0.2) |
-| T5.5 | file | `<stage>/resamples.parquet` is optional: the key columns and `z_null`, a list of the pair's resampled statistics. | V (through T0) |
-| T5.6 | file | A results table and its resamples table MUST have a `grna_id` column under the `singleton` strategy and, for the calibration stage, under `bonferroni`. They MUST NOT have one otherwise: not under `union`, and not for the power and discovery stages under `bonferroni`, whose results are per target. | V |
-| T5.7 | file | A row group of a resamples table MUST NOT have more than 10,000 rows. Every row holds a list, and software that wants one pair reads the pair's whole row group. | v; tests (`verify/writers`: a table of 25,000 rows is written in row groups of at most 10,000) |
+| A11.1 | file | One row per member of a negative-control group: `grna_group` (the group's name) and `grna_id`. | V (through A7) |
+| A11.2 | behaviour | A reader MUST take a group's members from this table, never from the group's name. | tests (control groups) |
+| A11.3 | file | A group's name appears in the calibration results in the column that names the tested unit: `grna_target` under the `union` strategy, `grna_id` otherwise. | tests (derived values, under each strategy) |
 
-### T6. The fit cache: `fits/response/`
+### A12. Results: `<stage>/results.parquet`
+
+| Rule | Kind | | Check |
+|---|---|---|---|
+| A12.1 | file | A results table has the key columns, `n_nonzero_trt`, `n_nonzero_cntrl`, `pass_qc`, `p_value` and `log_2_fold_change`. `fold_change` and `se_fold_change` MAY follow, and so MAY the diagnostic columns `stage`, `z_orig`, `xi`, `omega` and `alpha`. A pair that failed pairwise QC has a row, with missing values in every column after `pass_qc`. | V (through A7.1) |
+| A12.2 | file | In a table that has `fold_change`, a row's `log_2_fold_change` MUST equal `log(fold_change) / log(2)` to a relative difference of at most 10^-9, wherever neither is missing. A reader takes the stored value and does not recompute it. | V |
+| A12.3 | file | `significant` MUST NOT be stored. The record of the `calibration` and `discovery` stages has `significance_threshold`: the largest p-value called significant, or `null` if none was. A row is significant when its `p_value` is at most the threshold. | V |
+| A12.4 | file | Rows are sorted by key (A7.2), not by p-value. | V (through A7.2) |
+| A12.5 | file | `<stage>/resamples.parquet` is optional: the key columns and `z_null`, a list of the pair's resampled statistics. | V (through A7) |
+| A12.6 | file | A results table and its resamples table MUST have a `grna_id` column under the `singleton` strategy and, for the calibration stage, under `bonferroni`. They MUST NOT have one otherwise: not under `union`, and not for the power and discovery stages under `bonferroni`, whose results are per target. | V |
+| A12.7 | file | A row group of a resamples table MUST NOT have more than 10,000 rows. Every row holds a list, and software that wants one pair reads the pair's whole row group. | v; tests (`verify/writers`: a table of 25,000 rows is written in row groups of at most 10,000) |
+
+### A13. The fit cache: `fits/response/`
 
 **The fit cache follows different rules from the stage folders.** It holds
 fitted models for the responses, which the three testing stages share. No
@@ -337,32 +336,32 @@ and QC stages have run.
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T6.1 | file | `fits/response/`, if it exists, MUST hold part files (`*.parquet`) and nothing else. Each part MUST carry the **identity** of the fits it holds: JSON text under the key `sceptre_fit_identity` in the Parquet file's own key-value metadata, conforming to `spec/fits.schema.json`: `screen_id`, `formula`, `cells_in_use_sha256` (the hash of A1.3 over the identifiers of the cells in use), `control_group`. Other keys in that metadata are ignored. | V |
-| T6.2 | file | The fits are the rows of the part files: one row per response, with `response_id`, `coefficients` and `theta`. In a part whose identity is that of the analysis, `coefficients` has one value per term of the design, in the design's order. | V |
-| T6.3 | file | A fit cache MUST NOT exist before the parameters and QC stages have run. A part whose identity is not that of the analysis (another formula, control group, dataset or set of cells) is allowed: it is unused, and the validators do not report it. | V |
-| T6.4 | behaviour | Each writer adds a part file of its own, carrying the identity of the fits in it, and MUST NOT modify another's. No file of the cache is shared between writers. Two parts MAY hold the same response; a reader takes either. A writer that knows no job is still adding to the cache MAY merge the parts that carry one identity: it writes one new part holding their fits and deletes them. | V (a valid conformance case with two parts); tests (`verify/writers`: merged parts hold the same fits under the same identity) |
-| T6.5 | behaviour | The fits are a cache. A reader MAY ignore them, and deleting them changes no result beyond numerical tolerance. A reader MUST NOT take a fit from a part unless every field of that part's identity equals what the reader would use itself. It MUST ignore any other part, and a part with no identity. Identities are compared as parsed values, not as text, and two formulas are equal when they are the same once white space is removed. | tests (parts with another control group, another set of cells, no identity, and a formula spaced differently) |
-| T6.6 | behaviour | A writer SHOULD delete the cache when the `qc` stage or an earlier stage is rerun, and MUST keep it when a testing stage is rerun. Deleting is housekeeping: no result depends on it (T6.5), and it keeps a plain read of the folder from mixing old parts with current ones. | V (a valid conformance case); tests |
-| T6.7 | guidance | `fits/grna/` is reserved for fitted models of the gRNAs, which this version does not define. It would work the same way, with identity fields of its own. A table of another kind of fit is a folder of its own, never a column in this one. | — |
-| T6.8 | guidance | A job SHOULD write one part for all the fits it made, not one part per response. Reading the cache costs time for every part file. | — |
+| A13.1 | file | `fits/response/`, if it exists, MUST hold part files (`*.parquet`) and nothing else. Each part MUST carry the **identity** of the fits it holds: JSON text under the key `sceptre_fit_identity` in the Parquet file's own key-value metadata, conforming to `spec/fits.schema.json`: `screen_id`, `formula`, `cells_in_use_sha256` (the hash of A1.3 over the identifiers of the cells in use), `control_group`. Other keys in that metadata are ignored. | V |
+| A13.2 | file | The fits are the rows of the part files: one row per response, with `response_id`, `coefficients` and `theta`. In a part whose identity is that of the analysis, `coefficients` has one value per term of the design, in the design's order. | V |
+| A13.3 | file | A fit cache MUST NOT exist before the parameters and QC stages have run. A part whose identity is not that of the analysis (another formula, control group, dataset or set of cells) is allowed: it is unused, and the validators do not report it. | V |
+| A13.4 | behaviour | Each writer adds a part file of its own, carrying the identity of the fits in it, and MUST NOT modify another's. No file of the cache is shared between writers. Two parts MAY hold the same response; a reader takes either. A writer that knows no job is still adding to the cache MAY merge the parts that carry one identity: it writes one new part holding their fits and deletes them. | V (a valid conformance case with two parts); tests (`verify/writers`: merged parts hold the same fits under the same identity) |
+| A13.5 | behaviour | The fits are a cache. A reader MAY ignore them, and deleting them changes no result beyond numerical tolerance. A reader MUST NOT take a fit from a part unless every field of that part's identity equals what the reader would use itself. It MUST ignore any other part, and a part with no identity. Identities are compared as parsed values, not as text, and two formulas are equal when they are the same once white space is removed. | tests (parts with another control group, another set of cells, no identity, and a formula spaced differently) |
+| A13.6 | behaviour | A writer SHOULD delete the cache when the `qc` stage or an earlier stage is rerun, and MUST keep it when a testing stage is rerun. Deleting is housekeeping: no result depends on it (A13.5), and it keeps a plain read of the folder from mixing old parts with current ones. | V (a valid conformance case); tests |
+| A13.7 | guidance | `fits/grna/` is reserved for fitted models of the gRNAs, which this version does not define. It would work the same way, with identity fields of its own. A table of another kind of fit is a folder of its own, never a column in this one. | — |
+| A13.8 | guidance | A job SHOULD write one part for all the fits it made, not one part per response. Reading the cache costs time for every part file. | — |
 
-### T7. The design matrix
+### A14. The design matrix
 
 | Rule | Kind | | Check |
 |---|---|---|---|
-| T7.1 | file | The formula in the parameters record MUST be additive, each term one of: a covariate name (T7.4), `log(x)`, `log(x + 1)`, or `0` or `1` for the intercept. | V |
-| T7.2 | file | The design matrix is not stored. The parameters record has `design.terms` (the names of the matrix's columns, with covariates named as in T7.4). | V (through A2.1) |
-| T7.3 | behaviour | A reader that fits models MUST rebuild the matrix from the formula and the covariates and refuse the analysis if the term names differ. | none (testing it needs a package) |
-| T7.4 | behaviour | The covariate table of a model is the columns of the data file's shared cell table together with the columns of the cell tables of `grna` and of the response modality, each modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. To these are added the columns of `parameters/cell_covariates.parquet` (T7.6), under their own names. The data file's column names (S5.1, S5.3) keep these names distinct and usable in a formula. | tests in R (the data file format's R writer splits such a table and the checks join it again: every R copy in `verify/` here and in that format's `verify/`). In Python: none (testing it needs a package) |
-| T7.5 | behaviour | The baseline of a categorical covariate in the design matrix is its first stored category (S7.6). | none (testing it needs a package) |
-| T7.6 | file | `parameters/cell_covariates.parquet` is optional. It holds covariates that the analysis brings beside those of the data file: a value some method computed (a score, a cluster, a cell-type label), or one the data file does not store. It has `cell_id` and one column per covariate, and one row per cell of the data file. A covariate is a `double`, which may be missing, or text, which may not. Its name starts with a letter and contains only letters, digits, underscores and dots. | V |
-| T7.7 | file | A covariate of `parameters/cell_covariates.parquet` MUST NOT have the name of a covariate that the data file provides (T7.4). | V |
-| T7.8 | file | Every covariate that the formula names MUST be a column of the model's covariate table (T7.4): a covariate of the data file, or one of `parameters/cell_covariates.parquet`. | V |
-| T7.9 | behaviour | The levels of a text covariate of `parameters/cell_covariates.parquet` are its distinct values, sorted as UTF-8 bytes. The first is its baseline in the design matrix. | none (testing it needs a package) |
+| A14.1 | file | The formula in the parameters record MUST be additive, each term one of: a covariate name (A14.4), `log(x)`, `log(x + 1)`, or `0` or `1` for the intercept. | V |
+| A14.2 | file | The design matrix is not stored. The parameters record has `design.terms` (the names of the matrix's columns, with covariates named as in A14.4). | V (through A2.1) |
+| A14.3 | behaviour | A reader that fits models MUST rebuild the matrix from the formula and the covariates and refuse the analysis if the term names differ. | none (testing it needs a package) |
+| A14.4 | behaviour | The covariate table of a model is the columns of the data file's shared cell table together with the columns of the cell tables of `grna` and of the response modality, each modality's columns prefixed with the modality's name and an underscore: `rna_n_umis`, `grna_n_umis`. To these are added the columns of `parameters/cell_covariates.parquet` (A14.6), under their own names. The data file's column names (D5.1, D5.3) keep these names distinct and usable in a formula. | tests in R (the data file format's R writer splits such a table and the checks join it again: every R copy in `verify/` here and in that format's `verify/`). In Python: none (testing it needs a package) |
+| A14.5 | behaviour | The baseline of a categorical covariate in the design matrix is its first stored category (D7.6). | none (testing it needs a package) |
+| A14.6 | file | `parameters/cell_covariates.parquet` is optional. It holds covariates that the analysis brings beside those of the data file: a value some method computed (a score, a cluster, a cell-type label), or one the data file does not store. It has `cell_id` and one column per covariate, and one row per cell of the data file. A covariate is a `double`, which may be missing, or text, which may not. Its name starts with a letter and contains only letters, digits, underscores and dots. | V |
+| A14.7 | file | A covariate of `parameters/cell_covariates.parquet` MUST NOT have the name of a covariate that the data file provides (A14.4). | V |
+| A14.8 | file | Every covariate that the formula names MUST be a column of the model's covariate table (A14.4): a covariate of the data file, or one of `parameters/cell_covariates.parquet`. | V |
+| A14.9 | behaviour | The levels of a text covariate of `parameters/cell_covariates.parquet` are its distinct values, sorted as UTF-8 bytes. The first is its baseline in the design matrix. | none (testing it needs a package) |
 
 ---
 
-## 4. Types
+## Types
 
 | Value | In a table | In a JSON record |
 |---|---|---|
@@ -375,7 +374,7 @@ and QC stages have run.
 
 ---
 
-## 5. Conformance
+## Conformance
 
 - **Files.** `conformance/` holds analysis folders that conform and analysis
   folders that each break one rule or a few. `conformance/cases.json` lists
@@ -403,10 +402,10 @@ and QC stages have run.
 - **Agreement.** `verify/check_conformance.R` and `verify/check_conformance.py` run the two
   validators over every case. Both MUST report exactly the expected rules.
 - **What the validators do not check.** They do not rebuild the design matrix
-  (T7.3), recompute anything from the counts, or check the meaning of a value,
+  (A14.3), recompute anything from the counts, or check the meaning of a value,
   only its form.
 
-## 6. What the two libraries support
+## What the two libraries support
 
 "Tested" means a check in `verify/` or the conformance set passes in that
 language, on the small examples, or that the round trip with sceptre

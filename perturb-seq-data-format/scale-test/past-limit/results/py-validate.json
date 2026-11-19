@@ -1,0 +1,22 @@
+{
+ "step": "validate",
+ "file": "data/screen.h5mu",
+ "checks": [
+  {
+   "check": "validate_screen reports nothing",
+   "ok": true,
+   "detail": "Empty DataFrame\nColumns: [rule, where, message]\nIndex: []"
+  }
+ ],
+ "timings": {
+  "validate_screen (real limit)": {
+   "seconds": 48.4,
+   "ok": true,
+   "peak_rss_after": "71409668 kB"
+  }
+ },
+ "started": "2026-11-19T18:05:08.516383",
+ "problems": [],
+ "peak_rss_kb_getrusage": 71409668,
+ "finished": "2026-11-19T18:05:58.189237"
+}

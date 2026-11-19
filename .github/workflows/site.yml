@@ -39,12 +39,29 @@ jobs:
           use-public-rspm: true
       - name: System libraries for R packages
         run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev libhdf5-dev libnode-dev
-      - name: R libraries
-        run: |
-          install.packages(c("BiocManager", "jsonlite", "nanoparquet", "jsonvalidate", "arrow", "Matrix", "knitr", "rmarkdown", "reticulate"))
-          BiocManager::install(c("MuData", "rhdf5", "HDF5Array", "SingleCellExperiment", "MultiAssayExperiment"), ask = FALSE, update = FALSE)
-          for (package in c("MuData", "nanoparquet", "arrow", "reticulate", "rmarkdown")) library(package, character.only = TRUE)
-        shell: Rscript {0}
+      # installs binaries where there are any, and keeps the library between runs
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+          R_BIOC_VERSION: "3.23"
+        with:
+          install-quarto: false
+          dependencies: '"hard"'
+          packages: |
+            any::jsonlite
+            any::nanoparquet
+            any::jsonvalidate
+            any::arrow
+            any::Matrix
+            bioc::MuData
+            bioc::rhdf5
+            bioc::HDF5Array
+            bioc::SingleCellExperiment
+            bioc::MultiAssayExperiment
+            any::knitr
+            any::rmarkdown
+            any::reticulate
+            github::Katsevich-Lab/sceptre@20c33349c2c5a0df66589e37f67238e67c53bcb0
       - uses: quarto-dev/quarto-actions/setup@v2
       - name: Verification suites, whose results the overviews report
         run: |

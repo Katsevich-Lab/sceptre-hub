@@ -30,7 +30,7 @@ for file, writer in FILES.items():
             shape = tuple(int(v) for v in f[f"mod/{modality}/X"].attrs["shape"])
             results.add(f"anndata reads {modality} of {file} ({writer})", adata.shape == shape, f"{adata.shape}")
             # scanpy on the matrix exactly as anndata returns it, with nothing done to it:
-            # both index arrays are stored in one width (S4), which scipy requires in some
+            # both index arrays are stored in one width (D4), which scipy requires in some
             # operations. percent_top=None because the default asks for the top 500
             # features, which a 100-feature example does not have.
             results.add(f"both index arrays of {modality} of {file} arrive in one width", adata.X.indices.dtype == adata.X.indptr.dtype,

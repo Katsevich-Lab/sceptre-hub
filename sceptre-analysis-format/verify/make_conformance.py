@@ -191,7 +191,7 @@ broken_analysis("response_modality_grna", ["A1.1"], "`analysis.json` names `grna
                 lambda p: edit_json(p / "analysis.json", lambda v: v.__setitem__("response_modality", "grna")))
 broken_analysis("response_modality_not_in_file", ["A1.2"], "The response modality is `protein`, which the data file does not have",
                 lambda p: edit_json(p / "analysis.json", lambda v: v.__setitem__("response_modality", "protein")))
-# covariates an analysis brings itself (T7.6 to T7.8): here the count summaries of a
+# covariates an analysis brings itself (A14.6 to A14.8): here the count summaries of a
 # data file that does not store them, and a label that some method computed
 BARE = DATA / "highmoi_without_count_summaries.h5mu"
 
@@ -221,19 +221,19 @@ case("analysis", brought, [], "The data file stores no count summaries; the anal
 
 named_twice = INVALID / "analyses" / "covariate_the_data_file_already_has"
 with_covariates(named_twice)
-case("analysis", named_twice, ["T7.7"], "The analysis brings covariates under names the data file already provides", high_r)
+case("analysis", named_twice, ["A14.7"], "The analysis brings covariates under names the data file already provides", high_r)
 
 unknown = INVALID / "analyses" / "formula_names_an_unknown_covariate"
 shutil.copytree("example/highmoi/analyses/left_sided", unknown)
-case("analysis", unknown, ["T7.8"], "The formula names count summaries that neither the data file nor the analysis provides", BARE)
+case("analysis", unknown, ["A14.8"], "The formula names count summaries that neither the data file nor the analysis provides", BARE)
 
 wrong_type = INVALID / "analyses" / "covariate_of_the_wrong_type"
 with_covariates(wrong_type, lambda t: t.append_column("flag", pa.array([True] * t.num_rows)))
-case("analysis", wrong_type, ["T7.6"], "A covariate the analysis brings is a boolean, not a number or text", BARE)
+case("analysis", wrong_type, ["A14.6"], "A covariate the analysis brings is a boolean, not a number or text", BARE)
 
 too_few = INVALID / "analyses" / "covariates_for_some_cells_only"
 with_covariates(too_few, lambda t: t.slice(0, t.num_rows - 10))
-case("analysis", too_few, ["T7.6"], "The analysis's covariate table lacks some cells of the data file", BARE)
+case("analysis", too_few, ["A14.6"], "The analysis's covariate table lacks some cells of the data file", BARE)
 
 broken_analysis("analysis_format_from_the_future", ["A1.1"], "The analysis's format version is 9.0",
                 lambda p: edit_json(p / "analysis.json", lambda v: v.__setitem__("format", "9.0")))
@@ -255,17 +255,17 @@ broken_analysis("assignment_method_unknown", ["A2.1"], "The assignment record na
                 lambda p: edit_json(p / "assignment/record.json", lambda v: v["settings"].__setitem__("method", "nearest")))
 broken_analysis("no_pairwise_qc_thresholds", ["A2.1"], "The QC record lacks the two thresholds of pairwise QC",
                 lambda p: edit_json(p / "qc/record.json", lambda v: [v["settings"].pop(k) for k in ("n_nonzero_trt_thresh", "n_nonzero_cntrl_thresh")]))
-broken_analysis("pair_qc_without_counts", ["T0.1"], "A pair-QC table lacks `n_nonzero_trt` (T3.2)",
+broken_analysis("pair_qc_without_counts", ["A7.1"], "A pair-QC table lacks `n_nonzero_trt` (A10.2)",
                 lambda p: rewrite(p / "qc/discovery_pair_qc.parquet", lambda t: t.drop_columns(["n_nonzero_trt"])))
-broken_analysis("pair_qc_verdict_against_the_counts", ["T3.4"], "Pairs are marked as passing pairwise QC although a count is below its threshold",
+broken_analysis("pair_qc_verdict_against_the_counts", ["A10.4"], "Pairs are marked as passing pairwise QC although a count is below its threshold",
                 lambda p: edit_json(p / "qc/record.json", lambda v: v["settings"].__setitem__("n_nonzero_trt_thresh", 50)))
-broken_analysis("results_without_counts", ["T0.1"], "The discovery results lack `n_nonzero_cntrl` (T5.1)",
+broken_analysis("results_without_counts", ["A7.1"], "The discovery results lack `n_nonzero_cntrl` (A12.1)",
                 lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.drop_columns(["n_nonzero_cntrl"])))
 broken_analysis("stage_without_its_predecessor", ["A2.2", "A4.1"], "The assignment record is missing while later stages remain",
                 lambda p: (p / "assignment/record.json").unlink())
 broken_analysis("listed_file_missing", ["A5.1"], "A table that a record lists is not in the folder",
                 lambda p: (p / "power/results.parquet").unlink())
-broken_analysis("table_truncated", ["A5.2", "T2.1"], "`cells.parquet` has fewer rows than its stage wrote",
+broken_analysis("table_truncated", ["A5.2", "A9.1"], "`cells.parquet` has fewer rows than its stage wrote",
                 lambda p: rewrite(p / "qc/cells.parquet", lambda t: t.slice(0, 450)))
 
 
@@ -276,13 +276,13 @@ broken_analysis("required_table_not_listed", ["A4.1", "A5.4"], "The QC record do
                 lambda p: edit_json(p / "qc/record.json", lambda v: v.__setitem__("files", [f for f in v["files"] if f["path"] != "cells.parquet"])))
 broken_analysis("stale_results", ["A4.1"], "The discovery record is gone and its results table remains",
                 lambda p: (p / "discovery/record.json").unlink())
-broken_analysis("column_missing", ["T0.1"], "`cells.parquet` has no `in_use` column",
+broken_analysis("column_missing", ["A7.1"], "`cells.parquet` has no `in_use` column",
                 lambda p: rewrite(p / "qc/cells.parquet", lambda t: t.select(["cell_id"])))
-broken_analysis("column_of_the_wrong_type", ["T0.1"], "`pass_qc` is stored as integers",
+broken_analysis("column_of_the_wrong_type", ["A7.1"], "`pass_qc` is stored as integers",
                 lambda p: rewrite(p / "qc/discovery_pair_qc.parquet", lambda t: t.set_column(t.column_names.index("pass_qc"), "pass_qc", t["pass_qc"].cast(pa.int32()))))
-broken_analysis("rows_not_sorted", ["T0.2"], "The assignment table is in reverse order",
+broken_analysis("rows_not_sorted", ["A7.2"], "The assignment table is in reverse order",
                 lambda p: rewrite(p / "assignment/assignments.parquet", lambda t: t.take(list(range(t.num_rows - 1, -1, -1)))))
-broken_analysis("duplicate_row", ["T0.4"], "The assignment table has the same (gRNA, cell) twice",
+broken_analysis("duplicate_row", ["A7.4"], "The assignment table has the same (gRNA, cell) twice",
                 lambda p: rewrite(p / "assignment/assignments.parquet", lambda t: t.take([0] + list(range(t.num_rows - 1)))))
 
 
@@ -293,40 +293,40 @@ def unknown_cell(t):
     return pa.Table.from_pandas(frame.iloc[order].reset_index(drop=True), preserve_index=False)
 
 
-broken_analysis("cell_not_in_the_data_file", ["T0.5"], "The assignment table names a cell the data file does not have",
+broken_analysis("cell_not_in_the_data_file", ["A7.5"], "The assignment table names a cell the data file does not have",
                 lambda p: rewrite(p / "assignment/assignments.parquet", unknown_cell))
 def with_grna_id(t):
     return t.append_column("grna_id", pa.array([f"{g}_grna" for g in t["grna_target"].to_pylist()], type=pa.string()))
 
 
-broken_analysis("grna_column_under_the_union_strategy", ["T3.3"], "A pair-QC table has a `grna_id` column in an analysis that pools gRNAs by target",
+broken_analysis("grna_column_under_the_union_strategy", ["A10.3"], "A pair-QC table has a `grna_id` column in an analysis that pools gRNAs by target",
                 lambda p: rewrite(p / "qc/discovery_pair_qc.parquet", with_grna_id))
-broken_analysis("grna_column_in_bonferroni_discovery", ["T5.6"], "The discovery results of a bonferroni analysis have a `grna_id` column",
+broken_analysis("grna_column_in_bonferroni_discovery", ["A12.6"], "The discovery results of a bonferroni analysis have a `grna_id` column",
                 lambda p: rewrite(p / "discovery/results.parquet", with_grna_id), source="example/highmoi/analyses/bonferroni")
-broken_analysis("significant_stored", ["T5.3"], "The discovery results store a `significant` column",
+broken_analysis("significant_stored", ["A12.3"], "The discovery results store a `significant` column",
                 lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.append_column("significant", pa.array([False] * t.num_rows))))
-broken_analysis("no_log_2_fold_change", ["T0.1"], "The discovery results have no `log_2_fold_change` (T5.1)",
+broken_analysis("no_log_2_fold_change", ["A7.1"], "The discovery results have no `log_2_fold_change` (A12.1)",
                 lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.drop_columns(["log_2_fold_change"])))
-broken_analysis("effect_sizes_disagree", ["T5.2"], "A `log_2_fold_change` is not the base-2 logarithm of the row's `fold_change`",
+broken_analysis("effect_sizes_disagree", ["A12.2"], "A `log_2_fold_change` is not the base-2 logarithm of the row's `fold_change`",
                 lambda p: rewrite(p / "discovery/results.parquet", lambda t: t.set_column(
                     t.schema.get_field_index("log_2_fold_change"), "log_2_fold_change", pa.array([None if v is None else v + 1.0 for v in t["log_2_fold_change"].to_pylist()], type=pa.float64()))))
-broken_analysis("fit_part_without_identity", ["T6.1"], "A part of the fit cache does not say how its fits were made, as after a tool rewrote it; a reader takes no fit from it",
+broken_analysis("fit_part_without_identity", ["A13.1"], "A part of the fit cache does not say how its fits were made, as after a tool rewrote it; a reader takes no fit from it",
                 lambda p: restamp(fit_part(p), None))
 cases[-1]["fits_used"] = False
-broken_analysis("fit_identity_incomplete", ["T6.1"], "The identity inside a part of the fit cache lacks `cells_in_use_sha256`",
+broken_analysis("fit_identity_incomplete", ["A13.1"], "The identity inside a part of the fit cache lacks `cells_in_use_sha256`",
                 lambda p: restamp(fit_part(p), lambda v: v.pop("cells_in_use_sha256") and None))
-broken_analysis("fit_identity_not_json", ["T6.1"], "The identity inside a part of the fit cache is not JSON",
+broken_analysis("fit_identity_not_json", ["A13.1"], "The identity inside a part of the fit cache is not JSON",
                 lambda p: restamp(fit_part(p), lambda v: "poisson, all cells"))
 cases[-1]["fits_used"] = False
-broken_analysis("identity_file_in_the_fit_cache", ["T6.1"], "The fit cache holds a JSON file beside its parts, which a folder reader would trip on",
+broken_analysis("identity_file_in_the_fit_cache", ["A13.1"], "The fit cache holds a JSON file beside its parts, which a folder reader would trip on",
                 lambda p: (p / "fits/response/identity.json").write_text("{}\n"))
-broken_analysis("fits_before_qc", ["T6.3"], "An analysis that stopped after assignment holds a fit cache",
+broken_analysis("fits_before_qc", ["A13.3"], "An analysis that stopped after assignment holds a fit cache",
                 lambda p: [shutil.rmtree(p / s) for s in ("qc", "calibration", "power", "discovery")])
-broken_analysis("fit_with_too_few_coefficients", ["T6.2"], "A saved fit has fewer coefficients than the design has terms",
+broken_analysis("fit_with_too_few_coefficients", ["A13.2"], "A saved fit has fewer coefficients than the design has terms",
                 lambda p: rewrite(next((p / "fits/response").glob("*.parquet")), lambda t: t.set_column(
                     t.column_names.index("coefficients"), "coefficients",
                     pa.array([c[:-1] for c in t["coefficients"].to_pylist()], type=pa.list_(pa.float64())))))
-broken_analysis("formula_with_an_interaction", ["T7.1"], "The formula has an interaction, outside the additive subset; the fit cache was made for another formula, which is allowed and unused",
+broken_analysis("formula_with_an_interaction", ["A14.1"], "The formula has an interaction, outside the additive subset; the fit cache was made for another formula, which is allowed and unused",
                 lambda p: edit_json(p / "parameters/record.json", lambda v: v["settings"].__setitem__("formula", "~log(rna_n_umis) * batch")))
 
 (ROOT / "cases.json").write_text(json.dumps(cases, indent=2) + "\n")

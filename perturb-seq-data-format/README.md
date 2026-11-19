@@ -11,9 +11,9 @@ of MuData, meant for any software that handles Perturb-seq data. Nothing in it
 is specific to one analysis tool.
 
 **Start with [the overview](https://katsevich-lab.github.io/sceptre-hub/perturb-seq-data-format/overview.html).**
-It gives the principles, shows what a data file holds, the choices to review
-and their reasons, the questions for reviewers, what has been tested, and
-what each folder here holds. Its source is `overview.qmd`.
+It gives the principles and the main choices with their reasons, shows what
+a data file holds, how it is read and written, and how the format is checked.
+Its source is `overview.qmd`.
 
 Behind it are two reference documents: `SPEC.md` (the rules, numbered) and
 `RATIONALE.md` (the full reasons and evidence, under the same numbers).
@@ -26,11 +26,10 @@ analyses of a data file.
 
 ```sh
 verify/run.sh     # the verification suite; SCEPTRE_FORMAT_PYTHON picks the Python to use
-./render.sh       # overview.html, a local copy of the overview; the published one is built by ../site/build.sh
 ```
 
-Both use standard libraries only and the committed files in `example/` and
-`conformance/` as they are. They need, in R: `MuData`, `rhdf5`, `HDF5Array`, `SingleCellExperiment`, `MultiAssayExperiment`, `Matrix`, `jsonlite` (and for the overview page
+It uses standard libraries only and the committed files in `example/` and
+`conformance/` as they are. It needs, in R: `MuData`, `rhdf5`, `HDF5Array`, `SingleCellExperiment`, `MultiAssayExperiment`, `Matrix`, `jsonlite` (and for the overview page
 `reticulate` and quarto). In Python: `mudata`, `anndata`, `h5py`,
 `pandas`, `scipy`, `scanpy`. The suite passes on macOS, Linux and
 Windows.

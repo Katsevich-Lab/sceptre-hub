@@ -1,0 +1,164 @@
+{
+ "step": "read",
+ "file": "data/screen.h5mu",
+ "checks": [
+  {
+   "check": "mudata in memory: nnz per gene equals ground truth",
+   "ok": true,
+   "detail": "total nnz 2199990946 vs truth 2199990946"
+  },
+  {
+   "check": "mudata in memory: sum per gene equals ground truth",
+   "ok": true,
+   "detail": "genes differing: 0; total 8817880328 vs 8817880328"
+  },
+  {
+   "check": "mudata in memory: nnz per cell equals ground truth",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "n_umis written by write_screen equals ground-truth cell sums",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "n_nonzero written by write_screen equals ground-truth cell nnz",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 0 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 1 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 2 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 444 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 1800 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 2280 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 2401 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 4622 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 4995 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 5467 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 6201 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 6665 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 7171 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 7549 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 7799 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 7800 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 7801 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 7997 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 7998 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "in-memory gene 7999 equals regenerated truth exactly",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "timings": {
+  "mudata.read_h5mu (in memory)": {
+   "seconds": 28.3,
+   "ok": true,
+   "peak_rss_after": "27059624 kB"
+  },
+  "compare in-memory read to ground truth": {
+   "seconds": 3.1,
+   "ok": true,
+   "peak_rss_after": "27059624 kB"
+  }
+ },
+ "started": "2026-11-19T18:06:03.827011",
+ "in_memory": {
+  "type": "csc_matrix",
+  "shape": [
+   1100000,
+   8000
+  ],
+  "nnz": 2199990946,
+  "dtypes": [
+   "int32",
+   "int64",
+   "int64"
+  ],
+  "grna_dtypes": [
+   "int32",
+   "int32",
+   "int32"
+  ]
+ },
+ "peak_rss_kb_getrusage": 27059624,
+ "finished": "2026-11-19T18:06:38.969295"
+}

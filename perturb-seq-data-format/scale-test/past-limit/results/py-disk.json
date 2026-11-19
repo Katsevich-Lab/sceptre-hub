@@ -1,0 +1,144 @@
+{
+ "step": "disk",
+ "file": "data/screen.h5mu",
+ "checks": [
+  {
+   "check": "h5py gene 0 (stored values 0..27363) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 27363, sum 29936 vs 29936"
+  },
+  {
+   "check": "h5py gene 1 (stored values 27363..95402) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 68039, sum 84900 vs 84900"
+  },
+  {
+   "check": "h5py gene 2 (stored values 95402..283850) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 188448, sum 335553 vs 335553"
+  },
+  {
+   "check": "h5py gene 444 (stored values 119074935..119656384) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 581449, sum 2938447 vs 2938447"
+  },
+  {
+   "check": "h5py gene 1800 (stored values 492755759..492768588) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 12829, sum 13423 vs 13423"
+  },
+  {
+   "check": "h5py gene 2280 (stored values 623675441..623817742) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 142301, sum 222384 vs 222384"
+  },
+  {
+   "check": "h5py gene 2401 (stored values 655954129..655976881) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 22752, sum 24660 vs 24660"
+  },
+  {
+   "check": "h5py gene 4622 (stored values 1262691230..1262929327) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 238097, sum 484810 vs 484810"
+  },
+  {
+   "check": "h5py gene 4995 (stored values 1371588906..1371945021) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 356115, sum 991673 vs 991673"
+  },
+  {
+   "check": "h5py gene 5467 (stored values 1499988174..1500046553) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 58379, sum 70693 vs 70693"
+  },
+  {
+   "check": "h5py gene 6201 (stored values 1700582861..1700693240) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 110379, sum 156973 vs 156973"
+  },
+  {
+   "check": "h5py gene 6665 (stored values 1827546219..1828105029) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 558810, sum 2659858 vs 2659858"
+  },
+  {
+   "check": "h5py gene 7171 (stored values 1972613068..1973080032) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 466964, sum 1731870 vs 1731870"
+  },
+  {
+   "check": "h5py gene 7549 (stored values 2076620608..2076634093) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 13485, sum 14149 vs 14149"
+  },
+  {
+   "check": "h5py gene 7799 (stored values 2146839514..2146938555) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 99041, sum 135892 vs 135892"
+  },
+  {
+   "check": "h5py gene 7800 (stored values 2146938555..2147648423) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 709868, sum 5245997 vs 5245997"
+  },
+  {
+   "check": "h5py gene 7801 (stored values 2147648423..2147866475) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 218052, sum 420958 vs 420958"
+  },
+  {
+   "check": "h5py gene 7997 (stored values 2198856615..2199313803) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 457188, sum 1649404 vs 1649404"
+  },
+  {
+   "check": "h5py gene 7998 (stored values 2199313803..2199530974) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 217171, sum 417074 vs 417074"
+  },
+  {
+   "check": "h5py gene 7999 (stored values 2199530974..2199990946) equals regenerated truth exactly",
+   "ok": true,
+   "detail": "nnz 459972, sum 1674897 vs 1674897"
+  },
+  {
+   "check": "h5py indptr diff equals truth nnz",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "timings": {
+  "h5py: read indptr + sampled genes from disk": {
+   "seconds": 3.6,
+   "ok": true,
+   "peak_rss_after": "72512 kB"
+  }
+ },
+ "started": "2026-11-19T18:05:59.204481",
+ "indptr_dtype": "int64",
+ "peak_rss_kb_getrusage": 72512,
+ "finished": "2026-11-19T18:06:03.037139",
+ "per_gene_seconds": {
+  "0": 0.006,
+  "1": 0.003,
+  "2": 0.009,
+  "444": 0.025,
+  "1800": 0.006,
+  "2280": 0.01,
+  "2401": 0.006,
+  "4622": 0.012,
+  "4995": 0.016,
+  "5467": 0.008,
+  "6201": 0.01,
+  "6665": 0.023,
+  "7171": 0.019,
+  "7549": 0.005,
+  "7799": 0.009,
+  "7800": 0.024,
+  "7801": 0.01,
+  "7997": 0.024,
+  "7998": 0.008,
+  "7999": 0.014
+ }
+}

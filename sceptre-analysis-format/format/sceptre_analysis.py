@@ -2,7 +2,7 @@
 temporary writers and readers.
 
 SPEC.md states the rules and RATIONALE.md the reasons. Section numbers below
-(A1, T3, ...) refer to both. The tables of an analysis, the stages and the shape
+(A1, A10, ...) refer to both. The tables of an analysis, the stages and the shape
 of the JSON records are read from spec/ (tables.json and three JSON Schemas),
 which the R code reads too.
 
@@ -139,14 +139,14 @@ def _byte_order(table: pd.DataFrame, key) -> list[int]:
     return np.lexsort(columns).tolist()
 
 
-# ---------------------------------------------------------------- tables (T0)
+# ---------------------------------------------------------------- tables (A7)
 
 
 def row_group_limit(name=None) -> tuple[int, str]:
     """The most rows a row group of the table may have, and the rule that says so:
-    a million for every table (T0.3), fewer for the tables with a list per row (T5.7)."""
+    a million for every table (A7.3), fewer for the tables with a list per row (A12.7)."""
     definition = TABLE_DEFINITIONS.get(name, {})
-    return int(definition.get("max_rows_per_row_group", ROW_GROUP_ROWS)), definition.get("row_group_rule", "T0.3")
+    return int(definition.get("max_rows_per_row_group", ROW_GROUP_ROWS)), definition.get("row_group_rule", "A7.3")
 
 
 def write_table(table: pd.DataFrame, path, key, metadata=None, table_name=None) -> int:
@@ -341,7 +341,7 @@ def write_stage(directory, stage, record: dict, tables=None, provenance=None) ->
 def clear_stage(directory, stage) -> None:
     """Remove a stage and every later stage: their folders, records first (A4).
     The fit cache goes too when the QC stage or an earlier one is cleared, and
-    stays when only a testing stage is (T6)."""
+    stays when only a testing stage is (A13)."""
     directory = Path(directory)
     cleared = [s for s in STAGES if s == stage or STAGE_RANK[s] > STAGE_RANK[stage]]
     for later in cleared:
@@ -352,7 +352,7 @@ def clear_stage(directory, stage) -> None:
         shutil.rmtree(directory / FITS, ignore_errors=True)
 
 
-# The fit cache (T6): fits/response/, a folder of part files and nothing else,
+# The fit cache (A13): fits/response/, a folder of part files and nothing else,
 # outside the stages. It is no stage's output and is listed in no record. Each
 # writer adds a part of its own, and each part says how its fits were made, in the
 # Parquet file's own key-value metadata. No file is shared between writers, so
@@ -365,7 +365,7 @@ FIT_KEY = TABLE_SPEC["fits"]["identity_key"]
 
 
 def formula_key(text) -> str:
-    """A formula is the same formula however it is spaced (T6.5)."""
+    """A formula is the same formula however it is spaced (A13.5)."""
     return re.sub(r"\s", "", str(text))
 
 
@@ -390,7 +390,7 @@ def _fit_identity_text(file):
 def fit_parts(directory) -> list:
     """Every part of the cache with the identity it carries: (file, identity). The
     identity is None where a part has none or it is not a JSON object; a reader
-    ignores such a part (T6.5)."""
+    ignores such a part (A13.5)."""
     out = []
     folder = Path(directory) / FITS
     for file in _table_files(folder) if folder.is_dir() else []:
@@ -433,7 +433,7 @@ def write_fits(directory, table: pd.DataFrame, identity: dict) -> Path:
 
 def merge_fits(directory) -> list:
     """Replace the parts that carry one identity by a single part holding their
-    fits (T6.4). For a writer that knows no job is still adding to the cache.
+    fits (A13.4). For a writer that knows no job is still adding to the cache.
     Returns the parts written."""
     by_identity = {}
     for file, identity in fit_parts(directory):
@@ -526,7 +526,7 @@ def check_link(recorded: dict, mdata, what) -> None:
 
 def top_grna(counts, grna_ids) -> pd.DataFrame:
     """Each cell's gRNA with the most UMIs (the first on a tie) and its share of the
-    cell's gRNA UMIs (S6)."""
+    cell's gRNA UMIs (D6)."""
     from scipy import sparse
 
     coo = sparse.coo_matrix(counts)
@@ -555,7 +555,7 @@ def expand_pairs(pairs: pd.DataFrame, grna_table: pd.DataFrame) -> pd.DataFrame:
 
 
 def cells_by_grna(assignments: pd.DataFrame, grna_ids, cells: pd.Index) -> dict:
-    """Each gRNA's cells (positions among the data file's cells, ascending) (T1)."""
+    """Each gRNA's cells (positions among the data file's cells, ascending) (A8)."""
     position = cells.get_indexer(assignments["cell_id"])
     grouped = pd.Series(position).groupby(assignments["grna_id"].to_numpy(), sort=False)
     found = {k: np.sort(v.to_numpy(dtype=np.int64)) for k, v in grouped}
@@ -615,7 +615,7 @@ def n_pairs_passing(pair_qc: pd.DataFrame, strategy: str) -> int:
 
 def significance_threshold(result: pd.DataFrame):
     """The largest p-value called significant, or None: `significant` is then
-    p_value <= threshold, which no part file needs the whole table for (T5)."""
+    p_value <= threshold, which no part file needs the whole table for (A12)."""
     called = result["significant"].fillna(False).to_numpy(dtype=bool)
     return float(result.loc[called, "p_value"].max()) if called.any() else None
 
@@ -650,7 +650,7 @@ def resample_columns(table: pd.DataFrame) -> list[str]:
 
 def resamples_table(result: pd.DataFrame):
     """Resampled statistics: packages hold them as columns z_null_1, z_null_2, ...
-    padded with missing values; the file holds one list per pair (T5)."""
+    padded with missing values; the file holds one list per pair (A12)."""
     columns = resample_columns(result)
     if not columns:
         return None
@@ -675,7 +675,7 @@ def add_resamples(result: pd.DataFrame, resamples) -> pd.DataFrame:
 
 def formula_in_subset(text: str) -> bool:
     """Additive formulas only: each term a covariate name, log(x) or log(x + 1),
-    with 0 or 1 for the intercept (T7)."""
+    with 0 or 1 for the intercept (A14)."""
     rhs = re.sub(r"\s", "", text.split("~", 1)[1])
     terms, depth, start = [], 0, 0
     for i, char in enumerate(rhs):
@@ -689,7 +689,7 @@ def formula_in_subset(text: str) -> bool:
 
 
 def formula_covariates(text: str) -> list[str]:
-    """The covariates an additive formula names (T7.8)."""
+    """The covariates an additive formula names (A14.8)."""
     rhs = re.sub(r"\s", "", text.split("~", 1)[1])
     names = re.findall(r"[A-Za-z][A-Za-z0-9_.]*", re.sub(r"log\(", "(", rhs))
     return sorted(set(names))
@@ -747,7 +747,7 @@ def _screen_identity(file, response_modality) -> dict:
             out["targets"] = _text(target[()])
         if response_modality in f["mod"]:
             out["responses"] = _index_of(f[f"mod/{response_modality}/var"])
-        # the covariates the data file provides to a model, named as in T7.4
+        # the covariates the data file provides to a model, named as in A14.4
         def columns(table):
             return [k for k in f[table] if k != f[table].attrs.get("_index", "_index")]
 
@@ -859,29 +859,29 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
         if table_path(directory, name).exists():
             log.add("A4.1", f"{name}.parquet", "is in the folder and its stage's record does not list it.")
 
-    # the fit cache: part files only, each saying how its fits were made (T6)
+    # the fit cache: part files only, each saying how its fits were made (A13)
     fit_identities = {}
     if (directory / FITS).is_dir():
         for entry in sorted((directory / FITS).iterdir()):
             if entry.is_dir() or entry.suffix != ".parquet":
-                log.add("T6.1", f"{FITS}/{entry.name}", "is not a part file; the fit cache holds part files only.")
+                log.add("A13.1", f"{FITS}/{entry.name}", "is not a part file; the fit cache holds part files only.")
         for file in _table_files(directory / FITS):
             try:
                 text = _fit_identity_text(file)
             except Exception:
                 continue   # not a Parquet file: reported with the table below
             if text is None:
-                log.add("T6.1", f"{FITS}/{file.name}", f"does not say how its fits were made: its metadata has no `{FIT_KEY}`.")
+                log.add("A13.1", f"{FITS}/{file.name}", f"does not say how its fits were made: its metadata has no `{FIT_KEY}`.")
                 continue
             faults = _schema_problems_text(text, TABLE_SPEC["fits"]["identity_schema"])
             for fault in faults:
-                log.add("T6.1", f"{FITS}/{file.name}", f"`{FIT_KEY}` {fault}")
+                log.add("A13.1", f"{FITS}/{file.name}", f"`{FIT_KEY}` {fault}")
             if not faults:
                 fit_identities[file] = json.loads(text)
         if _table_files(directory / FITS):
             tables[FITS] = directory / FITS
         if not {"parameters", "qc"} <= set(present):
-            log.add("T6.3", FITS, "The fit cache needs the parameters and qc stages.")
+            log.add("A13.3", FITS, "The fit cache needs the parameters and qc stages.")
 
     # each table against its definition
     strategy = records.get("parameters", {}).get("settings", {}).get("grna_integration_strategy")
@@ -900,15 +900,15 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
             for part in parts:
                 if column["name"] not in part.column_names:
                     if column["required"]:
-                        log.add("T0.1", where, f"has no column `{column['name']}`.")
+                        log.add("A7.1", where, f"has no column `{column['name']}`.")
                         ok = False
                 elif _column_kind(part.schema.field(column["name"]).type) != column["type"]:
-                    log.add("T0.1", where, f"The column `{column['name']}` is not of type {column['type']}.")
+                    log.add("A7.1", where, f"The column `{column['name']}` is not of type {column['type']}.")
                     ok = False
                 elif not column.get("nullable") and column["type"] != "list<double>" and part[column["name"]].null_count:
-                    log.add("T0.1", where, f"The column `{column['name']}` has missing values.")
+                    log.add("A7.1", where, f"The column `{column['name']}` has missing values.")
                     ok = False
-        # the verdict of pairwise QC follows from the two counts and the thresholds (T3.4)
+        # the verdict of pairwise QC follows from the two counts and the thresholds (A10.4)
         if definition.get("pass_qc_from_counts") and ok and "qc" in records:
             limits = records["qc"]["settings"]
             for part in parts:
@@ -916,7 +916,7 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
                 if not np.array_equal(enough, part["pass_qc"].to_numpy(zero_copy_only=False)):
                     log.add(definition["pass_qc_from_counts"], where, "`pass_qc` does not follow from the two counts and the thresholds of the QC record.")
                     break
-        # a stored logarithm agrees with the column it is the logarithm of (T5.2)
+        # a stored logarithm agrees with the column it is the logarithm of (A12.2)
         agree = definition.get("log_2_of")
         if agree and ok and agree["of"] in parts[0].column_names:
             for part in parts:
@@ -928,7 +928,7 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
         for column in definition.get("forbidden_columns", []):
             if column["name"] in parts[0].column_names:
                 log.add(column["rule"], where, f"must not have the column `{column['name']}`.")
-        # a column present under some gRNA integration strategies only (T3.3, T5.6)
+        # a column present under some gRNA integration strategies only (A10.3, A12.6)
         for column in definition["columns"]:
             if "present_under" not in column or strategy is None:
                 continue
@@ -945,17 +945,17 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
         for frame in frames:
             key = _table_key(name, frame)
             if len(frame) > 1 and _byte_order(frame, key) != list(range(len(frame))):
-                log.add("T0.2", where, f"The rows are not sorted by {', '.join(key)}.")
+                log.add("A7.2", where, f"The rows are not sorted by {', '.join(key)}.")
             if not across_parts and frame.duplicated(subset=key).any():
-                log.add("T0.4", where, f"Two rows of one file have the same {', '.join(key)}.")
+                log.add("A7.4", where, f"Two rows of one file have the same {', '.join(key)}.")
         # the parts already read, put together: each table is read once
         whole = frames[0] if len(frames) == 1 else pd.concat(frames, ignore_index=True, join="inner")
         key = _table_key(name, whole)
         if across_parts and whole.duplicated(subset=key).any():
-            log.add("T0.4", where, f"Two rows have the same {', '.join(key)}.")
+            log.add("A7.4", where, f"Two rows have the same {', '.join(key)}.")
         contents[name] = whole
 
-    # covariates the analysis brings (T7.6): numbers or text, named like a data file's columns
+    # covariates the analysis brings (A14.6): numbers or text, named like a data file's columns
     brought = contents.get(COVARIATES)
     if brought is not None:
         definition = TABLE_DEFINITIONS[COVARIATES]
@@ -963,16 +963,16 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
             column = brought[name]
             is_text = column.map(lambda v: isinstance(v, str)).all()
             if not re.fullmatch(definition["covariate_name_pattern"], str(name)):
-                log.add("T7.6", f"{COVARIATES}.parquet", f"`{name}` is not a valid covariate name.")
+                log.add("A14.6", f"{COVARIATES}.parquet", f"`{name}` is not a valid covariate name.")
             elif not (pd.api.types.is_float_dtype(column.dtype) or is_text):
-                log.add("T7.6", f"{COVARIATES}.parquet", f"The covariate `{name}` must be a double, or text with no missing values.")
+                log.add("A14.6", f"{COVARIATES}.parquet", f"The covariate `{name}` must be a double, or text with no missing values.")
     parameters = records.get("parameters")
     if parameters is not None:
         if not formula_in_subset(parameters["settings"]["formula"]):
-            log.add("T7.1", "parameters/record.json", "The formula is outside the additive subset.")
+            log.add("A14.1", "parameters/record.json", "The formula is outside the additive subset.")
         # A part made for this analysis's parameters has one coefficient per term of its
-        # design (T6.2). A part made otherwise is allowed and unused, and is not
-        # reported: nothing depends on it, and clearing it is housekeeping (T6.3, T6.6).
+        # design (A13.2). A part made otherwise is allowed and unused, and is not
+        # reported: nothing depends on it, and clearing it is housekeeping (A13.3, A13.6).
         expected = {
             "formula": parameters["settings"]["formula"],
             "control_group": parameters["settings"]["control_group"],
@@ -982,7 +982,7 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
         for file, identity in fit_identities.items():
             if _matches(identity, expected) and "coefficients" in pq.ParquetFile(file).schema_arrow.names:
                 if any(len(c) != len(parameters["design"]["terms"]) for c in pq.read_table(file, columns=["coefficients"])["coefficients"].to_pylist() if c is not None):
-                    log.add("T6.2", FITS, "A fit does not have one coefficient per term of the design.")
+                    log.add("A13.2", FITS, "A fit does not have one coefficient per term of the design.")
                     break
 
     # against the data file
@@ -1003,25 +1003,25 @@ def validate_analysis(directory, screen_file=None) -> pd.DataFrame:
             for name, table in contents.items():
                 for column, values in known.items():
                     if column in table and not set(table[column]) <= values:
-                        log.add("T0.5", f"{name}.parquet", f"`{column}` names something the data file does not have.")
+                        log.add("A7.5", f"{name}.parquet", f"`{column}` names something the data file does not have.")
             for name in ("assignment/assignments", "calibration/negative_control_groups"):
                 if name in contents and not set(contents[name]["grna_id"]) <= set(screen["grnas"]):
-                    log.add("T0.5", f"{name}.parquet", "`grna_id` names something the data file does not have.")
+                    log.add("A7.5", f"{name}.parquet", "`grna_id` names something the data file does not have.")
             for name in ("parameters/discovery_pairs", "parameters/positive_control_pairs"):
                 if name in contents and not set(contents[name]["grna_target"]) <= set(screen["targets"]):
-                    log.add("T0.5", f"{name}.parquet", "`grna_target` names something the data file does not have.")
+                    log.add("A7.5", f"{name}.parquet", "`grna_target` names something the data file does not have.")
             # covariates: one row per cell, no name the data file already provides, and
-            # every covariate of the formula found in one of the two places (T7.6 to T7.8)
+            # every covariate of the formula found in one of the two places (A14.6 to A14.8)
             own = [] if brought is None else [c for c in brought.columns if c != "cell_id"]
             if brought is not None and set(brought["cell_id"]) != set(screen["cells"]):
-                log.add("T7.6", f"{COVARIATES}.parquet", "does not have one row per cell of the data file.")
+                log.add("A14.6", f"{COVARIATES}.parquet", "does not have one row per cell of the data file.")
             for name in sorted(set(own) & set(screen["covariates"])):
-                log.add("T7.7", f"{COVARIATES}.parquet", f"The covariate `{name}` is already provided by the data file.")
+                log.add("A14.7", f"{COVARIATES}.parquet", f"The covariate `{name}` is already provided by the data file.")
             if parameters is not None and formula_in_subset(parameters["settings"]["formula"]):
                 for name in formula_covariates(parameters["settings"]["formula"]):
                     if name not in set(own) | set(screen["covariates"]):
-                        log.add("T7.8", "parameters/record.json", f"The formula names `{name}`, which is neither a covariate of the data file nor one the analysis brings.")
+                        log.add("A14.8", "parameters/record.json", f"The formula names `{name}`, which is neither a covariate of the data file nor one the analysis brings.")
             kept = contents.get("qc/cells")
             if kept is not None and set(kept["cell_id"]) != set(screen["cells"]):
-                log.add("T2.1", "qc/cells.parquet", "does not have one row per cell of the data file.")
+                log.add("A9.1", "qc/cells.parquet", "does not have one row per cell of the data file.")
     return log.all()

@@ -1,4 +1,4 @@
-"""The 64-bit branch of S4. No test file is large enough to need 64-bit index
+"""The 64-bit branch of D4. No test file is large enough to need 64-bit index
 arrays, so the writer's limit is lowered and the highmoi example is written with
 both index arrays 64-bit, as a file past the real limit would have them. Python
 then reads it back with anndata, scipy and scanpy; verify/wide_index.R reads it
@@ -42,7 +42,7 @@ with h5py.File(wide) as f, h5py.File(source) as g:
                     np.array_equal(metrics["total_counts"].to_numpy(), adata.obs["n_umis"].to_numpy(dtype=float)))
 results.add("the validator passes it under the lowered limit", len(sf.validate_screen(wide, index_limit=1)) == 0)
 found = sf.validate_screen(wide)
-results.add("under the real limit it does not conform, breaking S4.2 and S4.3 only", sorted(set(found["rule"])) == ["S4.2", "S4.3"])
+results.add("under the real limit it does not conform, breaking D4.2 and D4.3 only", sorted(set(found["rule"])) == ["D4.2", "D4.3"])
 back = md.read_h5mu(wide)
 results.add("mudata returns the same counts", all((back[m].X != md.read_h5mu(source)[m].X).nnz == 0 for m in ("rna", "grna")))
 results.save()

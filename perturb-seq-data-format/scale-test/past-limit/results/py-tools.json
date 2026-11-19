@@ -1,0 +1,181 @@
+{
+ "step": "tools",
+ "file": "data/screen.h5mu",
+ "checks": [
+  {
+   "check": "anndata sparse_dataset gene 0 equals truth",
+   "ok": true,
+   "detail": "nnz 27363"
+  },
+  {
+   "check": "anndata sparse_dataset gene 1 equals truth",
+   "ok": true,
+   "detail": "nnz 68039"
+  },
+  {
+   "check": "anndata sparse_dataset gene 2 equals truth",
+   "ok": true,
+   "detail": "nnz 188448"
+  },
+  {
+   "check": "anndata sparse_dataset gene 444 equals truth",
+   "ok": true,
+   "detail": "nnz 581449"
+  },
+  {
+   "check": "anndata sparse_dataset gene 1800 equals truth",
+   "ok": true,
+   "detail": "nnz 12829"
+  },
+  {
+   "check": "anndata sparse_dataset gene 2280 equals truth",
+   "ok": true,
+   "detail": "nnz 142301"
+  },
+  {
+   "check": "anndata sparse_dataset gene 2401 equals truth",
+   "ok": true,
+   "detail": "nnz 22752"
+  },
+  {
+   "check": "anndata sparse_dataset gene 4622 equals truth",
+   "ok": true,
+   "detail": "nnz 238097"
+  },
+  {
+   "check": "anndata sparse_dataset gene 4995 equals truth",
+   "ok": true,
+   "detail": "nnz 356115"
+  },
+  {
+   "check": "anndata sparse_dataset gene 5467 equals truth",
+   "ok": true,
+   "detail": "nnz 58379"
+  },
+  {
+   "check": "anndata sparse_dataset gene 6201 equals truth",
+   "ok": true,
+   "detail": "nnz 110379"
+  },
+  {
+   "check": "anndata sparse_dataset gene 6665 equals truth",
+   "ok": true,
+   "detail": "nnz 558810"
+  },
+  {
+   "check": "anndata sparse_dataset gene 7171 equals truth",
+   "ok": true,
+   "detail": "nnz 466964"
+  },
+  {
+   "check": "anndata sparse_dataset gene 7549 equals truth",
+   "ok": true,
+   "detail": "nnz 13485"
+  },
+  {
+   "check": "anndata sparse_dataset gene 7799 equals truth",
+   "ok": true,
+   "detail": "nnz 99041"
+  },
+  {
+   "check": "anndata sparse_dataset gene 7800 equals truth",
+   "ok": true,
+   "detail": "nnz 709868"
+  },
+  {
+   "check": "anndata sparse_dataset gene 7801 equals truth",
+   "ok": true,
+   "detail": "nnz 218052"
+  },
+  {
+   "check": "anndata sparse_dataset gene 7997 equals truth",
+   "ok": true,
+   "detail": "nnz 457188"
+  },
+  {
+   "check": "anndata sparse_dataset gene 7998 equals truth",
+   "ok": true,
+   "detail": "nnz 217171"
+  },
+  {
+   "check": "anndata sparse_dataset gene 7999 equals truth",
+   "ok": true,
+   "detail": "nnz 459972"
+  },
+  {
+   "check": "anndata: nnz per gene equals ground truth",
+   "ok": true,
+   "detail": "total nnz 2199990946 vs truth 2199990946"
+  },
+  {
+   "check": "anndata: sum per gene equals ground truth",
+   "ok": true,
+   "detail": "genes differing: 0; total 8817880328 vs 8817880328"
+  },
+  {
+   "check": "scanpy var total_counts equals truth gene sums",
+   "ok": true,
+   "detail": "max abs diff 0"
+  },
+  {
+   "check": "scanpy var n_cells_by_counts equals truth gene nnz",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "scanpy obs total_counts equals truth cell sums",
+   "ok": true,
+   "detail": "max abs diff 0"
+  },
+  {
+   "check": "scanpy obs n_genes_by_counts equals truth cell nnz",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "timings": {
+  "anndata.io.sparse_dataset: sampled genes from disk": {
+   "seconds": 3.8,
+   "ok": true,
+   "peak_rss_after": "332316 kB"
+  },
+  "anndata.io.read_elem(mod/rna) in memory": {
+   "seconds": 40.3,
+   "ok": true,
+   "peak_rss_after": "26498904 kB"
+  },
+  "compare anndata read to truth": {
+   "seconds": 0.7,
+   "ok": true,
+   "peak_rss_after": "26498904 kB"
+  },
+  "scanpy calculate_qc_metrics": {
+   "seconds": 18.0,
+   "ok": true,
+   "peak_rss_after": "60807120 kB"
+  }
+ },
+ "started": "2026-11-19T18:06:40.233342",
+ "versions": {
+  "anndata": "0.13.4",
+  "scanpy": "1.12.6"
+ },
+ "sparse_dataset": {
+  "format": "csc",
+  "shape": [
+   1100000,
+   8000
+  ]
+ },
+ "peak_rss_kb_getrusage": 60807120,
+ "finished": "2026-11-19T18:07:54.787069",
+ "anndata": {
+  "type": "csc_matrix",
+  "nnz": 2199990946,
+  "dtypes": [
+   "int32",
+   "int64",
+   "int64"
+  ]
+ }
+}

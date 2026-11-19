@@ -2,7 +2,7 @@
 # temporary writer.
 #
 # SPEC.md states the rules and RATIONALE.md the reasons. Section numbers below
-# (S4, S10, ...) refer to both. The structure of a data file is read from
+# (D4, D10, ...) refer to both. The structure of a data file is read from
 # spec/screen.json, which the Python code reads too.
 #
 #   validate_screen()    checks a data file against SPEC.md, building no object
@@ -13,9 +13,9 @@
 # Nothing here knows about analyses or about any analysis tool.
 #
 # Names. A modality is named for what was measured (`rna`), and the gRNA
-# modality is always `grna` (S2).
+# modality is always `grna` (D2).
 
-# The format version, "MAJOR.MINOR" (S10.3). A minor increase adds things an
+# The format version, "MAJOR.MINOR" (D10.3). A minor increase adds things an
 # older reader can ignore; a major increase is one an older reader must refuse.
 FORMAT_VERSION <- "0.1"
 
@@ -31,7 +31,7 @@ SPEC_DIR <- file.path(Sys.getenv("PERTURB_SEQ_DATA_FORMAT_DIR", getwd()), "spec"
 
 SCREEN_SPEC <- jsonlite::fromJSON(file.path(SPEC_DIR, "screen.json"), simplifyVector = FALSE)
 
-# The optional entries of a data file's metadata (S10.5): a name for people, and
+# The optional entries of a data file's metadata (D10.5): a name for people, and
 # what is known about the screen at import and cannot be worked out later.
 OPTIONAL_METADATA <- names(Filter(function(entry) !isTRUE(entry$required), SCREEN_SPEC$metadata$entries))
 
@@ -41,7 +41,7 @@ GRNA <- "grna"
 # object does not name it
 DEFAULT_MAIN_MODALITY <- "rna"
 
-# the columns of the gRNA table that hold a target's position (S8.2)
+# the columns of the gRNA table that hold a target's position (D8.2)
 GRNA_COORDINATES <- c(chr = "target_chr", start = "target_start", end = "target_end")
 
 fmt_stop <- function(...) stop(..., call. = FALSE)
@@ -52,7 +52,7 @@ new_id <- function() unname(tools::md5sum(bytes = charToRaw(paste(Sys.time(), Sy
 
 # ---------------------------------------------------------------- the data file
 
-# Column types of the cell and feature tables (S7).
+# Column types of the cell and feature tables (D7).
 #   covariates (cell tables): text and true/false become categoricals
 #   feature tables:           text stays text, as a categorical only where it has
 #                             missing values (R's MuData cannot store a missing string)
@@ -73,7 +73,7 @@ as_file_frame <- function(frame, covariates) {
 }
 
 # The writer's input has one table of cell covariates, a modality's columns
-# prefixed with `<modality>_`. It is split in the file (S5): facts about the
+# prefixed with `<modality>_`. It is split in the file (D5): facts about the
 # cell are in the shared cell table, measurements of a modality in that
 # modality's, without the prefix.
 split_covariates <- function(covariates, modalities) {
@@ -93,7 +93,7 @@ scalar <- function(x) {
     x
 }
 
-# The one type of both index arrays of a count matrix (S4.2, S4.3): 32-bit while
+# The one type of both index arrays of a count matrix (D4.2, D4.3): 32-bit while
 # the stored values, the cells and the features each number at most
 # 2,147,483,647, and 64-bit beyond. It is the type scipy chooses for a matrix of
 # that size. `index_limit` replaces the limit, for tests only: no test file is
@@ -105,7 +105,7 @@ index_type <- function(n_stored, n_cells, n_features, index_limit = NULL) {
 }
 
 # Counts as 32-bit integers and both index arrays in the one type the size
-# requires, uncompressed (S4, S11). MuData would write doubles, so
+# requires, uncompressed (D4, D11). MuData would write doubles, so
 # fmt_write_screen() has it write an empty matrix and puts
 # the three arrays in afterwards. Rewriting full-size arrays in place would
 # leave their first copy as dead space in the file: HDF5 does not give it back.
@@ -128,32 +128,32 @@ write_counts <- function(file, modality, counts, index_limit = NULL) {
 }
 
 # Several gRNAs may be delivered on one vector, named by the optional column
-# `vector_id` of the gRNA table (S8.6). A vector has one target, and a vector is
+# `vector_id` of the gRNA table (D8.6). A vector has one target, and a vector is
 # not named like a gRNA on another vector. Returns the rules broken.
 vector_faults <- function(grna_ids, vectors, targets) {
     faults <- list()
     if (any(tapply(targets, vectors, function(t) length(unique(t))) > 1L)) {
-        faults <- c(faults, list(list(rule = "S8.7", message = "gRNAs on one vector have different targets; screens that combine targets on a vector are not supported.")))
+        faults <- c(faults, list(list(rule = "D8.7", message = "gRNAs on one vector have different targets; screens that combine targets on a vector are not supported.")))
     }
     own <- vectors[match(vectors, grna_ids)]   # the vector of the gRNA each vector is named like, if any
     if (any(!is.na(own) & own != vectors)) {
-        faults <- c(faults, list(list(rule = "S8.8", message = "A vector is named like a gRNA on another vector.")))
+        faults <- c(faults, list(list(rule = "D8.8", message = "A vector is named like a gRNA on another vector.")))
     }
     faults
 }
 
 # The optional column `grna_type` of the gRNA table says what kind of gRNA each
-# is (S8.15), and agrees with `grna_target`: a control of any kind has the target
-# `non-targeting`, and a targeting gRNA has another target (S8.16). A control may
+# is (D8.15), and agrees with `grna_target`: a control of any kind has the target
+# `non-targeting`, and a targeting gRNA has another target (D8.16). A control may
 # have a position: where it cuts. Returns the rules broken.
 GRNA_TYPES <- unlist(Filter(function(column) column$name == "grna_type", SCREEN_SPEC$grna_table)[[1]]$values)
 type_faults <- function(types, targets) {
     if (anyNA(types) || !all(types %in% GRNA_TYPES)) {
-        return(list(list(rule = "S8.15", message = paste0("`grna_type` must be one of ", paste(GRNA_TYPES, collapse = ", "), "."))))
+        return(list(list(rule = "D8.15", message = paste0("`grna_type` must be one of ", paste(GRNA_TYPES, collapse = ", "), "."))))
     }
     control <- types != "targeting"
     if (any(control != (targets == "non-targeting"))) {
-        return(list(list(rule = "S8.16", message = "`grna_type` and `grna_target` disagree: a control of any kind has the target `non-targeting`, and a targeting gRNA has another target.")))
+        return(list(list(rule = "D8.16", message = "`grna_type` and `grna_target` disagree: a control of any kind has the target `non-targeting`, and a targeting gRNA has another target.")))
     }
     list()
 }
@@ -166,7 +166,7 @@ type_faults <- function(types, targets) {
 #   altExp "gRNA"           gRNA counts; its rowData is the gRNA table (grna_target, ...)
 #   other altExps           further modalities over the same cells, written under
 #                           their names
-#   metadata(sce)           the entries of S10 that are known; `dataset_id` is kept
+#   metadata(sce)           the entries of D10 that are known; `dataset_id` is kept
 #                           if present; `main_modality` names the main
 #                           experiment's modality ("rna" if absent); `title`
 #                           and `source` (a URL, DOI or accession) are optional
@@ -181,7 +181,7 @@ fmt_write_screen <- function(sce, file, index_limit = NULL) {
         fmt_stop("Modality names must be distinct, start with a letter and use letters, digits and underscores; '", GRNA, "' is the gRNA modality.")
     }
     grna <- SingleCellExperiment::altExp(sce, "gRNA")
-    # cells without identifiers get their positions (S9)
+    # cells without identifiers get their positions (D9)
     cells <- if (is.null(colnames(sce))) as.character(seq_len(ncol(sce))) else colnames(sce)
     features <- c(rownames(sce), rownames(grna), unlist(lapply(others, function(name) rownames(SingleCellExperiment::altExp(sce, name)))))
     if (anyDuplicated(cells) > 0L) fmt_stop("Cell identifiers must be unique.")
@@ -200,13 +200,13 @@ fmt_write_screen <- function(sce, file, index_limit = NULL) {
     covariates <- split_covariates(SummarizedExperiment::colData(sce), c(main, GRNA))
     modality <- function(experiment, obs, var) {
         # every modality's cell table has its total count and its number of
-        # features with a nonzero count; a writer computes them if they are absent (S6)
+        # features with a nonzero count; a writer computes them if they are absent (D6)
         counts <- SummarizedExperiment::assay(experiment, "counts")
         obs <- as.data.frame(obs, optional = TRUE, stringsAsFactors = FALSE)
         if (is.null(obs$n_umis)) obs$n_umis <- as.double(Matrix::colSums(counts))
         if (is.null(obs$n_nonzero)) obs$n_nonzero <- as.integer(Matrix::colSums(counts != 0))
         # row-compressed (features x cells) in R is column-compressed
-        # (cells x features) in the file: one feature is one contiguous read (S3)
+        # (cells x features) in the file: one feature is one contiguous read (D3)
         stored <- methods::as(Matrix::drop0(methods::as(counts, "generalMatrix")), "RsparseMatrix")
         empty <- methods::as(Matrix::sparseMatrix(i = integer(), j = integer(), x = numeric(), dims = dim(counts)), "RsparseMatrix")
         list(
@@ -235,13 +235,13 @@ fmt_write_screen <- function(sce, file, index_limit = NULL) {
         MultiAssayExperiment::MultiAssayExperiment(
             lapply(experiments, function(e) e$experiment),
             colData = S4Vectors::DataFrame(as_file_frame(covariates$shared, TRUE), check.names = FALSE, row.names = cells),
-            # scalar entries at the top level of `uns` (S10)
+            # scalar entries at the top level of `uns` (D10)
             metadata = c(
                 list(
                     perturb_seq_format = scalar(FORMAT_VERSION),
                     dataset_id = scalar(if (is.null(stamp$dataset_id)) new_id() else stamp$dataset_id)
                 ),
-                # optional: a title for people, and what is known about the screen (S10.5)
+                # optional: a title for people, and what is known about the screen (D10.5)
                 lapply(stamp[intersect(OPTIONAL_METADATA, names(stamp)[!vapply(stamp, is.null, logical(1))])], scalar)
             )
         ),
@@ -260,8 +260,8 @@ check_format <- function(format, what, known = FORMAT_VERSION) {
 }
 
 # What software must refuse before using a data file it has read with
-# MuData::readH5MU: a major format version it does not know (S10.3), and a gRNA
-# table whose vectors break S8.7 or S8.8 (S8.9). Cheap: it looks at the metadata
+# MuData::readH5MU: a major format version it does not know (D10.3), and a gRNA
+# table whose vectors break D8.7 or D8.8 (D8.9). Cheap: it looks at the metadata
 # and the gRNA table only.
 check_screen <- function(mae) {
     check_format(as.vector(S4Vectors::metadata(mae)$perturb_seq_format)[1], "The data file")
@@ -343,7 +343,7 @@ validate_screen <- function(file, index_limit = NULL) {
     log <- problem_log()
     listing <- tryCatch(rhdf5::h5ls(file, all = TRUE), error = function(e) NULL)
     if (is.null(listing)) {
-        log$add("S1.1", file, "is not an HDF5 file.")
+        log$add("D1.1", file, "is not an HDF5 file.")
         return(log$all())
     }
     attribute <- function(path, name) tryCatch(rhdf5::h5readAttributes(file, path)[[name]], error = function(e) NULL)
@@ -353,14 +353,14 @@ validate_screen <- function(file, index_limit = NULL) {
     }
     children <- function(path) listing[listing$group == paste0("/", sub("^/", "", path)), , drop = FALSE]
     read <- function(path) as.vector(rhdf5::h5read(file, path, bit64conversion = "double"))
-    if (!identical(as.vector(attribute("/", "encoding-type")), SCREEN_SPEC$root[["encoding-type"]])) log$add("S1.1", file, "The file is not marked as MuData.")
+    if (!identical(as.vector(attribute("/", "encoding-type")), SCREEN_SPEC$root[["encoding-type"]])) log$add("D1.1", file, "The file is not marked as MuData.")
     if (!has("mod")) {
-        log$add("S2.1", file, "The file has no modalities.")
+        log$add("D2.1", file, "The file has no modalities.")
         return(log$all())
     }
     in_file <- children("mod")$name
-    if (!GRNA %in% in_file || length(in_file) < SCREEN_SPEC$modalities$minimum) log$add("S2.1", "mod", "A data file needs the modality 'grna' and at least one other.")
-    for (name in in_file[!grepl(MODALITY_NAME, in_file)]) log$add("S2.2", paste0("mod/", name), "is not a valid modality name.")
+    if (!GRNA %in% in_file || length(in_file) < SCREEN_SPEC$modalities$minimum) log$add("D2.1", "mod", "A data file needs the modality 'grna' and at least one other.")
+    for (name in in_file[!grepl(MODALITY_NAME, in_file)]) log$add("D2.2", paste0("mod/", name), "is not a valid modality name.")
 
     # file-level metadata
     where <- SCREEN_SPEC$metadata$path
@@ -370,22 +370,22 @@ validate_screen <- function(file, index_limit = NULL) {
     entries <- SCREEN_SPEC$metadata$entries
     classes <- vapply(entries, function(e) if (e$kind == "integer") "INTEGER" else "STRING", character(1))
     for (name in names(entries)[!vapply(entries, function(e) isTRUE(e$required), logical(1))]) {
-        if (nrow(entry(name)) == 1L && !scalar_of(name, classes[[name]])) log$add("S10.5", paste0(where, "/", name), "must be a scalar text entry.")
+        if (nrow(entry(name)) == 1L && !scalar_of(name, classes[[name]])) log$add("D10.5", paste0(where, "/", name), "must be a scalar text entry.")
     }
     required <- vapply(entries, function(e) isTRUE(e$required), logical(1))
     if (!all(mapply(scalar_of, names(entries)[required], classes[required]))) {
-        log$add("S10.1", where, "needs the scalar text entries `perturb_seq_format` and `dataset_id`.")
+        log$add("D10.1", where, "needs the scalar text entries `perturb_seq_format` and `dataset_id`.")
     } else if (is.null(format_parts(read(paste0(where, "/perturb_seq_format"))))) {
-        log$add("S10.1", paste0(where, "/perturb_seq_format"), "is not a version of the form MAJOR.MINOR.")
+        log$add("D10.1", paste0(where, "/perturb_seq_format"), "is not a version of the form MAJOR.MINOR.")
     } else {
-        if (!known_major(read(paste0(where, "/perturb_seq_format")))) log$add("S10.3", paste0(where, "/perturb_seq_format"), "is a format this validator does not know.")
-        if (!nzchar(read(paste0(where, "/dataset_id")))) log$add("S10.1", paste0(where, "/dataset_id"), "is empty.")
+        if (!known_major(read(paste0(where, "/perturb_seq_format")))) log$add("D10.3", paste0(where, "/perturb_seq_format"), "is a format this validator does not know.")
+        if (!nzchar(read(paste0(where, "/dataset_id")))) log$add("D10.1", paste0(where, "/dataset_id"), "is empty.")
     }
-    # optional entries with a fixed vocabulary (S10.6)
+    # optional entries with a fixed vocabulary (D10.6)
     for (name in OPTIONAL_METADATA) {
         allowed <- unlist(entries[[name]]$values)
         if (!is.null(allowed) && nrow(entry(name)) == 1L && scalar_of(name, "STRING") && !read(paste0(where, "/", name)) %in% allowed) {
-            log$add("S10.6", paste0(where, "/", name), "must be one of ", paste(allowed, collapse = ", "), ".")
+            log$add("D10.6", paste0(where, "/", name), "must be one of ", paste(allowed, collapse = ", "), ".")
         }
     }
 
@@ -397,19 +397,19 @@ validate_screen <- function(file, index_limit = NULL) {
     # cells: the same, in the same order, in every modality and in the shared table
     cells <- if (GRNA %in% in_file) index_of("mod/grna/obs") else index_of(paste0("mod/", in_file[1], "/obs"))
     if (is.null(cells)) {
-        log$add("S2.3", "mod", "A modality has no cell identifiers.")
+        log$add("D2.3", "mod", "A modality has no cell identifiers.")
         return(log$all())
     }
-    if (anyDuplicated(cells) > 0L) log$add("S9.1", "obs", "Cell identifiers are not unique.")
+    if (anyDuplicated(cells) > 0L) log$add("D9.1", "obs", "Cell identifiers are not unique.")
     for (name in in_file) {
-        if (!identical(index_of(paste0("mod/", name, "/obs")), cells)) log$add("S2.3", paste0("mod/", name, "/obs"), "does not hold the same cells in the same order as 'grna'.")
+        if (!identical(index_of(paste0("mod/", name, "/obs")), cells)) log$add("D2.3", paste0("mod/", name, "/obs"), "does not hold the same cells in the same order as 'grna'.")
     }
-    if (has("obs") && !identical(index_of("obs"), cells)) log$add("S2.3", "obs", "The shared cell table does not hold the same cells in the same order.")
+    if (has("obs") && !identical(index_of("obs"), cells)) log$add("D2.3", "obs", "The shared cell table does not hold the same cells in the same order.")
     features <- lapply(stats::setNames(in_file, in_file), function(name) index_of(paste0("mod/", name, "/var")))
-    if (anyDuplicated(unlist(features)) > 0L) log$add("S9.2", "mod", "Feature identifiers are not unique across the modalities.")
-    if (any(grepl("\n", c(cells, unlist(features)), fixed = TRUE))) log$add("S9.4", "mod", "An identifier contains a line feed.")
+    if (anyDuplicated(unlist(features)) > 0L) log$add("D9.2", "mod", "Feature identifiers are not unique across the modalities.")
+    if (any(grepl("\n", c(cells, unlist(features)), fixed = TRUE))) log$add("D9.4", "mod", "An identifier contains a line feed.")
 
-    # the count matrix of every modality (S3, S4, S11)
+    # the count matrix of every modality (D3, D4, D11)
     expect <- unlist(SCREEN_SPEC$counts$arrays)
     rules <- unlist(SCREEN_SPEC$counts$rules)
     for (name in in_file) {
@@ -417,40 +417,40 @@ validate_screen <- function(file, index_limit = NULL) {
         n_features <- length(features[[name]])
         if (!identical(as.vector(attribute(x, "encoding-type")), SCREEN_SPEC$counts[["encoding-type"]]) ||
             !identical(as.numeric(attribute(x, "shape")), as.numeric(c(length(cells), n_features)))) {
-            log$add("S3.1", x, "is not a column-compressed (csc_matrix) matrix of cells x features.")
+            log$add("D3.1", x, "is not a column-compressed (csc_matrix) matrix of cells x features.")
             next
         }
         filters <- h5_filters(file, paste0(x, "/", names(expect)))
         stored <- children(x)
-        # both index arrays in the one type this file's size requires (S4.2, S4.3)
+        # both index arrays in the one type this file's size requires (D4.2, D4.3)
         index <- index_type(as.numeric(stored$dim[stored$name == "data"]), length(cells), n_features, index_limit)
         for (array in names(expect)) {
             row <- stored[stored$name == array, , drop = FALSE]
             kind <- if (expect[[array]] == "index") index else expect[[array]]
             why <- if (expect[[array]] == "index") " (the index type a file of this size requires)" else ""
             if (!is_stored_as(row$dtype, kind)) {
-                # not conforming; a reader still accepts any whole-number type here (S4.4)
+                # not conforming; a reader still accepts any whole-number type here (D4.4)
                 log$add(rules[[array]], paste0(x, "/", array), "is not stored as ", sub("int", "", kind), "-bit signed integers", why, ".")
             }
-            if (length(setdiff(filters[[paste0(x, "/", array)]], unlist(SCREEN_SPEC$counts$filters))) > 0L) log$add("S11.1", paste0(x, "/", array), "uses a filter other than gzip.")
+            if (length(setdiff(filters[[paste0(x, "/", array)]], unlist(SCREEN_SPEC$counts$filters))) > 0L) log$add("D11.1", paste0(x, "/", array), "uses a filter other than gzip.")
         }
         data <- read(paste0(x, "/data"))
         indices <- read(paste0(x, "/indices"))
         indptr <- read(paste0(x, "/indptr"))
         if (length(indptr) != n_features + 1L || indptr[1] != 0 || is.unsorted(indptr) || utils::tail(indptr, 1) != length(data) || length(indices) != length(data)) {
-            log$add("S3.2", x, "The column pointers do not describe the stored values.")
+            log$add("D3.2", x, "The column pointers do not describe the stored values.")
             next
         }
         if (length(indices) > 0L) {
             step <- diff(indices)
             starts <- indptr[indptr > 0 & indptr < length(indices)]   # where a new feature begins
             within <- if (length(starts) > 0L) step[-starts] else step
-            if (any(indices < 0 | indices >= length(cells)) || any(within <= 0)) log$add("S3.3", x, "Within a feature, cell positions must be in range and strictly increasing.")
-            if (any(data <= 0) || any(data != round(data))) log$add("S3.4", x, "Stored counts must be positive integers.")
+            if (any(indices < 0 | indices >= length(cells)) || any(within <= 0)) log$add("D3.3", x, "Within a feature, cell positions must be in range and strictly increasing.")
+            if (any(data <= 0) || any(data != round(data))) log$add("D3.4", x, "Stored counts must be positive integers.")
         }
     }
 
-    # column kinds (S7); returns each column's kind
+    # column kinds (D7); returns each column's kind
     check_table <- function(table, cell_table) {
         allowed <- unlist(if (cell_table) SCREEN_SPEC$cell_tables$column_kinds else SCREEN_SPEC$feature_tables$column_kinds)
         index <- as.vector(attribute(table, "_index"))
@@ -462,19 +462,19 @@ validate_screen <- function(file, index_limit = NULL) {
             kind <- storage_kind(as.vector(attribute(path, "encoding-type")), entries$dtype[i])
             kinds[i] <- kind
             if (!kind %in% allowed) {
-                log$add(if (cell_table) "S7.1" else "S7.2", path, "is not one of the column kinds allowed here (", paste(allowed, collapse = ", "), ").")
+                log$add(if (cell_table) "D7.1" else "D7.2", path, "is not one of the column kinds allowed here (", paste(allowed, collapse = ", "), ").")
             } else if (kind == "categorical") {
                 categories <- read(paste0(path, "/categories"))
                 codes <- read(paste0(path, "/codes"))
                 if (!is.character(categories) || anyDuplicated(categories) > 0L || any(codes < -1 | codes >= length(categories))) {
-                    log$add("S7.3", path, "is not a well-formed categorical.")
+                    log$add("D7.3", path, "is not a well-formed categorical.")
                 }
             } else if (kind == "int32") {
                 # rhdf5 returns the value -2^31 as NA, with a message
-                if (anyNA(suppressMessages(read(path)))) log$add("S7.4", path, "An integer column holds a missing value; it must be stored as doubles.")
+                if (anyNA(suppressMessages(read(path)))) log$add("D7.4", path, "An integer column holds a missing value; it must be stored as doubles.")
             }
             if (cell_table && !grepl(SCREEN_SPEC$cell_tables$column_name_pattern, entries$name[i])) {
-                log$add("S5.3", path, "is not a valid column name (letters, digits, underscores and dots, starting with a letter).")
+                log$add("D5.3", path, "is not a valid column name (letters, digits, underscores and dots, starting with a letter).")
             }
         }
         kinds
@@ -483,25 +483,25 @@ validate_screen <- function(file, index_limit = NULL) {
         shared <- names(check_table("obs", TRUE))
         for (name in in_file) {
             for (column in shared[startsWith(shared, paste0(name, "_"))]) {
-                log$add("S5.1", paste0("obs/", column), "A shared column must not start with a modality's name and an underscore.")
+                log$add("D5.1", paste0("obs/", column), "A shared column must not start with a modality's name and an underscore.")
             }
         }
     }
     for (name in in_file) {
         table <- paste0("mod/", name, "/obs")
         kinds <- check_table(table, TRUE)
-        # the columns every modality's cell table has (S6)
+        # the columns every modality's cell table has (D6)
         for (column in SCREEN_SPEC$cell_tables$every_modality) {
             if (!column$name %in% names(kinds)) {
-                if (isTRUE(column$required)) log$add("S6.1", table, "has no column `", column$name, "`.")
+                if (isTRUE(column$required)) log$add("D6.1", table, "has no column `", column$name, "`.")
             } else if (!kinds[[column$name]] %in% unlist(column$kinds)) {
-                log$add("S6.2", paste0(table, "/", column$name), "must be a number.")
+                log$add("D6.2", paste0(table, "/", column$name), "must be a number.")
             }
         }
         check_table(paste0("mod/", name, "/var"), FALSE)
     }
 
-    # the gRNA table (S8)
+    # the gRNA table (D8)
     if (GRNA %in% in_file) {
         table <- "mod/grna/var"
         columns <- children(table)
@@ -530,7 +530,7 @@ validate_screen <- function(file, index_limit = NULL) {
                 if (anyNA(values) || any(!nzchar(values))) log$add(column$rule, path, "must be text with no missing values.")
             }
         }
-        # target positions: 1-based, both ends included; all three or none (S8.10, S8.11)
+        # target positions: 1-based, both ends included; all three or none (D8.10, D8.11)
         position <- function(name, as_text) {
             row <- columns[columns$name == name, , drop = FALSE]
             if (nrow(row) == 0L) return(rep(NA, length(features[[GRNA]])))
@@ -546,14 +546,14 @@ validate_screen <- function(file, index_limit = NULL) {
         end <- position("target_end", FALSE)
         if (!is.null(chromosome) && !is.null(start) && !is.null(end)) {
             given <- cbind(!is.na(chromosome), !is.na(start), !is.na(end))
-            if (any(rowSums(given) %in% 1:2)) log$add("S8.11", table, "A gRNA has some of `target_chr`, `target_start`, `target_end` and not all three.")
-            if (any(given) && nrow(record) > 0L && nrow(entry("genome_build")) == 0L) log$add("S8.14", table, "The gRNA table has positions and the file has no `genome_build`.")
+            if (any(rowSums(given) %in% 1:2)) log$add("D8.11", table, "A gRNA has some of `target_chr`, `target_start`, `target_end` and not all three.")
+            if (any(given) && nrow(record) > 0L && nrow(entry("genome_build")) == 0L) log$add("D8.14", table, "The gRNA table has positions and the file has no `genome_build`.")
             both <- !is.na(start) & !is.na(end)
             if (any(start[both] != round(start[both]) | end[both] != round(end[both]) | start[both] < 1 | end[both] < start[both])) {
-                log$add("S8.10", table, "Target positions must be whole numbers, 1-based with both ends included: `target_start` at least 1 and `target_end` not before it.")
+                log$add("D8.10", table, "Target positions must be whole numbers, 1-based with both ends included: `target_start` at least 1 and `target_end` not before it.")
             }
         }
-        # gRNAs delivered on one vector (S8.6 to S8.8)
+        # gRNAs delivered on one vector (D8.6 to D8.8)
         if ("vector_id" %in% columns$name && "grna_target" %in% columns$name) {
             vectors <- tryCatch(text("vector_id"), error = function(e) NULL)
             targets <- tryCatch(text("grna_target"), error = function(e) NULL)
@@ -561,7 +561,7 @@ validate_screen <- function(file, index_limit = NULL) {
                 for (fault in vector_faults(features[[GRNA]], vectors, targets)) log$add(fault$rule, paste0(table, "/vector_id"), fault$message)
             }
         }
-        # the kind of each gRNA, where recorded (S8.15, S8.16)
+        # the kind of each gRNA, where recorded (D8.15, D8.16)
         if ("grna_type" %in% columns$name && "grna_target" %in% columns$name) {
             types <- tryCatch(text("grna_type"), error = function(e) NULL)
             targets <- tryCatch(text("grna_target"), error = function(e) NULL)

@@ -2,7 +2,7 @@
 # writers and readers.
 #
 # SPEC.md states the rules and RATIONALE.md the reasons. Section numbers below
-# (A1, T3, ...) refer to both. The tables of an analysis, the stages and the
+# (A1, A10, ...) refer to both. The tables of an analysis, the stages and the
 # shape of the JSON records are read from spec/ (tables.json and three JSON
 # Schemas), which the Python code reads too.
 #
@@ -60,15 +60,15 @@ read_json <- function(path) {
     jsonlite::fromJSON(paste(readLines(path, warn = FALSE), collapse = "\n"), simplifyVector = TRUE, simplifyDataFrame = FALSE)
 }
 
-# ---------------------------------------------------------------- tables (T0)
+# ---------------------------------------------------------------- tables (A7)
 
 # The most rows a row group of the table may have, and the rule that says so:
-# a million for every table (T0.3), fewer for the tables with a list per row (T5.7).
+# a million for every table (A7.3), fewer for the tables with a list per row (A12.7).
 row_group_limit <- function(name = NULL) {
     definition <- if (is.null(name)) NULL else TABLES[[name]]$definition
     list(
         rows = as.integer(if (is.null(definition$max_rows_per_row_group)) ROW_GROUP_ROWS else definition$max_rows_per_row_group),
-        rule = if (is.null(definition$row_group_rule)) "T0.3" else definition$row_group_rule
+        rule = if (is.null(definition$row_group_rule)) "A7.3" else definition$row_group_rule
     )
 }
 
@@ -213,7 +213,7 @@ fmt_write_stage <- function(directory, stage, record, tables = list(), provenanc
 
 # Remove a stage and every later stage: their folders, records first (A4). The
 # fit cache goes too when the QC stage or an earlier one is cleared, and stays
-# when only a testing stage is (T6).
+# when only a testing stage is (A13).
 fmt_clear_stage <- function(directory, stage) {
     cleared <- names(STAGE_RANK)[STAGE_RANK > STAGE_RANK[[stage]] | names(STAGE_RANK) == stage]
     for (later in cleared) {
@@ -225,7 +225,7 @@ fmt_clear_stage <- function(directory, stage) {
     invisible(directory)
 }
 
-# ---- the fit cache (T6): fits/response/, a folder of part files and nothing
+# ---- the fit cache (A13): fits/response/, a folder of part files and nothing
 # else, outside the stages. It is no stage's output and is listed in no record.
 # Each writer adds a part of its own, and each part says how its fits were made,
 # in the Parquet file's own key-value metadata. No file is shared between
@@ -235,7 +235,7 @@ FITS <- TABLE_SPEC$fits$folder
 
 FIT_KEY <- TABLE_SPEC$fits$identity_key
 
-# A formula is the same formula however it is spaced (T6.5).
+# A formula is the same formula however it is spaced (A13.5).
 formula_key <- function(text) gsub("[[:space:]]", "", as.character(text))
 
 identity_value <- function(identity, name) {
@@ -257,7 +257,7 @@ fit_identity_text <- function(file) {
 
 # Every part of the cache with the identity it carries. The identity is NULL
 # where a part has none or it is not a JSON object; a reader ignores such a
-# part (T6.5).
+# part (A13.5).
 fit_parts <- function(directory) {
     folder <- file.path(directory, FITS)
     files <- if (dir.exists(folder)) table_files(folder) else character()
@@ -294,7 +294,7 @@ fmt_write_fits <- function(directory, table, identity) {
 }
 
 # Replace the parts that carry one identity by a single part holding their fits
-# (T6.4). For a writer that knows no job is still adding to the cache. Returns
+# (A13.4). For a writer that knows no job is still adding to the cache. Returns
 # the parts written.
 fmt_merge_fits <- function(directory) {
     parts <- Filter(function(part) !is.null(part$identity), fit_parts(directory))
@@ -381,7 +381,7 @@ check_link <- function(recorded, sce, what) {
 # the same way, and the sceptre_object writer checks each against the object.
 
 # Each cell's gRNA with the most UMIs (the first on a tie) and its share of the
-# cell's gRNA UMIs (S6).
+# cell's gRNA UMIs (D6).
 top_grna <- function(grna_counts) {
     counts <- methods::as(methods::as(grna_counts, "generalMatrix"), "TsparseMatrix")
     entries <- data.frame(grna = counts@i + 1L, cell = counts@j + 1L, umis = counts@x)
@@ -408,7 +408,7 @@ expand_pairs <- function(pairs, grna_table) {
 }
 
 # Each gRNA's cells (positions among the data file's cells, ascending), from
-# the assignment table (T1).
+# the assignment table (A8).
 cells_by_grna <- function(assignments, grna_ids, cells) {
     position <- match(assignments$cell_id, cells)
     by_grna <- split(position, factor(assignments$grna_id, levels = grna_ids))
@@ -460,7 +460,7 @@ n_pairs_passing <- function(pair_qc, strategy) {
 }
 
 # The largest p-value called significant, or NULL: `significant` is then
-# p_value <= threshold, which no part file needs the whole table for (T5).
+# p_value <= threshold, which no part file needs the whole table for (A12).
 significance_threshold <- function(result) {
     called <- which(result$significant)
     if (length(called) == 0L) NULL else max(result$p_value[called])
@@ -472,7 +472,7 @@ add_significant <- function(result, threshold) {
 }
 
 # `log_2_fold_change` follows from `fold_change`, so a results table that has
-# `fold_change` does not store it (T5). The formula is sceptre's, to the last
+# `fold_change` does not store it (A12). The formula is sceptre's, to the last
 # bit: log(x) / log(2), which is not always what log2(x) returns.
 log_2_of <- function(fold_change) log(fold_change) / log(2)
 
@@ -484,7 +484,7 @@ add_log_2_fold_change <- function(result) {
 }
 
 # Resampled statistics: packages hold them as columns z_null_1, z_null_2, ...
-# padded with missing values; the file holds one list per pair (T5).
+# padded with missing values; the file holds one list per pair (A12).
 resample_columns <- function(table) grep("^z_null_[0-9]+$", names(table), value = TRUE)
 
 resamples_table <- function(result) {
@@ -507,7 +507,7 @@ add_resamples <- function(result, resamples) {
 }
 
 # Additive formulas only: each term a covariate name, log(x) or log(x + 1),
-# with 0 or 1 for the intercept (T7).
+# with 0 or 1 for the intercept (A14).
 formula_in_subset <- function(text) {
     rhs <- gsub("[[:space:]]", "", sub("^[^~]*~", "", text))
     characters <- strsplit(rhs, "")[[1]]
@@ -518,7 +518,7 @@ formula_in_subset <- function(text) {
     all(grepl(paste0("^(0|1|", name, "|log\\(", name, "\\)|log\\(", name, "\\+1\\))$"), terms))
 }
 
-# The covariates an additive formula names (T7.8).
+# The covariates an additive formula names (A14.8).
 formula_covariates <- function(text) {
     rhs <- gsub("log\\(", "(", gsub("[[:space:]]", "", sub("^[^~]*~", "", text)))
     sort(unique(regmatches(rhs, gregexpr("[A-Za-z][A-Za-z0-9_.]*", rhs))[[1]]), method = "radix")
@@ -556,7 +556,7 @@ screen_identity <- function(file, response_modality) {
         read(target)
     }
     if (response_modality %in% modalities) out$responses <- index(paste0("mod/", response_modality, "/var"))
-    # the covariates the data file provides to a model, named as in T7.4
+    # the covariates the data file provides to a model, named as in A14.4
     listing <- rhdf5::h5ls(file, recursive = 4L)
     columns <- function(table) setdiff(listing$name[listing$group == paste0("/", table)], as.vector(rhdf5::h5readAttributes(file, table)[["_index"]]))
     out$covariates <- c(columns("obs"), unlist(lapply(intersect(c("grna", response_modality), modalities), function(modality) {
@@ -666,28 +666,28 @@ validate_analysis <- function(directory, screen_file = NULL) {
         if (file.exists(table_path(directory, name))) log$add("A4.1", paste0(name, ".parquet"), "is in the folder and its stage's record does not list it.")
     }
 
-    # the fit cache: part files only, each saying how its fits were made (T6)
+    # the fit cache: part files only, each saying how its fits were made (A13)
     fit_identities <- list()
     fits_folder <- file.path(directory, FITS)
     if (dir.exists(fits_folder)) {
         entries <- sort(list.files(fits_folder, all.files = TRUE, no.. = TRUE), method = "radix")
         for (entry in entries) {
-            if (dir.exists(file.path(fits_folder, entry)) || !grepl("\\.parquet$", entry)) log$add("T6.1", paste0(FITS, "/", entry), "is not a part file; the fit cache holds part files only.")
+            if (dir.exists(file.path(fits_folder, entry)) || !grepl("\\.parquet$", entry)) log$add("A13.1", paste0(FITS, "/", entry), "is not a part file; the fit cache holds part files only.")
         }
         for (file in table_files(fits_folder)) {
             text <- tryCatch(list(fit_identity_text(file)), error = function(e) NULL)
             if (is.null(text)) next   # not a Parquet file: reported with the table below
             where <- paste0(FITS, "/", basename(file))
             if (is.null(text[[1]])) {
-                log$add("T6.1", where, "does not say how its fits were made: its metadata has no `", FIT_KEY, "`.")
+                log$add("A13.1", where, "does not say how its fits were made: its metadata has no `", FIT_KEY, "`.")
                 next
             }
             faults <- schema_problems_text(text[[1]], TABLE_SPEC$fits$identity_schema)
-            for (fault in faults) log$add("T6.1", where, "`", FIT_KEY, "` ", fault)
+            for (fault in faults) log$add("A13.1", where, "`", FIT_KEY, "` ", fault)
             if (length(faults) == 0L) fit_identities[[file]] <- jsonlite::fromJSON(text[[1]], simplifyVector = TRUE, simplifyDataFrame = FALSE)
         }
         if (length(table_files(fits_folder)) > 0L) tables[[FITS]] <- fits_folder
-        if (!all(c("parameters", "qc") %in% present)) log$add("T6.3", FITS, "The fit cache needs the parameters and qc stages.")
+        if (!all(c("parameters", "qc") %in% present)) log$add("A13.3", FITS, "The fit cache needs the parameters and qc stages.")
     }
 
     # each table against its definition
@@ -709,19 +709,19 @@ validate_analysis <- function(directory, screen_file = NULL) {
             for (part in parts) {
                 if (is.null(part[[column$name]])) {
                     if (isTRUE(column$required)) {
-                        log$add("T0.1", where, "has no column `", column$name, "`.")
+                        log$add("A7.1", where, "has no column `", column$name, "`.")
                         ok <- FALSE
                     }
                 } else if (column_kind(part[[column$name]]) != column$type) {
-                    log$add("T0.1", where, "The column `", column$name, "` is not of type ", column$type, ".")
+                    log$add("A7.1", where, "The column `", column$name, "` is not of type ", column$type, ".")
                     ok <- FALSE
                 } else if (!isTRUE(column$nullable) && column$type != "list<double>" && anyNA(part[[column$name]])) {
-                    log$add("T0.1", where, "The column `", column$name, "` has missing values.")
+                    log$add("A7.1", where, "The column `", column$name, "` has missing values.")
                     ok <- FALSE
                 }
             }
         }
-        # the verdict of pairwise QC follows from the two counts and the thresholds (T3.4)
+        # the verdict of pairwise QC follows from the two counts and the thresholds (A10.4)
         if (!is.null(definition$pass_qc_from_counts) && ok && !is.null(records$qc)) {
             limits <- records$qc$settings
             for (part in parts) {
@@ -732,7 +732,7 @@ validate_analysis <- function(directory, screen_file = NULL) {
                 }
             }
         }
-        # a stored logarithm agrees with the column it is the logarithm of (T5.2)
+        # a stored logarithm agrees with the column it is the logarithm of (A12.2)
         agree <- definition$log_2_of
         if (!is.null(agree) && ok && agree$of %in% names(parts[[1]])) {
             for (part in parts) {
@@ -748,7 +748,7 @@ validate_analysis <- function(directory, screen_file = NULL) {
         for (column in definition$forbidden_columns) {
             if (column$name %in% names(parts[[1]])) log$add(column$rule, where, "must not have the column `", column$name, "`.")
         }
-        # a column present under some gRNA integration strategies only (T3.3, T5.6)
+        # a column present under some gRNA integration strategies only (A10.3, A12.6)
         for (column in definition$columns) {
             if (is.null(column$present_under) || is.null(strategy)) next
             expected <- strategy %in% unlist(column$present_under)
@@ -764,8 +764,8 @@ validate_analysis <- function(directory, screen_file = NULL) {
             factors <- vapply(part, is.factor, logical(1))
             part[factors] <- lapply(part[factors], as.character)
             key <- table_key(name, part)
-            if (nrow(part) > 1L && !identical(byte_order(part, key), seq_len(nrow(part)))) log$add("T0.2", where, "The rows are not sorted by ", paste(key, collapse = ", "), ".")
-            if (!across_parts && anyDuplicated(part[key]) > 0L) log$add("T0.4", where, "Two rows of one file have the same ", paste(key, collapse = ", "), ".")
+            if (nrow(part) > 1L && !identical(byte_order(part, key), seq_len(nrow(part)))) log$add("A7.2", where, "The rows are not sorted by ", paste(key, collapse = ", "), ".")
+            if (!across_parts && anyDuplicated(part[key]) > 0L) log$add("A7.4", where, "Two rows of one file have the same ", paste(key, collapse = ", "), ".")
         }
         # the parts already read, put together: each table is read once
         plain <- lapply(parts, function(part) {
@@ -777,29 +777,29 @@ validate_analysis <- function(directory, screen_file = NULL) {
         whole <- do.call(rbind, lapply(plain, function(part) part[shared]))
         rownames(whole) <- NULL
         key <- table_key(name, whole)
-        if (across_parts && anyDuplicated(whole[key]) > 0L) log$add("T0.4", where, "Two rows have the same ", paste(key, collapse = ", "), ".")
+        if (across_parts && anyDuplicated(whole[key]) > 0L) log$add("A7.4", where, "Two rows have the same ", paste(key, collapse = ", "), ".")
         contents[[name]] <- whole
     }
 
     parameters <- records$parameters
     if (!is.null(parameters)) {
-        if (!formula_in_subset(parameters$settings$formula)) log$add("T7.1", "parameters/record.json", "The formula is outside the additive subset.")
+        if (!formula_in_subset(parameters$settings$formula)) log$add("A14.1", "parameters/record.json", "The formula is outside the additive subset.")
     }
-    # covariates the analysis brings (T7.6): numbers or text, named like a data file's columns
+    # covariates the analysis brings (A14.6): numbers or text, named like a data file's columns
     brought <- contents[[COVARIATES]]
     own <- as.character(setdiff(names(brought), "cell_id"))
     for (name in own) {
         column <- brought[[name]]
         if (!grepl(TABLES[[COVARIATES]]$definition$covariate_name_pattern, name)) {
-            log$add("T7.6", paste0(COVARIATES, ".parquet"), "`", name, "` is not a valid covariate name.")
+            log$add("A14.6", paste0(COVARIATES, ".parquet"), "`", name, "` is not a valid covariate name.")
         } else if (!(is.double(column) || ((is.character(column) || is.factor(column)) && !anyNA(column)))) {
-            log$add("T7.6", paste0(COVARIATES, ".parquet"), "The covariate `", name, "` must be a double, or text with no missing values.")
+            log$add("A14.6", paste0(COVARIATES, ".parquet"), "The covariate `", name, "` must be a double, or text with no missing values.")
         }
     }
     if (!is.null(parameters)) {
         # A part made for this analysis's parameters has one coefficient per term of its
-        # design (T6.2). A part made otherwise is allowed and unused, and is not
-        # reported: nothing depends on it, and clearing it is housekeeping (T6.3, T6.6).
+        # design (A13.2). A part made otherwise is allowed and unused, and is not
+        # reported: nothing depends on it, and clearing it is housekeeping (A13.3, A13.6).
         expected <- list(
             formula = parameters$settings$formula,
             control_group = parameters$settings$control_group
@@ -809,7 +809,7 @@ validate_analysis <- function(directory, screen_file = NULL) {
             if (!identity_matches(fit_identities[[file]], expected)) next
             part <- as.data.frame(nanoparquet::read_parquet(file), stringsAsFactors = FALSE)
             if (!is.null(part$coefficients) && any(lengths(part$coefficients) != length(parameters$design$terms))) {
-                log$add("T6.2", FITS, "A fit does not have one coefficient per term of the design.")
+                log$add("A13.2", FITS, "A fit does not have one coefficient per term of the design.")
                 break
             }
         }
@@ -831,31 +831,31 @@ validate_analysis <- function(directory, screen_file = NULL) {
             known <- list(cell_id = screen$cells, response_id = screen$responses)
             for (name in names(contents)) {
                 for (column in intersect(names(known), names(contents[[name]]))) {
-                    if (!all(contents[[name]][[column]] %in% known[[column]])) log$add("T0.5", paste0(name, ".parquet"), "`", column, "` names something the data file does not have.")
+                    if (!all(contents[[name]][[column]] %in% known[[column]])) log$add("A7.5", paste0(name, ".parquet"), "`", column, "` names something the data file does not have.")
                 }
             }
             for (name in intersect(c("assignment/assignments", "calibration/negative_control_groups"), names(contents))) {
-                if (!all(contents[[name]]$grna_id %in% screen$grnas)) log$add("T0.5", paste0(name, ".parquet"), "`grna_id` names something the data file does not have.")
+                if (!all(contents[[name]]$grna_id %in% screen$grnas)) log$add("A7.5", paste0(name, ".parquet"), "`grna_id` names something the data file does not have.")
             }
             for (name in intersect(c("parameters/discovery_pairs", "parameters/positive_control_pairs"), names(contents))) {
-                if (!all(contents[[name]]$grna_target %in% screen$targets)) log$add("T0.5", paste0(name, ".parquet"), "`grna_target` names something the data file does not have.")
+                if (!all(contents[[name]]$grna_target %in% screen$targets)) log$add("A7.5", paste0(name, ".parquet"), "`grna_target` names something the data file does not have.")
             }
             # covariates: one row per cell, no name the data file already provides, and
-            # every covariate of the formula found in one of the two places (T7.6 to T7.8)
+            # every covariate of the formula found in one of the two places (A14.6 to A14.8)
             if (!is.null(brought) && !setequal(brought$cell_id, screen$cells)) {
-                log$add("T7.6", paste0(COVARIATES, ".parquet"), "does not have one row per cell of the data file.")
+                log$add("A14.6", paste0(COVARIATES, ".parquet"), "does not have one row per cell of the data file.")
             }
             for (name in sort(as.character(intersect(own, screen$covariates)), method = "radix")) {
-                log$add("T7.7", paste0(COVARIATES, ".parquet"), "The covariate `", name, "` is already provided by the data file.")
+                log$add("A14.7", paste0(COVARIATES, ".parquet"), "The covariate `", name, "` is already provided by the data file.")
             }
             if (!is.null(parameters) && formula_in_subset(parameters$settings$formula)) {
                 for (name in setdiff(formula_covariates(parameters$settings$formula), c(own, screen$covariates))) {
-                    log$add("T7.8", "parameters/record.json", "The formula names `", name, "`, which is neither a covariate of the data file nor one the analysis brings.")
+                    log$add("A14.8", "parameters/record.json", "The formula names `", name, "`, which is neither a covariate of the data file nor one the analysis brings.")
                 }
             }
             kept <- contents[["qc/cells"]]
             if (!is.null(kept) && !setequal(kept$cell_id, screen$cells)) {
-                log$add("T2.1", "qc/cells.parquet", "does not have one row per cell of the data file.")
+                log$add("A9.1", "qc/cells.parquet", "does not have one row per cell of the data file.")
             }
         }
     }

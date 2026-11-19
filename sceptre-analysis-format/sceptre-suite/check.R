@@ -79,19 +79,19 @@ for (dataset in names(objects)) for (name in names(objects[[dataset]])) {
         verdict <- same_files(file.path(out, dataset, part, name), file.path("example", dataset, part, name))
         check(paste0(label, ": ", part, " equal to the committed example"), verdict, as.character(verdict))
     }
-    back <- suppressWarnings(suppressMessages(read_main_object(screen_of(dataset), directory)))
+    back <- suppressWarnings(suppressMessages(read_sceptre_object(screen_of(dataset), directory)))
     for (slot in setdiff(methods::slotNames(object), NOT_STORED)) {
-        held <- get(object, slot)
-        rebuilt <- get(back, slot)
+        held <- slot_of(object, slot)
+        rebuilt <- slot_of(back, slot)
         if (slot %in% UNORDERED) { held <- sort(held); rebuilt <- sort(rebuilt) }
         verdict <- compare_slot(held, rebuilt)
         check(paste0(label, ": slot `", slot, "` of the rebuilt object"), !startsWith(verdict, "DIFFERENT"), verdict)
     }
     again <- suppressWarnings(suppressMessages(replay(screen_of(dataset), directory)))
-    check(paste0(label, ": cells in use, run again from the recorded settings"), identical(get(object, "cells_in_use"), get(again, "cells_in_use")))
+    check(paste0(label, ": cells in use, run again from the recorded settings"), identical(slot_of(object, "cells_in_use"), slot_of(again, "cells_in_use")))
     for (stage in intersect(c("calibration", "power", "discovery"), called(object))) {
-        first <- as.data.frame(get(object, result_slot[[stage]]))
-        second <- as.data.frame(get(again, result_slot[[stage]]))
+        first <- as.data.frame(slot_of(object, result_slot[[stage]]))
+        second <- as.data.frame(slot_of(again, result_slot[[stage]]))
         first <- first[names(second)]   # the rerun keeps sceptre's default columns
         check(paste0(label, ": ", stage, " results, run again from the recorded settings"), close_enough(rows_sorted(first), rows_sorted(second)))
     }

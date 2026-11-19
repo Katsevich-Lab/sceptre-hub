@@ -33,11 +33,19 @@ jobs:
       - name: System libraries for R packages (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev libhdf5-dev libnode-dev
-      - name: R libraries
-        run: |
-          install.packages(c("BiocManager", "jsonlite", "Matrix"))
-          BiocManager::install(c("MuData", "rhdf5", "HDF5Array", "SingleCellExperiment", "MultiAssayExperiment"), ask = FALSE, update = FALSE)
-        shell: Rscript {0}
+      # installs binaries where there are any, and keeps the library between runs
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          install-quarto: false
+          dependencies: '"hard"'
+          packages: |
+            any::jsonlite
+            any::Matrix
+            bioc::MuData
+            bioc::rhdf5
+            bioc::HDF5Array
+            bioc::SingleCellExperiment
+            bioc::MultiAssayExperiment
       - name: Verification suite
         shell: bash
         run: perturb-seq-data-format/verify/run.sh

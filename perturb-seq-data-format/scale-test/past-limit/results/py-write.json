@@ -1,0 +1,108 @@
+{
+ "step": "write",
+ "file": "data/screen.h5mu",
+ "checks": [
+  {
+   "check": "rna: data int32, indices int64, indptr int64",
+   "ok": true,
+   "detail": "{'data': 'int32', 'indices': 'int64', 'indptr': 'int64'}"
+  },
+  {
+   "check": "grna (small, own size under the limit): data int32, indices int32, indptr int32 per D4 (index type is per modality)",
+   "ok": true,
+   "detail": "{'data': 'int32', 'indices': 'int32', 'indptr': 'int32'}"
+  },
+  {
+   "check": "rna indptr ends at nnz > 2^31-1",
+   "ok": true,
+   "detail": "2199990946"
+  },
+  {
+   "check": "rna shape attr",
+   "ok": true,
+   "detail": "[np.int64(1100000), np.int64(8000)]"
+  }
+ ],
+ "timings": {
+  "generate": {
+   "seconds": 189.9,
+   "ok": true,
+   "peak_rss_after": "25973240 kB"
+  },
+  "build MuData": {
+   "seconds": 2.3,
+   "ok": true,
+   "peak_rss_after": "26693168 kB"
+  },
+  "write_screen (real limit)": {
+   "seconds": 57.6,
+   "ok": true,
+   "peak_rss_after": "53404716 kB"
+  }
+ },
+ "started": "2026-11-19T18:00:51.628864",
+ "dataset": {
+  "n_cells": 1100000,
+  "n_genes": 8000,
+  "rna_nnz": 2199990946,
+  "rna_nnz_minus_limit": 52507299,
+  "rna_count_total": 8817880328,
+  "max_count": 85,
+  "sample_genes": [
+   0,
+   1,
+   2,
+   444,
+   1800,
+   2280,
+   2401,
+   4622,
+   4995,
+   5467,
+   6201,
+   6665,
+   7171,
+   7549,
+   7799,
+   7800,
+   7801,
+   7997,
+   7998,
+   7999
+  ],
+  "straddle_gene": 7800,
+  "straddle_range": [
+   2146938555,
+   2147648423
+  ],
+  "scipy_index_dtypes_in_memory": [
+   "int64",
+   "int64"
+  ],
+  "grna_shape": [
+   1100000,
+   400
+  ],
+  "grna_nnz": 1429861
+ },
+ "peak_rss_kb_getrusage": 53404716,
+ "finished": "2026-11-19T18:05:07.080069",
+ "file_size_bytes": 26613611728,
+ "stored_types": {
+  "rna": {
+   "data": "int32",
+   "indices": "int64",
+   "indptr": "int64"
+  },
+  "grna": {
+   "data": "int32",
+   "indices": "int32",
+   "indptr": "int32"
+  }
+ },
+ "filters": {
+  "data": null,
+  "indices": null,
+  "indptr": null
+ }
+}

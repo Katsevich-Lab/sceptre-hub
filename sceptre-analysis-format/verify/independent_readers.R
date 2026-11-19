@@ -21,7 +21,7 @@ for (folder in c("example/highmoi/analyses/left_sided", "example/highmoi/analyse
     if (length(parts) > 0L) {
         rows <- sum(vapply(parts, function(p) nanoparquet::read_parquet_info(p)$num_rows, numeric(1)))
         check(paste0("arrow reads the part files of the fit cache of ", folder, " as one dataset"), arrow::open_dataset(parts, format = "parquet")$num_rows == rows)
-        # the folder holds part files and nothing else (T6.1), so a dataset reader opens the folder itself
+        # the folder holds part files and nothing else (A13.1), so a dataset reader opens the folder itself
         as_folder <- tryCatch(arrow::open_dataset(file.path(folder, "fits/response"), format = "parquet")$num_rows == rows, error = function(e) FALSE)
         check(paste0("arrow opens the fit cache folder of ", folder, " itself"), as_folder)
         # the identity of the fits is in each part's own metadata, which arrow shows too

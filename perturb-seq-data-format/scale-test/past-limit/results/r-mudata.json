@@ -1,0 +1,64 @@
+{
+  "step": "mudata",
+  "file": "data/screen.h5mu",
+  "checks": [
+    {
+      "check": "MuData backed gene 0 equals truth exactly",
+      "ok": true,
+      "detail": "nnz 27363"
+    },
+    {
+      "check": "MuData backed gene 5467 equals truth exactly",
+      "ok": true,
+      "detail": "nnz 58379"
+    },
+    {
+      "check": "MuData backed gene 7999 equals truth exactly",
+      "ok": true,
+      "detail": "nnz 459972"
+    }
+  ],
+  "timings": {
+    "MuData::readH5MU in memory": {
+      "seconds": 59.8,
+      "ok": false,
+      "warnings": "NAs produced by integer overflow while converting 64-bit integer from HDF5 to a 32-bit integer in R.\nChoose bit64conversion='bit64' or bit64conversion='double' to avoid data loss",
+      "error": "error in evaluating the argument 'x' in selecting a method for function 't': 'p' must be a nondecreasing vector c(0, ...)",
+      "error_call": "h(simpleError(msg, call))"
+    },
+    "MuData::readH5MU backed": {
+      "seconds": 10.6,
+      "ok": true,
+      "warnings": ["omp_pause_resource() failed to relinquish resources on device 0", "sampleMap[['assay']] coerced with as.factor()"]
+    },
+    "backed gene 0": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "backed gene 5467": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "backed gene 7999": {
+      "seconds": 0.2,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    }
+  },
+  "started": "2026-11-19 18:15:34",
+  "versions": {
+    "MuData": "1.14.0",
+    "rhdf5": "2.54.1",
+    "HDF5Array": "1.38.0",
+    "Matrix": "1.7.6",
+    "R": "4.5.2"
+  },
+  "finished": "2026-11-19 18:16:52",
+  "gc_max_mb": 26024.4,
+  "mudata_backed": {
+    "class": "DelayedMatrix",
+    "dim": [8000, 1100000]
+  }
+}

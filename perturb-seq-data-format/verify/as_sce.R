@@ -42,7 +42,7 @@ read_as_sce <- function(file, main_modality = NULL) {
     grna <- experiment(GRNA)
     SingleCellExperiment::altExp(sce, "gRNA") <- grna
     # the other modalities are carried along, so that writing the object back
-    # keeps them (S2.5)
+    # keeps them (D2.5)
     for (name in setdiff(names(mae), c(main, GRNA))) {
         other <- experiment(name)
         SummarizedExperiment::colData(other) <- S4Vectors::DataFrame(

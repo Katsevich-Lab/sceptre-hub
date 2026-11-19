@@ -1,0 +1,29 @@
+{
+  "step": "validate",
+  "file": "data/screen.h5mu",
+  "checks": [
+    {
+      "check": "R validate_screen reports nothing",
+      "ok": true,
+      "detail": "[1] rule    where   message\n<0 rows> (or 0-length row.names)"
+    }
+  ],
+  "timings": {
+    "validate_screen (real limit)": {
+      "seconds": 242.4,
+      "ok": true,
+      "warnings": []
+    }
+  },
+  "started": "2026-11-19 18:08:18",
+  "versions": {
+    "MuData": "1.14.0",
+    "rhdf5": "2.54.1",
+    "HDF5Array": "1.38.0",
+    "Matrix": "1.7.6",
+    "R": "4.5.2"
+  },
+  "finished": "2026-11-19 18:12:32",
+  "gc_max_mb": 134888.2,
+  "problems": []
+}

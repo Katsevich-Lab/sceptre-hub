@@ -1,0 +1,267 @@
+{
+  "step": "hdf5array",
+  "file": "data/screen.h5mu",
+  "checks": [
+    {
+      "check": "HDF5Array gene 0 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 27363 vs 27363 sum 29936 vs 29936"
+    },
+    {
+      "check": "HDF5Array gene 1 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 68039 vs 68039 sum 84900 vs 84900"
+    },
+    {
+      "check": "HDF5Array gene 2 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 188448 vs 188448 sum 335553 vs 335553"
+    },
+    {
+      "check": "HDF5Array gene 444 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 581449 vs 581449 sum 2938447 vs 2938447"
+    },
+    {
+      "check": "HDF5Array gene 1800 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 12829 vs 12829 sum 13423 vs 13423"
+    },
+    {
+      "check": "HDF5Array gene 2280 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 142301 vs 142301 sum 222384 vs 222384"
+    },
+    {
+      "check": "HDF5Array gene 2401 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 22752 vs 22752 sum 24660 vs 24660"
+    },
+    {
+      "check": "HDF5Array gene 4622 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 238097 vs 238097 sum 484810 vs 484810"
+    },
+    {
+      "check": "HDF5Array gene 4995 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 356115 vs 356115 sum 991673 vs 991673"
+    },
+    {
+      "check": "HDF5Array gene 5467 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 58379 vs 58379 sum 70693 vs 70693"
+    },
+    {
+      "check": "HDF5Array gene 6201 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 110379 vs 110379 sum 156973 vs 156973"
+    },
+    {
+      "check": "HDF5Array gene 6665 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 558810 vs 558810 sum 2659858 vs 2659858"
+    },
+    {
+      "check": "HDF5Array gene 7171 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 466964 vs 466964 sum 1731870 vs 1731870"
+    },
+    {
+      "check": "HDF5Array gene 7549 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 13485 vs 13485 sum 14149 vs 14149"
+    },
+    {
+      "check": "HDF5Array gene 7799 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 99041 vs 99041 sum 135892 vs 135892"
+    },
+    {
+      "check": "HDF5Array gene 7800 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 709868 vs 709868 sum 5245997 vs 5245997"
+    },
+    {
+      "check": "HDF5Array gene 7801 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 218052 vs 218052 sum 420958 vs 420958"
+    },
+    {
+      "check": "HDF5Array gene 7997 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 457188 vs 457188 sum 1649404 vs 1649404"
+    },
+    {
+      "check": "HDF5Array gene 7998 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 217171 vs 217171 sum 417074 vs 417074"
+    },
+    {
+      "check": "HDF5Array gene 7999 equals regenerated truth exactly",
+      "ok": true,
+      "detail": "nnz 459972 vs 459972 sum 1674897 vs 1674897"
+    },
+    {
+      "check": "HDF5Array last 50 genes: column sums equal truth",
+      "ok": true,
+      "detail": "SVT_SparseMatrix nnz 13174746 truth 13174746"
+    }
+  ],
+  "timings": {
+    "HDF5Array::H5SparseMatrix open": {
+      "seconds": 1.3,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 0": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 1": {
+      "seconds": 0.2,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 2": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 444": {
+      "seconds": 0.2,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 1800": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 2280": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 2401": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 4622": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 4995": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 5467": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 6201": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 6665": {
+      "seconds": 0.2,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 7171": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 7549": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 7799": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 7800": {
+      "seconds": 0.2,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 7801": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 7997": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 7998": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "read gene 7999": {
+      "seconds": 0.1,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "HDF5Array: 50 genes from the end as SparseArray": {
+      "seconds": 2.4,
+      "ok": true,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0"
+    },
+    "HDF5Array: as(x, 'dgCMatrix') whole matrix": {
+      "seconds": 137.3,
+      "ok": false,
+      "warnings": "omp_pause_resource() failed to relinquish resources on device 0",
+      "error": "SVT_SparseMatrix object contains too many nonzero values (2199990946) to \"fit\" in a CsparseMatrix derivative",
+      "error_call": ".Call2(.NAME, ..., PACKAGE = \"SparseArray\")"
+    }
+  },
+  "started": "2026-11-19 18:12:40",
+  "versions": {
+    "MuData": "1.14.0",
+    "rhdf5": "2.54.1",
+    "HDF5Array": "1.38.0",
+    "Matrix": "1.7.6",
+    "R": "4.5.2"
+  },
+  "finished": "2026-11-19 18:15:24",
+  "gc_max_mb": 34604.8,
+  "h5sparse": {
+    "class": "H5SparseMatrix",
+    "dim": [8000, 1100000],
+    "seed_class": "CSR_H5SparseMatrixSeed"
+  },
+  "per_gene_seconds": {
+    "0": 0.5,
+    "1": 0.62,
+    "2": 0.52,
+    "444": 0.62,
+    "1800": 0.47,
+    "2280": 0.52,
+    "2401": 0.49,
+    "4622": 0.52,
+    "4995": 0.55,
+    "5467": 0.49,
+    "6201": 0.49,
+    "6665": 0.57,
+    "7171": 0.56,
+    "7549": 0.48,
+    "7799": 0.49,
+    "7800": 0.61,
+    "7801": 0.51,
+    "7997": 0.56,
+    "7998": 0.51,
+    "7999": 0.54
+  }
+}

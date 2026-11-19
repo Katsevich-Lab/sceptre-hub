@@ -37,7 +37,7 @@ for folder in ("example/highmoi/analyses/left_sided", "example/highmoi/analyses/
         results.add(f"polars reads the part files of the fit cache of {folder} as one table", pl.read_parquet(parts).height == rows)
         results.add(f"duckdb reads the part files of the fit cache of {folder} as one table",
                     duckdb.sql(f"select count(*) from read_parquet('{parts}')").fetchall()[0][0] == rows)
-        # the folder holds part files and nothing else (T6.1), so readers open the folder itself
+        # the folder holds part files and nothing else (A13.1), so readers open the folder itself
         whole = f"{folder}/fits/response"
         def opens(read):
             try:

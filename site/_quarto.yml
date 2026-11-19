@@ -12,27 +12,29 @@ project:
 
 website:
   title: "Perturb-seq formats"
-  repo-url: https://github.com/Katsevich-Lab/sceptre-hub
   page-navigation: true
+  navbar:
+    right:
+      - icon: github
+        href: https://github.com/Katsevich-Lab/sceptre-hub
+        aria-label: The repository on GitHub
   search: true
   sidebar:
     style: docked
     collapse-level: 2
     contents:
-      - text: Home
+      - text: Overview
         href: index.md
       - section: Perturb-seq data file format
+        href: perturb-seq-data-format/overview.qmd
         contents:
-          - text: Overview
-            href: perturb-seq-data-format/overview.qmd
           - text: Specification
             href: perturb-seq-data-format/SPEC.md
           - text: Rationale
             href: perturb-seq-data-format/RATIONALE.md
       - section: sceptre analysis format
+        href: sceptre-analysis-format/overview.qmd
         contents:
-          - text: Overview
-            href: sceptre-analysis-format/overview.qmd
           - text: Specification
             href: sceptre-analysis-format/SPEC.md
           - text: Rationale
@@ -47,7 +49,7 @@ format:
     theme: cosmo
     toc: true
     toc-depth: 3
-    toc-expand: 2
+    toc-expand: 1
     toc-title: On this page
     anchor-sections: true
     link-external-newwindow: true
