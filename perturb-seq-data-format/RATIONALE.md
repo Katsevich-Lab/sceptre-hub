@@ -197,7 +197,7 @@ them, usually 16-bit (`bin/count_matrix_utils.py`); see D4.
 
   | Written by | Column | Read by the other language as |
   |---|---|---|
-  | Python (default settings) | any file at all | **R cannot open the file**: current pandas writes identifiers as `nullable-string-array` |
+  | Python (default settings) | any file at all | **R cannot open the file** with MuData before 1.16.1: current pandas writes identifiers as `nullable-string-array`. MuData 1.16.1 opens it |
   | Python | boolean | text (`"TRUE"`, `"FALSE"`) |
   | Python | 64-bit integer | all missing, silently |
   | R | logical | 8-bit integer |
@@ -483,8 +483,8 @@ specification.
    falls on the writers, which are few, and not on readers, which include
    tools outside this project.
 3. **The R-side restrictions come from one library.** Every restriction in D7
-   traces to MuData's reader or writer, not to SingleCellExperiment: it cannot
-   open pandas' nullable strings, reads a Python boolean as text and a 64-bit
+   traces to MuData's reader or writer, not to SingleCellExperiment: before
+   version 1.16.1 it cannot open pandas' nullable strings; it reads a Python boolean as text and a 64-bit
    integer column as all missing, and writes a logical as an integer, missing
    integers in a form Python cannot open, and missing text as empty. If MuData
    is fixed or replaced, several restrictions could be lifted. None has been

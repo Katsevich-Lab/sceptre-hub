@@ -130,7 +130,9 @@ def status(shows: dict) -> str:
 
     def passed(results) -> str:
         fails = results.count("fail")
-        return f"{results.count('pass'):,} of {len(results):,}" + ("" if fails == 0 else " — FAILING")
+        differ = len(results) - results.count("pass") - fails   # a forbidden kind that reads otherwise than recorded
+        return (f"{results.count('pass'):,} of {len(results):,}" + ("" if fails == 0 else " — FAILING")
+                + ("" if differ == 0 else f" ({differ} read otherwise than recorded)"))
     lines = "".join(f"<tr><td><code>{name}</code></td><td>{text(shows[name])}</td><td>{passed(found[name]['r'])}</td><td>{passed(found[name]['python'])}</td></tr>" for name in shows)
     return f"<table class='status'><thead><tr><th>Check</th><th>What it shows</th><th>Passed in R</th><th>Passed in Python</th></tr></thead><tbody>{lines}</tbody></table>"
 
