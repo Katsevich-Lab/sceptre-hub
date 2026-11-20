@@ -446,8 +446,8 @@ format's rationale](../sceptre-analysis-format/RATIONALE.md#suggested-changes-to
 | Validator | `validate_screen()` in `format/perturb_seq_data.R` and `format/perturb_seq_data.py` | Checks a data file without building a package object, and reports every problem, not only the first |
 
 **Why define it this way.** Writing the schemas exposes ambiguities in the
-prose while they are still free to fix. Reviewers get something exact to
-disagree with. And people can work with the format through AI assistants,
+prose while they are still free to fix. A reader who disagrees has something
+exact to disagree with. And people can work with the format through AI assistants,
 which need rules a machine can read and a validator to check their own output
 against.
 

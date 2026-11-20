@@ -25,13 +25,13 @@ This repository holds:
 
 - [ROADMAP.md](ROADMAP.md): the development phases and priorities.
 - [perturb-seq-data-format/](perturb-seq-data-format/): a draft of an on-disk
-  format for Perturb-seq data, the same file in R and Python, meant for any
+  format for Perturb-seq data, the same file for R and Python, meant for any
   software.
 - [sceptre-analysis-format/](sceptre-analysis-format/): a draft of the format
   for sceptre's analyses of such a file.
   Both formats can be browsed at
-  <https://katsevich-lab.github.io/sceptre-hub/>, which is built from these
-  two folders.
+  <https://katsevich-lab.github.io/sceptre-hub/>, which [site/](site/) builds
+  from these two folders.
 - [contracts/](contracts/): the few things the implementations must agree on,
   kept executable where possible. The R package is the reference
   implementation; the [parity contract](contracts/parity.md) defines agreement
@@ -52,5 +52,6 @@ not go into git.
 
 ## Status
 
-This repository is new (October 2026) and still being set up. Expect the contracts
-to fill in over the coming weeks.
+Phase 1 of the [roadmap](ROADMAP.md) is in progress. The two formats are drafts
+(version 0.1) and have not been reviewed. Of the [contracts](contracts/), parity
+is agreed and its fixtures are not built; the others are not started.

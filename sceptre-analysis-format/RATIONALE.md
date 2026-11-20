@@ -641,7 +641,7 @@ measurements](../perturb-seq-data-format/RATIONALE.md#appendix-a-measurements).
 |---|---|
 | An assignment table of 6.6 million rows, written by Python and rewritten by R | Equal |
 | Read the assignment table | 5 s in Python; 1 s in R |
-| Write the assignment table | Python: 111 s, sorting rows one at a time; not rerun with the numpy sort the writer uses now. R: 1 s |
+| Write the assignment table | Python: 111 s, measured with a writer that sorted rows one at a time; the writer in `format/` sorts with numpy and was not timed. R: 1 s |
 
 The tables of an analysis were also measured at real size with made-up
 content; `scale-test/README.md` has those numbers. No real analysis at that

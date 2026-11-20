@@ -6,7 +6,7 @@
 > frozen as 1.0.
 
 One MuData `.h5mu` file per Perturb-seq screen: counts, cells, features and
-gRNAs, the same file in R and in Python. It is a set of names and rules on top
+gRNAs, the same file for R and Python. It is a set of names and rules on top
 of MuData, meant for any software that handles Perturb-seq data. Nothing in it
 is specific to one analysis tool.
 

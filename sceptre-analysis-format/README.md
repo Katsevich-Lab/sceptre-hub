@@ -6,7 +6,7 @@
 > sceptre's first release that uses it, which freezes it as 1.0.
 
 One folder per analysis of a Perturb-seq data file: the settings and tables of
-each stage, the same files in R and in Python. It builds on the
+each stage, the same files for R and Python. It builds on the
 [Perturb-seq data file format](../perturb-seq-data-format/), which is separate,
 has its own version, and knows nothing about analyses.
 

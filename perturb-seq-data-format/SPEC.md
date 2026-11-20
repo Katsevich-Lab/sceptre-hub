@@ -4,8 +4,9 @@
 
 **Status.** This is a first draft. It was written in about a week, by one
 author, and implemented twice by that same author, in R and in Python. It has
-been tested on datasets of 500 and 1,000 cells and on one real screen of
-207,324 cells. Nobody else has reviewed it. It looks more finished than it is.
+been tested on datasets of 500 and 1,000 cells, on one real screen of
+207,324 cells and on one made-up file of 1,100,000 cells. Nobody else has
+reviewed it. It looks more finished than it is.
 
 **What it is.** One MuData `.h5mu` file per screen: counts, cells, features
 and gRNAs. The format is a set of names and restrictions on top of MuData and
