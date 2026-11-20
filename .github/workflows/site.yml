@@ -3,7 +3,9 @@
 # they are, and overview.qmd, which is run and reports the results of the
 # verification suites. The suites are not run here. Each format's own workflow
 # runs them and keeps their results, and this build starts when one of those
-# workflows finishes and takes the results of its latest run on Linux. No HTML
+# workflows finishes and takes the results of its latest run on Linux. A change
+# to the text of a format, which those workflows do not check, starts this build
+# directly. No HTML
 # of the site is committed.
 name: Site
 
@@ -13,6 +15,16 @@ on:
     paths:
       - "site/**"
       - "ROADMAP.md"
+      # the text of the formats, which their own checks do not cover
+      - "perturb-seq-data-format/SPEC.md"
+      - "perturb-seq-data-format/RATIONALE.md"
+      - "perturb-seq-data-format/overview.qmd"
+      - "perturb-seq-data-format/overview_tools.py"
+      - "perturb-seq-data-format/_overview_style.md"
+      - "sceptre-analysis-format/SPEC.md"
+      - "sceptre-analysis-format/RATIONALE.md"
+      - "sceptre-analysis-format/overview.qmd"
+      - "sceptre-analysis-format/analysis_overview.py"
       - ".github/workflows/site.yml"
   workflow_run:
     workflows: ["Perturb-seq data file format", "sceptre analysis format"]

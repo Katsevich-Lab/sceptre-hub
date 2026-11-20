@@ -20,6 +20,15 @@ on:
       - "sceptre-analysis-format/**"
       - "perturb-seq-data-format/**"
       - ".github/workflows/sceptre-analysis-format.yml"
+      # the text and the overviews: the site workflow publishes those
+      - "!sceptre-analysis-format/**/*.md"
+      - "!sceptre-analysis-format/overview.qmd"
+      - "!sceptre-analysis-format/analysis_overview.py"
+      - "!sceptre-analysis-format/scale-test/**"
+      - "!perturb-seq-data-format/**/*.md"
+      - "!perturb-seq-data-format/overview.qmd"
+      - "!perturb-seq-data-format/overview_tools.py"
+      - "!perturb-seq-data-format/scale-test/**"
   workflow_dispatch:
 
 jobs:
@@ -60,6 +69,12 @@ jobs:
             bioc::HDF5Array
             bioc::SingleCellExperiment
             bioc::MultiAssayExperiment
+      # The text of the format does not start these checks (see the paths above).
+      # Removing it here makes a check that came to depend on it fail.
+      - name: Remove the files that do not start these checks
+        shell: bash
+        run: |
+          git ls-files -z -- ':(glob)sceptre-analysis-format/**/*.md' 'sceptre-analysis-format/overview.qmd' 'sceptre-analysis-format/analysis_overview.py' 'sceptre-analysis-format/scale-test' ':(glob)perturb-seq-data-format/**/*.md' 'perturb-seq-data-format/overview.qmd' 'perturb-seq-data-format/overview_tools.py' 'perturb-seq-data-format/scale-test' | xargs -0 rm -f
       - name: Verification suite
         shell: bash
         run: sceptre-analysis-format/verify/run.sh ${{ matrix.part }}
@@ -101,6 +116,12 @@ jobs:
             bioc::SingleCellExperiment
             bioc::MultiAssayExperiment
             github::Katsevich-Lab/sceptre@20c33349c2c5a0df66589e37f67238e67c53bcb0
+      # The text of the format does not start these checks (see the paths above).
+      # Removing it here makes a check that came to depend on it fail.
+      - name: Remove the files that do not start these checks
+        shell: bash
+        run: |
+          git ls-files -z -- ':(glob)sceptre-analysis-format/**/*.md' 'sceptre-analysis-format/overview.qmd' 'sceptre-analysis-format/analysis_overview.py' 'sceptre-analysis-format/scale-test' ':(glob)perturb-seq-data-format/**/*.md' 'perturb-seq-data-format/overview.qmd' 'perturb-seq-data-format/overview_tools.py' 'perturb-seq-data-format/scale-test' | xargs -0 rm -f
       - name: sceptre suite
         shell: bash
         run: sceptre-analysis-format/sceptre-suite/run.sh

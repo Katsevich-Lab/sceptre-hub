@@ -10,6 +10,11 @@ on:
     paths:
       - "perturb-seq-data-format/**"
       - ".github/workflows/perturb-seq-data-format.yml"
+      # the text and the overview: the site workflow publishes those
+      - "!perturb-seq-data-format/**/*.md"
+      - "!perturb-seq-data-format/overview.qmd"
+      - "!perturb-seq-data-format/overview_tools.py"
+      - "!perturb-seq-data-format/scale-test/**"
   workflow_dispatch:
 
 jobs:
@@ -46,6 +51,12 @@ jobs:
             bioc::HDF5Array
             bioc::SingleCellExperiment
             bioc::MultiAssayExperiment
+      # The text of the format does not start these checks (see the paths above).
+      # Removing it here makes a check that came to depend on it fail.
+      - name: Remove the files that do not start these checks
+        shell: bash
+        run: |
+          git ls-files -z -- ':(glob)perturb-seq-data-format/**/*.md' 'perturb-seq-data-format/overview.qmd' 'perturb-seq-data-format/overview_tools.py' 'perturb-seq-data-format/scale-test' | xargs -0 rm -f
       - name: Verification suite
         shell: bash
         run: perturb-seq-data-format/verify/run.sh
