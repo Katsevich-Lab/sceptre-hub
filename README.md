@@ -29,9 +29,9 @@ This repository holds:
   software.
 - [sceptre-analysis-format/](sceptre-analysis-format/): a draft of the format
   for sceptre's analyses of such a file.
-  Both formats can be browsed at
-  <https://katsevich-lab.github.io/sceptre-hub/>, which [site/](site/) builds
-  from these two folders.
+- [site/](site/): the SCEPTRE site at
+  <https://katsevich-lab.github.io/sceptre-hub/>, built from the roadmap and
+  the two format folders.
 - [LICENSE](LICENSE): the MIT licence, which covers everything here.
 
 Each component repository holds its code, tests, API documentation, vignettes,

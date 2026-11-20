@@ -8,9 +8,9 @@ tr:has(a.rule-id:target) { background: #fff6d6; }
 #TOC a { overflow-wrap: anywhere; }
 #TOC code { white-space: normal; }
 
-/* the home page: one card per format */
+/* the home page: one card per package and per format */
 .format-card { border-color: #ced4da !important; background: #fff; }
-.format-card h2 { border-bottom: none; font-size: 1.35rem; margin-top: 0; padding-bottom: 0; }
+.format-card h3 { font-size: 1.25rem; margin-top: 0; }
 .format-card p:last-child { margin-bottom: 0; }
 
 /* the sidebar: a format's name opens its overview, and its pages stay listed */
