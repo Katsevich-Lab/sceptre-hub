@@ -31,6 +31,11 @@ on:
       - "!perturb-seq-data-format/scale-test/**"
   workflow_dispatch:
 
+# a newer push replaces checks still running for an older one
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     name: ${{ matrix.part }} (${{ matrix.os }})

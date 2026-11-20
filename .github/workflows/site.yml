@@ -3,7 +3,7 @@
 # they are, and overview.qmd, which is run and reports the results of the
 # verification suites. The suites are not run here. Each format's own workflow
 # runs them and keeps their results, and this build starts when one of those
-# workflows finishes and takes the results of its latest run on Linux. A change
+# workflows finishes and takes the results of its latest finished run on Linux. A change
 # to the text of a format, which those workflows do not check, starts this build
 # directly. No HTML
 # of the site is committed.
@@ -43,27 +43,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # While a format's checks are still running, wait: their end starts this
-  # workflow again, with results that match the files.
-  ready:
-    runs-on: ubuntu-latest
-    outputs:
-      go: ${{ steps.check.outputs.go }}
-    steps:
-      - id: check
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          running=0
-          for workflow in perturb-seq-data-format sceptre-analysis-format; do
-            n="$(gh run list --workflow "$workflow.yml" --branch main --limit 20 --json status --jq '[.[] | select(.status != "completed")] | length')"
-            running=$((running + n))
-          done
-          if [ "$running" -eq 0 ]; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "go=false" >> "$GITHUB_OUTPUT"; echo "Format checks are running; this build starts again when they finish."; fi
   build:
-    needs: ready
-    if: needs.ready.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
