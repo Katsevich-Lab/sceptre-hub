@@ -23,7 +23,7 @@ language's repository.
 
 This repository holds:
 
-- [ROADMAP.md](ROADMAP.md): the development phases and priorities.
+- [ROADMAP.md](ROADMAP.md): the development phases.
 - [perturb-seq-data-format/](perturb-seq-data-format/): a draft of an on-disk
   format for Perturb-seq data, the same file for R and Python, meant for any
   software.

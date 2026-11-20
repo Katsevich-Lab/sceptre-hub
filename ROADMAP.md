@@ -31,17 +31,3 @@ Phase 1 is in progress.
 | **3a. Nextflow pipeline** | The pipeline made maintainable and extensible on top of the stable package interfaces, and scaled to large screens. |
 | **3b. GPU acceleration** | Full-scale analyses on GPU in pysceptre, matching CPU results. |
 | **4. New methods** | A minimal subset of new statistical methods, for example the saddlepoint approximation and pairwise QC. |
-
-## Priorities
-
-- **Quality over speed.** Development is not planned around external dates.
-- **Foundations before extensions.** New features wait until the formats and
-  both packages are sound.
-- **Among extensions, scalability, maintainability, extensibility and
-  interoperability before new methods.** GPU acceleration and the pipeline
-  come before method development.
-
-## Waiting until Phase 4 or later
-
-Improved gRNA assignment, the Wilcoxon test, per-pair power, improved
-calibration, and improved upstream bioinformatics.

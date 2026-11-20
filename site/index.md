@@ -72,4 +72,4 @@ One analysis of a data file by sceptre: settings, gRNA assignments, quality cont
 ## Roadmap
 
 Development proceeds in four phases. The first, agreeing on the file formats,
-is in progress. [The roadmap](roadmap.qmd) gives the phases and priorities.
+is in progress. [The roadmap](roadmap.qmd) describes them.

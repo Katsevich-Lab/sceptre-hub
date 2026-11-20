@@ -53,4 +53,7 @@ jobs:
         if: always()
         with:
           name: results-${{ matrix.os }}
-          path: perturb-seq-data-format/verify/out/results/
+          # the site build takes these from here instead of running the suite again
+          path: |
+            perturb-seq-data-format/verify/out/results/
+            perturb-seq-data-format/conformance/results-*.json

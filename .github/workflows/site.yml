@@ -1,8 +1,10 @@
-# Builds the browsable site of the two formats and publishes it with GitHub
-# Pages. The sources are the files of the two format folders: SPEC.md and
-# RATIONALE.md, rendered as they are, and overview.qmd, which is run and
-# reports the results of the verification suites. So this runs both suites,
-# then site/build.sh. No HTML of the site is committed.
+# Builds the SCEPTRE site and publishes it with GitHub Pages: site/index.md,
+# ROADMAP.md, and from each format folder SPEC.md and RATIONALE.md, rendered as
+# they are, and overview.qmd, which is run and reports the results of the
+# verification suites. The suites are not run here. Each format's own workflow
+# runs them and keeps their results, and this build starts when one of those
+# workflows finishes and takes the results of its latest run on Linux. No HTML
+# of the site is committed.
 name: Site
 
 on:
@@ -11,13 +13,16 @@ on:
     paths:
       - "site/**"
       - "ROADMAP.md"
-      - "perturb-seq-data-format/**"
-      - "sceptre-analysis-format/**"
       - ".github/workflows/site.yml"
+  workflow_run:
+    workflows: ["Perturb-seq data file format", "sceptre analysis format"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -26,7 +31,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # While a format's checks are still running, wait: their end starts this
+  # workflow again, with results that match the files.
+  ready:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.check.outputs.go }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          running=0
+          for workflow in perturb-seq-data-format sceptre-analysis-format; do
+            n="$(gh run list --workflow "$workflow.yml" --branch main --limit 20 --json status --jq '[.[] | select(.status != "completed")] | length')"
+            running=$((running + n))
+          done
+          if [ "$running" -eq 0 ]; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "go=false" >> "$GITHUB_OUTPUT"; echo "Format checks are running; this build starts again when they finish."; fi
   build:
+    needs: ready
+    if: needs.ready.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,10 +89,34 @@ jobs:
             any::reticulate
             github::Katsevich-Lab/sceptre@20c33349c2c5a0df66589e37f67238e67c53bcb0
       - uses: quarto-dev/quarto-actions/setup@v2
-      - name: Verification suites, whose results the overviews report
+      # The results of each format's latest finished checks that kept any. If
+      # none can be had, the suite is run here.
+      - name: Results of the verification suites
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          perturb-seq-data-format/verify/run.sh
-          sceptre-analysis-format/verify/run.sh
+          fetch() {
+            workflow="$1"; shift
+            for run in $(gh run list --workflow "$workflow.yml" --branch main --status completed --limit 10 --json databaseId --jq '.[].databaseId'); do
+              rm -rf fetched "$workflow/verify/out/results" "$workflow"/conformance/results-*.json
+              got=yes
+              for artifact in "$@"; do
+                gh run download "$run" --name "$artifact" --dir "fetched/$artifact" || got=no
+              done
+              # a run from before the results were kept whole has no conformance results
+              ls fetched/*/conformance/results-python.json fetched/*/verify/out/results > /dev/null 2>&1 || got=no
+              if [ "$got" = yes ]; then
+                for artifact in "$@"; do cp -R "fetched/$artifact/." "$workflow/"; done
+                rm -rf fetched
+                echo "$workflow: results of run $run"
+                return 0
+              fi
+            done
+            rm -rf fetched
+            return 1
+          }
+          fetch perturb-seq-data-format results-ubuntu-latest || perturb-seq-data-format/verify/run.sh
+          fetch sceptre-analysis-format results-format-ubuntu-latest results-writers-ubuntu-latest || sceptre-analysis-format/verify/run.sh
       - name: Build the site
         run: SCEPTRE_FORMAT_PYTHON="$(command -v python)" site/build.sh
       - uses: actions/upload-pages-artifact@v3

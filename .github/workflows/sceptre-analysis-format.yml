@@ -67,7 +67,10 @@ jobs:
         if: always()
         with:
           name: results-${{ matrix.part }}-${{ matrix.os }}
-          path: sceptre-analysis-format/verify/out/results/
+          # the site build takes these from here instead of running the suite again
+          path: |
+            sceptre-analysis-format/verify/out/results/
+            sceptre-analysis-format/conformance/results-*.json
 
   sceptre:
     name: sceptre (ubuntu-latest)
