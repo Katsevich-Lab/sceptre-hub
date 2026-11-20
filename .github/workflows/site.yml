@@ -38,9 +38,10 @@ permissions:
   pages: write
   id-token: write
 
+# a build that has started finishes; of those waiting, only the newest runs
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
