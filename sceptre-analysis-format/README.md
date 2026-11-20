@@ -10,7 +10,7 @@ each stage, the same files for R and Python. It builds on the
 [Perturb-seq data file format](../perturb-seq-data-format/), which is separate,
 has its own version, and knows nothing about analyses.
 
-**Start with [the overview](https://katsevich-lab.github.io/sceptre-hub/sceptre-analysis-format/overview.html).**
+**Start with [the overview](https://katsevich-lab.github.io/sceptre-hub/file-formats/sceptre-analysis-format/overview.html).**
 It gives the principles and the main choices with their reasons, shows what
 an analysis folder holds, how it is read and written, and how the format is checked.
 Its source is `overview.qmd`.

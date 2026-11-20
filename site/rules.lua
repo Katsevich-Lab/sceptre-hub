@@ -43,6 +43,7 @@ end
 
 -- a relative link to something this site does not render goes to the repository
 local function fix_link(link)
+  if link.classes:includes("rule-ref") or link.classes:includes("rule-id") then return nil end   -- made above
   local target = link.target
   if target:match("^%a+:") or target:match("^#") then return nil end
   local path = target:gsub("#.*$", "")

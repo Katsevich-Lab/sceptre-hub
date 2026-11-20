@@ -10,7 +10,7 @@ gRNAs, the same file for R and Python. It is a set of names and rules on top
 of MuData, meant for any software that handles Perturb-seq data. Nothing in it
 is specific to one analysis tool.
 
-**Start with [the overview](https://katsevich-lab.github.io/sceptre-hub/perturb-seq-data-format/overview.html).**
+**Start with [the overview](https://katsevich-lab.github.io/sceptre-hub/file-formats/perturb-seq-data-format/overview.html).**
 It gives the principles and the main choices with their reasons, shows what
 a data file holds, how it is read and written, and how the format is checked.
 Its source is `overview.qmd`.

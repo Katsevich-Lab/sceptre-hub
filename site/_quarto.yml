@@ -4,12 +4,13 @@ project:
   render:
     - index.md
     - roadmap.qmd
-    - perturb-seq-data-format/overview.qmd
-    - perturb-seq-data-format/SPEC.md
-    - perturb-seq-data-format/RATIONALE.md
-    - sceptre-analysis-format/overview.qmd
-    - sceptre-analysis-format/SPEC.md
-    - sceptre-analysis-format/RATIONALE.md
+    - file-formats/index.md
+    - file-formats/perturb-seq-data-format/overview.qmd
+    - file-formats/perturb-seq-data-format/SPEC.md
+    - file-formats/perturb-seq-data-format/RATIONALE.md
+    - file-formats/sceptre-analysis-format/overview.qmd
+    - file-formats/sceptre-analysis-format/SPEC.md
+    - file-formats/sceptre-analysis-format/RATIONALE.md
 
 website:
   title: "SCEPTRE"
@@ -29,21 +30,22 @@ website:
       - text: Roadmap
         href: roadmap.qmd
       - section: File formats
+        href: file-formats/index.md
         contents:
           - section: Perturb-seq data file format
-            href: perturb-seq-data-format/overview.qmd
+            href: file-formats/perturb-seq-data-format/overview.qmd
             contents:
               - text: Specification
-                href: perturb-seq-data-format/SPEC.md
+                href: file-formats/perturb-seq-data-format/SPEC.md
               - text: Rationale
-                href: perturb-seq-data-format/RATIONALE.md
+                href: file-formats/perturb-seq-data-format/RATIONALE.md
           - section: sceptre analysis format
-            href: sceptre-analysis-format/overview.qmd
+            href: file-formats/sceptre-analysis-format/overview.qmd
             contents:
               - text: Specification
-                href: sceptre-analysis-format/SPEC.md
+                href: file-formats/sceptre-analysis-format/SPEC.md
               - text: Rationale
-                href: sceptre-analysis-format/RATIONALE.md
+                href: file-formats/sceptre-analysis-format/RATIONALE.md
 
 from: markdown+gfm_auto_identifiers
 execute:

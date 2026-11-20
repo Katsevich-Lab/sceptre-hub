@@ -519,7 +519,7 @@ The two temporary writers are compared with each other, on seeded random
 content, in the sceptre analysis format's folder, because that check writes
 an analysis as well.
 
-**The overview** (`overview.qmd`, published at <https://katsevich-lab.github.io/sceptre-hub/perturb-seq-data-format/overview.html>) is the
+**The overview** (`overview.qmd`, published at <https://katsevich-lab.github.io/sceptre-hub/file-formats/perturb-seq-data-format/overview.html>) is the
 introduction, not a check: it shows the example data file as an annotated
 tree, with descriptions read from `spec/`, and reports what the verification
 suite found when it was rendered. It renders R and Python in one process

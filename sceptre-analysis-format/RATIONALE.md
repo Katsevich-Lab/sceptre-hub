@@ -568,7 +568,7 @@ Python, all passing. The checks that need sceptre are a separate suite,
 - what a reader derives from the files, against values sceptre computed,
   stored beside the examples.
 
-**The overview** (`overview.qmd`, published at <https://katsevich-lab.github.io/sceptre-hub/sceptre-analysis-format/overview.html>) is the
+**The overview** (`overview.qmd`, published at <https://katsevich-lab.github.io/sceptre-hub/file-formats/sceptre-analysis-format/overview.html>) is the
 introduction, not a check: it shows one analysis as an annotated tree, with
 descriptions read from `spec/`, and reports what the verification suite found
 when it was rendered. It renders R and Python in one process *(measured,

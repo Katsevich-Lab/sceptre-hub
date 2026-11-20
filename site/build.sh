@@ -1,6 +1,6 @@
 #!/bin/sh
-# Builds the SCEPTRE site in site/_site: a home page, the roadmap and the two
-# formats. The sources are index.md here, ROADMAP.md, and
+# Builds the SCEPTRE site in site/_site: a home page, the roadmap and, under
+# file-formats/, the two formats. The sources are index.md here, ROADMAP.md, and
 # the files of the two format folders: SPEC.md and RATIONALE.md, rendered as
 # they are, and overview.qmd, which is run. The folders are copied to a work
 # folder and rendered there as one Quarto website, so nothing is written into
@@ -19,30 +19,32 @@ Rscript -e 'if (!requireNamespace("sceptre", quietly = TRUE) || packageVersion("
 rm -rf _work _site
 mkdir _work
 cp _quarto.yml index.md rules.lua site.css _work/
+mkdir _work/file-formats
+cp file-formats.md _work/file-formats/index.md
 # the roadmap: its heading becomes the page title, its diagram is run, and its
 # links to the format folders go to their overviews
 [ "$(head -n 1 ../ROADMAP.md)" = "# SCEPTRE roadmap" ] || { echo "ROADMAP.md does not start with its heading." >&2; exit 1; }
 printf -- '---\ntitle: Roadmap\n---\n' > _work/roadmap.qmd
 sed -e '1d' -e 's/^```mermaid$/```{mermaid}/' \
-    -e 's#(perturb-seq-data-format/)#(perturb-seq-data-format/overview.qmd)#g' \
-    -e 's#(sceptre-analysis-format/)#(sceptre-analysis-format/overview.qmd)#g' ../ROADMAP.md >> _work/roadmap.qmd
+    -e 's#(perturb-seq-data-format/)#(file-formats/perturb-seq-data-format/overview.qmd)#g' \
+    -e 's#(sceptre-analysis-format/)#(file-formats/sceptre-analysis-format/overview.qmd)#g' ../ROADMAP.md >> _work/roadmap.qmd
 for format in perturb-seq-data-format sceptre-analysis-format; do
     if [ ! -d "../$format/verify/out/results" ]; then
         echo "Run $format/verify/run.sh first: the overview reports its results." >&2
         exit 1
     fi
-    mkdir "_work/$format"
-    (cd "../$format" && tar -cf - --exclude ./rlib .) | (cd "_work/$format" && tar -xf -)
-    [ -d "../$format/rlib" ] && ln -s "$(cd "../$format/rlib" && pwd)" "_work/$format/rlib"
+    mkdir "_work/file-formats/$format"
+    (cd "../$format" && tar -cf - --exclude ./rlib .) | (cd "_work/file-formats/$format" && tar -xf -)
+    [ -d "../$format/rlib" ] && ln -s "$(cd "../$format/rlib" && pwd)" "_work/file-formats/$format/rlib"
 done
-# the home page's badges carry each format's version, as its specification states it
+# the badges of the file formats page carry each format's version, as its specification states it
 for format in perturb-seq-data-format sceptre-analysis-format; do
     version="$(sed -n 's/^\*\*Version \(.*\)\.\*\*$/\1/p' "../$format/SPEC.md" | head -n 1)"
     [ -n "$version" ] || { echo "No version line in $format/SPEC.md." >&2; exit 1; }
     label="$(printf 'version %s' "${version%%,*}" | sed -e 's/ /%20/g' -e 's/(/%28/g' -e 's/)/%29/g')"
-    sed -i.bak "s/{{version $format}}/$label/" _work/index.md
+    sed -i.bak "s/{{version $format}}/$label/" _work/file-formats/index.md
 done
-rm _work/index.md.bak
+rm _work/file-formats/index.md.bak
 quarto render _work
 mv _work/_site _site
 rm -rf _work
