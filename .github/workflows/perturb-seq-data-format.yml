@@ -17,10 +17,11 @@ on:
       - "!perturb-seq-data-format/scale-test/**"
   workflow_dispatch:
 
-# a newer push replaces checks still running for an older one
+# checks that have started finish, so the badge never reports a cancelled run;
+# of those waiting, only the newest runs
 concurrency:
   group: ${{ github.workflow }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   verify:
